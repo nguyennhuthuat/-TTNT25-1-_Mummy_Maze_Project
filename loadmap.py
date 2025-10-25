@@ -18,12 +18,12 @@ clock = pygame.time.Clock() # For controlling frame rate
 
 
 # Load background and game square images
-backdrop = pygame.image.load(os.path.join("assets","image", "backdrop.jpg")).convert()
+backdrop = pygame.image.load(os.path.join("assets","image", "backdrop.png")).convert()
 
  
 
 backdrop = pygame.transform.scale(backdrop, (backdrop_width, backdrop_height))
-game_square = pygame.image.load(os.path.join("assets","image", "floor6.jpg")).convert_alpha()
+game_square = pygame.image.load(os.path.join("assets","image", "floor6.png")).convert_alpha()
 game_square = pygame.transform.scale(game_square, (TILE_SIZE*6, TILE_SIZE*6)) 
 
 class Mum_Map:  
