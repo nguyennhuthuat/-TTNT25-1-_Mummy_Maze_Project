@@ -25,13 +25,14 @@ class Mum_Map:
             't*': 'draw_top_t_wall_tile',
             'b*': 'draw_bottom_t_wall_tile'}
         
-        self.map_data = [['', '', '', '', '', ''],
+        self.map_data = [['', '', '', '', 'b*', ''],
                          ['r', '', 'tl', '', '', ''],
                          ['', '', 'bl', '', '', 't'],
                          ['', '', '', '', '', ''],
                          ['', 'cc', '', 'tl', 't*', ''],
                          ['', '', '', '', 'r', '']]
         
+        self.stair_positions = (7, 5) # (row, column) position of the stair tile in the map_data
         
         self.TILE_SIZE = 70 # Size of each tile in the grid
         self.backdrop_width = 575 # Set width  size for the backdrop
@@ -46,6 +47,7 @@ class Mum_Map:
 
 
         self.load_tiles()
+       
     
     def load_tiles(self):
         #seperate wall image to cut from walls6.png 
@@ -64,16 +66,17 @@ class Mum_Map:
         area_stair_surface = pygame.image.load(os.path.join("assets","image", 'stairs.png')).convert_alpha()
         
         area_to_cut = pygame.Rect(2, 0, 54, 66)
-        self.bottom_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
+        self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
 
         area_to_cut = pygame.Rect(60, 0, 54, 66)
-        self.left_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
+        self.right_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
 
-        area_to_cut = pygame.Rect(114, 0, 54, 36)
-        self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,42))
+        area_to_cut = pygame.Rect(114, 0, 54, 34)
+        self.bottom_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,36))
 
         area_to_cut = pygame.Rect(170, 0, 54, 66)
-        self.right_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
+        self.left_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77)) 
+        #bottom, left, right : 54x66 scaled to 63x77; top: 54x36 scaled to 63x42
         return 0
     
     def draw_top_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
@@ -137,16 +140,54 @@ class Mum_Map:
         screen.blit(self.down_standing_wall, (self.margin_left + self.TILE_SIZE*x - 3, self.margin_top + self.TILE_SIZE*y - 14))
         screen.blit(self.down_standing_wall, (self.margin_left + self.TILE_SIZE*x + self.TILE_SIZE - 3, self.margin_top + self.TILE_SIZE*y - 14))    
 
+    def draw_stair(self, screen):
+        def draw_bottom_stair(self, screen, row, col):
+            x = self.margin_left + self.TILE_SIZE*(row - 1) 
+            y = self.margin_top + self.TILE_SIZE*(col - 1) - 2
+            screen.blit(self.bottom_stair, (x, y))
+
+        def draw_top_stair(self, screen, row, col):
+            x = self.margin_left + self.TILE_SIZE*(row - 1) - self.top_stair.get_width() - 3
+            y = self.margin_top + self.TILE_SIZE*(col - 1) - self.top_stair.get_height()  + self.TILE_SIZE
+            screen.blit(self.top_stair, (x, y))
+
+        def draw_left_stair(self, screen, row, col):
+            x = self.margin_left + self.TILE_SIZE*(row - 1) 
+            y = self.margin_top + self.TILE_SIZE*(col - 1) - 5
+            screen.blit(self.left_stair, (x, y))
+
+        def draw_right_stair(self, screen, row, col):
+            x = self.margin_left + self.TILE_SIZE*(row - 1) 
+            y = self.margin_top + self.TILE_SIZE*(col - 1) - 5
+            screen.blit(self.right_stair, (x, y))
+        
+        
+        row, col = self.stair_positions
+      #check position and draw corresponding stair
+        if col == 7:
+            draw_bottom_stair(self, screen, row, col)
+        elif col == 0:
+            draw_top_stair(self, screen, row, col)
+            print("vẽ thang trên")
+        elif row == 0:
+            draw_left_stair(self, screen, row, col)
+        elif row == 7:
+            draw_right_stair(self, screen, row, col)
+    
+
     def draw_map(self, screen):
         screen.blit(self.backdrop, ((screen_width-self.backdrop_width)//2, (screen_height-self.backdrop_height)//2))
         screen.blit(self.game_square, ( self.margin_left, self.margin_top)) 
-        for row_index, row in enumerate(self.map_data):
+        for row_index, row in enumerate(self.map_data): #draw walls based on map_data
             for col_index, tile_id in enumerate(row):
                 if tile_id.strip() and (tile_id in self.database.keys()):  # Only draw if tile_id is not empty
                     getattr(self, self.database[tile_id])(screen, col_index + 1, row_index + 1) # Call the drawing function based on tile_id
                 elif tile_id.strip() and tile_id not in self.database.keys():
                     print(f"Warning: tile_id '{tile_id}' at ({row_index}, {col_index}) not found in database. Skipping drawing.")
                     continue
+
+        #draw stair
+        self.draw_stair(screen)
   
 my_map = Mum_Map()
 running = True
