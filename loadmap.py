@@ -10,7 +10,9 @@ clock = pygame.time.Clock() # For controlling frame rate
 
 class Mum_Map:  
     
-    def __init__(self):
+    def __init__(self, length):
+
+        self.length = length
         self.database = { # dictionary to link tile id to drawing function
             't': 'draw_top_wall_tile',
             'b': 'draw_bottom_wall_tile',
@@ -25,11 +27,11 @@ class Mum_Map:
             't*': 'draw_top_t_wall_tile',
             'b*': 'draw_bottom_t_wall_tile'}
         
-        self.map_data = [['', '', '', '', 'b*', ''],
+        self.map_data = [['', '', '', '', 'bl', ''],
                          ['r', '', 'tl', '', '', ''],
-                         ['', '', 'bl', '', '', 't'],
+                         ['', 'r', 'bl', '', '', 't'],
                          ['', '', '', '', '', ''],
-                         ['', 'cc', '', 'tl', 't*', ''],
+                         ['', 'l', '', 'tl', 't*', ''],
                          ['', '', '', '', 'r', '']]
         
         self.stair_positions = (7, 5) # (row, column) position of the stair tile in the map_data
@@ -42,7 +44,7 @@ class Mum_Map:
         # Load background and game square images
         self.backdrop = pygame.image.load(os.path.join("assets","image", "backdrop.png")).convert()
         self.backdrop = pygame.transform.scale(self.backdrop, (self.backdrop_width, self.backdrop_height))
-        self.game_square = pygame.image.load(os.path.join("assets","image", "floor6.png")).convert_alpha()
+        self.game_square = pygame.image.load(os.path.join("assets","image", "floor" + str(self.length) + ".png")).convert_alpha()
         self.game_square = pygame.transform.scale(self.game_square, (self.TILE_SIZE*6, self.TILE_SIZE*6)) 
 
 
@@ -51,7 +53,7 @@ class Mum_Map:
     
     def load_tiles(self):
         #seperate wall image to cut from walls6.png 
-        area_surface = pygame.image.load(os.path.join("assets","image", 'walls6.png')).convert_alpha()
+        area_surface = pygame.image.load(os.path.join("assets","image", "walls" + str(self.length) + ".png")).convert_alpha()
 
         area_to_cut = pygame.Rect(0, 0, 12,78)
         self.down_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14,91))
@@ -63,7 +65,7 @@ class Mum_Map:
         self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14,87)) ### bottom col wall = 14x91, rol wall = 84x21, top col wall = 14x87
         
         #seperate stair image to cut from stairs.png
-        area_stair_surface = pygame.image.load(os.path.join("assets","image", 'stairs.png')).convert_alpha()
+        area_stair_surface = pygame.image.load(os.path.join("assets","image", "stairs" + str(self.length) + ".png")).convert_alpha()
         
         area_to_cut = pygame.Rect(2, 0, 54, 66)
         self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
@@ -164,15 +166,16 @@ class Mum_Map:
         
         row, col = self.stair_positions
       #check position and draw corresponding stair
-        if col == 7:
+        if col == len(self.map_data[0]) + 1:
             draw_bottom_stair(self, screen, row, col)
         elif col == 0:
             draw_top_stair(self, screen, row, col)
             print("vẽ thang trên")
         elif row == 0:
             draw_left_stair(self, screen, row, col)
-        elif row == 7:
+        elif row == len(self.map_data[0]) + 1:
             draw_right_stair(self, screen, row, col)
+        else: print(len(self.map_data[0]))
     
 
     def draw_map(self, screen):
@@ -188,8 +191,13 @@ class Mum_Map:
 
         #draw stair
         self.draw_stair(screen)
-  
-my_map = Mum_Map()
+
+class player:
+    def __init__(self):
+        pass
+    def load_player(self):
+        pass 
+my_map = Mum_Map(6)
 running = True
 
 while running:
