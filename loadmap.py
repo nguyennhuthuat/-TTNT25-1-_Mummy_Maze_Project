@@ -247,7 +247,7 @@ class MummyMazePlayerManager:
                     frames.append(frame)
             return frames
         player_surface = pygame.image.load(os.path.join("assets","image", "explorer" + str(self.length) + ".png")).convert_alpha()
-        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width()*7//6, player_surface.get_height()*7//6))
+        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width(), player_surface.get_height()))
         
         # sperate player sprite sheet into frames, each movement direction has 5 frames, total 20 frames
         # visit assets/image/mummy_white6.png to see the sprite sheet
@@ -313,7 +313,7 @@ class MummyMazePlayerManager:
                     grid_x = 1
                     grid_y = 0            
 
-            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -322,7 +322,7 @@ class MummyMazePlayerManager:
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
         else:
-            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
         print(f'position of explorer: {self.grid_position}')
 
         
@@ -364,8 +364,9 @@ while running:
                         MummyExplorer.facing_direction = RIGHT
 
     MummyMazeMap.draw_map(screen)  
-    MummyExplorer.update_player(screen)
     MummyMazeMap.draw_walls(screen)
+    MummyExplorer.update_player(screen)
+    
 
 
     # x, y = pygame.mouse.get_pos()
