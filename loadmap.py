@@ -325,7 +325,121 @@ class MummyMazePlayerManager:
             screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
         print(f'position of explorer: {self.grid_position}')
 
+class MummyMazeZombieManager:
+    class MummyMazeFramesManager:
+        def __init__(self,UP, DOWN, LEFT, RIGHT):
+            self.UP = UP
+            self.DOWN = DOWN
+            self.LEFT = LEFT
+            self.RIGHT = RIGHT
+
+    def __init__(self, length, grid_position :list, map_data):
+        self.length = length
+        self.zombie_frames = self.load_zombie_images()
+        self.map_data = map_data
+
+        self.grid_position = grid_position  # [row, column] position of the zombie in the grid
         
+        self.movement_list = []  # List to store movement directions
+        self.movement_frame_index = 0  # Index to track the current frame in the movement animation ( 0 -> 9)
+        self.facing_direction = DOWN  # Initial facing direction
+        self.total_frames = 10  # Total frames per movement direction
+        self.current_frame = getattr(self.zombie_frames,self.facing_direction)[self.total_frames - 1]  # Start with the first frame facing down
+        self.Speed = 70
+
+    def get_zombie_position(self,grid_position): ###!!!!!!!!
+        return [(margin_left + TILE_SIZE*(grid_position[0] - 1) + 4), (margin_top + TILE_SIZE*(grid_position[1]-1) + 4)]
+    
+    def load_zombie_images(self):
+        def double_list(input_list):
+            return [item for item in input_list for _ in range(2)]
+        def extract_sprite_frames(sheet, frame_width, frame_height):
+            sheet_width, sheet_height = sheet.get_size()
+            frames = []
+            for y in range(0, sheet_height, frame_height):
+                for x in range(0, sheet_width, frame_width):
+                    frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                    frames.append(frame)
+            return frames
+        zombie_surface = pygame.image.load(os.path.join("assets","image", "mummy_white" + str(self.length) + ".png")).convert_alpha()
+        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width(), zombie_surface.get_height()))
+        
+        # sperate zombie sprite sheet into frames, each movement direction has 5 frames, total 20 frames
+        # visit assets/image/mummy_white6.png to see the sprite sheet
+        zombie_frame = extract_sprite_frames(zombie_surface, zombie_surface.get_width()//5, zombie_surface.get_height()//4) 
+        zombie_go_up_frames = zombie_frame[1:5]
+        zombie_go_up_frames.append(zombie_frame[0])
+        # self.zombie_go_up_frames.append(self.zombie_go_up_frames[0])
+        zombie_go_right_frames = zombie_frame[6:10]
+        zombie_go_right_frames.append(zombie_frame[5])
+        # self.zombie_go_right_frames.append(self.zombie_go_right_frames[0])
+        zombie_go_down_frames = zombie_frame[11:15]
+        zombie_go_down_frames.append(zombie_frame[10])
+        # self.zombie_go_down_frames.append(self.zombie_go_down_frames[0])
+        zombie_go_left_frames = zombie_frame[16:20]
+        zombie_go_left_frames.append(zombie_frame[15])
+        # self.zombie_go_left_frames.append(self.zombie_go_left_frames[0])
+        return self.MummyMazeFramesManager(double_list(zombie_go_up_frames), double_list(zombie_go_down_frames), double_list(zombie_go_left_frames), double_list(zombie_go_right_frames))
+
+    def zombie_can_move(self, direction, facing_direction): #check if have walls on the way
+        
+        x = direction[0]
+        y = direction[1]
+        if facing_direction == UP:
+            return (y-1 > 0) and (self.map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (self.map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
+        if facing_direction == DOWN:
+            return (y+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (self.map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
+        if facing_direction == LEFT:
+            return (x-1 > 0) and (self.map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (self.map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
+        if facing_direction == RIGHT:
+            return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
+        return True
+    
+    def update_zombie(self, screen):
+        move_distance_x = 0 # sai so khoang cach tinh theo pixel
+        move_distance_y = 0
+        grid_x = 0  #sai so khoang cach tinh theo o vuong don vi
+        grid_y = 0
+
+        if self.movement_list:
+            self.facing_direction = self.movement_list[0] # Get the current movement direction
+            self.current_frame = getattr(self.zombie_frames, str(self.facing_direction))[self.movement_frame_index]
+
+            if self.zombie_can_move(self.grid_position, self.facing_direction):
+                if self.facing_direction == UP:
+                    move_distance_x = 0
+                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed//self.total_frames)   
+                    print(self.movement_frame_index)     
+                    grid_x = 0
+                    grid_y = -1            
+                elif self.facing_direction == DOWN:
+                    move_distance_x = 0
+                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
+                    grid_x = 0
+                    grid_y = 1
+                elif self.facing_direction == LEFT:
+                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
+                    move_distance_y = 0
+                    grid_x = -1
+                    grid_y = 0
+                elif self.facing_direction == RIGHT:
+                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
+                    move_distance_y = 0
+                    grid_x = 1
+                    grid_y = 0            
+
+            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+
+            self.movement_frame_index += 1
+            if self.movement_frame_index >= self.total_frames:
+                self.movement_frame_index = 0
+                self.movement_list.pop(0)  # Remove the completed movement
+                self.grid_position[0] += grid_x
+                self.grid_position[1] += grid_y
+        else:
+            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+        print(f'position of explorer: {self.grid_position}')
+
 
 
     
@@ -337,9 +451,9 @@ margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge 
     
 MummyMazeMap = MummyMazeMapManager(6, map_data)
 MummyExplorer = MummyMazePlayerManager(6, [6,6], map_data)
+MummyZombie= MummyMazeZombieManager(6, [2,3], map_data)
 
 running = True
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -366,6 +480,7 @@ while running:
     MummyMazeMap.draw_map(screen)  
     MummyMazeMap.draw_walls(screen)
     MummyExplorer.update_player(screen)
+    MummyZombie.update_zombie(screen)
     
 
 
