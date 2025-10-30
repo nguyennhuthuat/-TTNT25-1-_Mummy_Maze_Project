@@ -13,8 +13,8 @@ LEFT_status = "LEFT"
 RIGHT_status = "RIGHT"
 map_data = [['l', 'r', 't', 'b', 'bl', 'br'],
             ['tr', 'tl', 't*', 'b*', 'r*', 'l*'],
-            ['', 'r', 'bl', '', '', 't'],
-            ['', '', '', '', '', ''],
+            ['', ' r ', 'bl', '', '', 't'],
+            ['', '', '', '', '   ', ''],
             ['', 'l', '', 'tl', 't*', ''],
             ['', '', '', '', 'r', '']]
 
@@ -193,7 +193,7 @@ class MummyMazeMapManager:
         self.draw_stair(screen)
 
     def draw_walls(self, screen):
-        for row_index, row in enumerate(self.map_data): #draw walls based on map_data
+        for row_index, row in enumerate(self.map_data): #dr aw walls based on map_data
             for col_index, tile_id in enumerate(row):
                 if tile_id.strip() and (tile_id in self.database.keys()):  # Only draw if tile_id is not empty
                     getattr(self, self.database[tile_id])(screen, col_index + 1, row_index + 1) # Call the drawing function based on tile_id
