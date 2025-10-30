@@ -13,10 +13,10 @@ LEFT_status = "LEFT"
 RIGHT_status = "RIGHT"
 map_data = [['l', 'r', 't', 'b', 'bl', 'br'],
             ['tr', 'tl', 't*', 'b*', 'r*', 'l*'],
-            ['', ' r ', 'bl', '', '', 't'],
+            ['', 'r', '   bl   ', '', '', 't'],
             ['', '', '', '', '   ', ''],
             ['', 'l', '', 'tl', 't*', ''],
-            ['', '', '', '', 'r', '']]
+            ['', '     ', '', '', 'r', '']]
 
 
 pygame.init()
@@ -26,6 +26,14 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE
 pygame.display.set_caption("Load Map Example")
 clock = pygame.time.Clock() # For controlling frame rate
 
+def clean_map_data(map_data):
+    for col_index, col in enumerate(map_data): #dr aw walls based on map_data
+            for row_index, tile_id in enumerate(col):
+                map_data[col_index][row_index] = map_data[col_index][row_index].strip()
+    print(map_data)
+    return map_data
+map_data = clean_map_data(map_data)
+                
 class MummyMazeMapManager:  
     
     def __init__(self, length,map_data):
@@ -193,13 +201,13 @@ class MummyMazeMapManager:
         self.draw_stair(screen)
 
     def draw_walls(self, screen):
-        for row_index, row in enumerate(self.map_data): #dr aw walls based on map_data
-            for col_index, tile_id in enumerate(row):
+        for col_index, col in enumerate(self.map_data): #dr aw walls based on map_data
+            for row_index, tile_id in enumerate(col):
                 if tile_id.strip() and (tile_id in self.database.keys()):  # Only draw if tile_id is not empty
-                    getattr(self, self.database[tile_id])(screen, col_index + 1, row_index + 1) # Call the drawing function based on tile_id
+                    getattr(self, self.database[tile_id])(screen, row_index + 1, col_index + 1) # Call the drawing function based on tile_id
                     #getattr(object, name[, default]) -> value
                 elif tile_id.strip() and tile_id not in self.database.keys():
-                    print(f"Warning: tile_id '{tile_id}' at ({row_index}, {col_index}) not found in database. Skipping drawing.")
+                    print(f"Warning: tile_id '{tile_id}' at ({col_index}, {row_index}) not found in database. Skipping drawing.")
                     continue
 
 class MummyMazePlayerManager:
@@ -220,8 +228,8 @@ class MummyMazePlayerManager:
         self.movement_list = []  # List to store movement directions
         self.movement_frame_index = 0  # Index to track the current frame in the movement animation ( 0 -> 9)
         self.facing_direction = DOWN  # Initial facing direction
-        self.current_frame = getattr(self.player_frames,self.facing_direction)[4]  # Start with the first frame facing down
         self.total_frames = 10  # Total frames per movement direction
+        self.current_frame = getattr(self.player_frames,self.facing_direction)[self.total_frames - 1]  # Start with the first frame facing down
         self.Speed = 70
 
     def get_player_position(self,grid_position): ###!!!!!!!!
@@ -264,14 +272,15 @@ class MummyMazePlayerManager:
         y = direction[1]
         if facing_direction == UP:
             return (y-1 > 0) and (self.map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (self.map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
-
         if facing_direction == DOWN:
             return (y+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (self.map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
         if facing_direction == LEFT:
+            print(self.map_data[y-1][x-1], self.map_data[y-1][x-2])
             return (x-1 > 0) and (self.map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (self.map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
         if facing_direction == RIGHT:
             return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
         return True
+    
     def update_player(self, screen):
         move_distance_x = 0 # sai so khoang cach tinh theo pixel
         move_distance_y = 0
@@ -339,17 +348,21 @@ while running:
 
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    MummyExplorer.movement_list.append(UP)                    
-                    MummyExplorer.facing_direction = UP
+                    if MummyExplorer.movement_list == []:
+                        MummyExplorer.movement_list.append(UP)                    
+                        MummyExplorer.facing_direction = UP
                 elif event.key == pygame.K_DOWN:
-                    MummyExplorer.movement_list.append(DOWN)
-                    MummyExplorer.facing_direction = DOWN
+                    if MummyExplorer.movement_list == []:
+                        MummyExplorer.movement_list.append(DOWN)
+                        MummyExplorer.facing_direction = DOWN
                 elif event.key == pygame.K_LEFT:
-                    MummyExplorer.movement_list.append(LEFT)
-                    MummyExplorer.facing_direction = LEFT
+                    if MummyExplorer.movement_list == []:
+                        MummyExplorer.movement_list.append(LEFT)
+                        MummyExplorer.facing_direction = LEFT
                 elif event.key == pygame.K_RIGHT:
-                    MummyExplorer.movement_list.append(RIGHT)
-                    MummyExplorer.facing_direction = RIGHT
+                    if MummyExplorer.movement_list == []:
+                        MummyExplorer.movement_list.append(RIGHT)
+                        MummyExplorer.facing_direction = RIGHT
 
     MummyMazeMap.draw_map(screen)  
     MummyExplorer.update_player(screen)
