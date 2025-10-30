@@ -327,7 +327,7 @@ class MummyMazePlayerManager:
 
 class MummyMazeZombieManager:
     class MummyMazeFramesManager:
-        def __init__(self,UP, DOWN, LEFT, RIGHT):
+        def __init__(self, UP, DOWN, LEFT, RIGHT):
             self.UP = UP
             self.DOWN = DOWN
             self.LEFT = LEFT
@@ -395,6 +395,20 @@ class MummyMazeZombieManager:
             return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
         return True
     
+    def zombie_movement(self):
+        for i in range(0,2):
+            if (MummyExplorer.grid_position[0]>self.grid_position[0]):
+                self.movement_list.append(RIGHT)
+            elif (MummyExplorer.grid_position[0]<self.grid_position[0]):
+                self.movement_list.append(LEFT)
+            else:
+                if (MummyExplorer.grid_position[1]<self.grid_position[1]):
+                    self.movement_list.append(UP)
+                elif (MummyExplorer.grid_position[1]>self.grid_position[1]):
+                    self.movement_list.append(DOWN)
+                else:
+                    return False
+
     def update_zombie(self, screen):
         move_distance_x = 0 # sai so khoang cach tinh theo pixel
         move_distance_y = 0
@@ -462,18 +476,22 @@ while running:
 
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
+                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(UP)                    
                         MummyExplorer.facing_direction = UP
                 elif event.key == pygame.K_DOWN:
+                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(DOWN)
                         MummyExplorer.facing_direction = DOWN
                 elif event.key == pygame.K_LEFT:
+                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(LEFT)
                         MummyExplorer.facing_direction = LEFT
                 elif event.key == pygame.K_RIGHT:
+                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(RIGHT)
                         MummyExplorer.facing_direction = RIGHT
