@@ -247,7 +247,7 @@ class MummyMazePlayerManager:
                     frames.append(frame)
             return frames
         player_surface = pygame.image.load(os.path.join("assets","image", "explorer" + str(self.length) + ".png")).convert_alpha()
-        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width(), player_surface.get_height()))
+        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width()*7//6, player_surface.get_height()*7//6))
         
         # sperate player sprite sheet into frames, each movement direction has 5 frames, total 20 frames
         # visit assets/image/mummy_white6.png to see the sprite sheet
@@ -313,7 +313,7 @@ class MummyMazePlayerManager:
                     grid_x = 1
                     grid_y = 0            
 
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -322,7 +322,7 @@ class MummyMazePlayerManager:
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
         else:
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
         print(f'position of explorer: {self.grid_position}')
 
 class MummyMazeZombieManager:
@@ -362,7 +362,7 @@ class MummyMazeZombieManager:
                     frames.append(frame)
             return frames
         zombie_surface = pygame.image.load(os.path.join("assets","image", "mummy_white" + str(self.length) + ".png")).convert_alpha()
-        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width(), zombie_surface.get_height()))
+        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width()*7//6, zombie_surface.get_height()*7//6))
         
         # sperate zombie sprite sheet into frames, each movement direction has 5 frames, total 20 frames
         # visit assets/image/mummy_white6.png to see the sprite sheet
@@ -428,7 +428,7 @@ class MummyMazeZombieManager:
                     grid_x = 1
                     grid_y = 0            
 
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -437,7 +437,7 @@ class MummyMazeZombieManager:
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
         else:
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
         print(f'position of explorer: {self.grid_position}')
 
 
@@ -450,7 +450,8 @@ margin_left = 78 + (screen_width - backdrop_width)//2 # distance from left edge 
 margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge to game square top edge
     
 MummyMazeMap = MummyMazeMapManager(6, map_data)
-MummyExplorer = MummyMazePlayerManager(6, [6,6], map_data)
+MummyExplorer_position=[6,6]
+MummyExplorer = MummyMazePlayerManager(6, MummyExplorer_position, map_data)
 MummyZombie= MummyMazeZombieManager(6, [2,3], map_data)
 
 running = True
@@ -478,9 +479,9 @@ while running:
                         MummyExplorer.facing_direction = RIGHT
 
     MummyMazeMap.draw_map(screen)  
-    MummyMazeMap.draw_walls(screen)
     MummyExplorer.update_player(screen)
     MummyZombie.update_zombie(screen)
+    MummyMazeMap.draw_walls(screen)
     
 
 
