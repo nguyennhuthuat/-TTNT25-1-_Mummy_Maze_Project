@@ -281,6 +281,7 @@ class MummyMazePlayerManager:
         return True
     
     def update_player(self, screen):
+        move_completed = False
         move_distance_x = 0 # sai so khoang cach tinh theo pixel
         move_distance_y = 0
         grid_x = 0  #sai so khoang cach tinh theo o vuon don vi
@@ -321,10 +322,11 @@ class MummyMazePlayerManager:
                 self.movement_list.pop(0)  # Remove the completed movement
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
+                move_completed = True #Động tác của player hoàn thành rồi thì zombie mới di chuyển
         else:
             screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
         print(f'position of explorer: {self.grid_position}')
-
+        return move_completed #Động tác của player hoàn thành rồi thì zombie mới di chuyển
 class MummyMazeZombieManager:
     class MummyMazeFramesManager:
         def __init__(self, UP, DOWN, LEFT, RIGHT):
@@ -395,20 +397,44 @@ class MummyMazeZombieManager:
             return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
         return True
     
-    def zombie_movement(self):
-        for i in range(0,2):
-            if (MummyExplorer.grid_position[0]>self.grid_position[0]):
-                self.movement_list.append(RIGHT)
-            elif (MummyExplorer.grid_position[0]<self.grid_position[0]):
-                self.movement_list.append(LEFT)
-            else:
-                if (MummyExplorer.grid_position[1]<self.grid_position[1]):
-                    self.movement_list.append(UP)
-                elif (MummyExplorer.grid_position[1]>self.grid_position[1]):
-                    self.movement_list.append(DOWN)
-                else:
-                    return False
+    def zombie_movement(self,player_position): #hàm định nghĩa cách zombie di chuyển
+        if self.movement_list: #nếu đang di chuyển thì không làm gì cả
+            return False
+        next_zombie_position=self.grid_position[:]
+        for _ in range(2):
+            if next_zombie_position == player_position:
+                break  #đã đến nơi, không cần đi nữa
 
+            moved_this_step = False
+            # Ưu tiên di chuyển ngang
+            
+            if player_position[0] > next_zombie_position[0] and self.zombie_can_move(next_zombie_position, RIGHT):
+                self.movement_list.append(RIGHT)
+                next_zombie_position[0] += 1
+                moved_this_step = True
+            elif player_position[0] > next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, RIGHT):
+                self.facing_direction=RIGHT
+                break
+            elif player_position[0] < next_zombie_position[0] and self.zombie_can_move(next_zombie_position, LEFT):
+                self.movement_list.append(LEFT)
+                next_zombie_position[0] -= 1
+                moved_this_step = True
+            elif player_position[0] < next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, LEFT):
+                self.facing_direction=LEFT
+                break
+            else:
+                if player_position[1] > next_zombie_position[1] and self.zombie_can_move(next_zombie_position, DOWN):
+                    self.movement_list.append(DOWN)
+                    next_zombie_position[1] += 1
+                    moved_this_step = True
+                elif player_position[1] < next_zombie_position[1] and self.zombie_can_move(next_zombie_position, UP):
+                    self.movement_list.append(UP)
+                    next_zombie_position[1] -= 1
+                    moved_this_step = True
+            if not moved_this_step:
+                break  #Nếu không đi đâu được, thì dừng
+        return len(self.movement_list) > 0
+    
     def update_zombie(self, screen):
         move_distance_x = 0 # sai so khoang cach tinh theo pixel
         move_distance_y = 0
@@ -462,13 +488,15 @@ backdrop_width = 575 # Set width  size for the backdrop
 backdrop_height = 558 # Set height size for the backdrop
 margin_left = 78 + (screen_width - backdrop_width)//2 # distance from left edge to game square left edge
 margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge to game square top edge
-    
+
+  
 MummyMazeMap = MummyMazeMapManager(6, map_data)
 MummyExplorer_position=[6,6]
 MummyExplorer = MummyMazePlayerManager(6, MummyExplorer_position, map_data)
 MummyZombie= MummyMazeZombieManager(6, [2,3], map_data)
 
 running = True
+player_turn_completed=False
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -476,32 +504,28 @@ while running:
 
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(UP)                    
                         MummyExplorer.facing_direction = UP
                 elif event.key == pygame.K_DOWN:
-                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(DOWN)
                         MummyExplorer.facing_direction = DOWN
                 elif event.key == pygame.K_LEFT:
-                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(LEFT)
                         MummyExplorer.facing_direction = LEFT
                 elif event.key == pygame.K_RIGHT:
-                    MummyZombie.zombie_movement()
                     if MummyExplorer.movement_list == []:
                         MummyExplorer.movement_list.append(RIGHT)
                         MummyExplorer.facing_direction = RIGHT
 
     MummyMazeMap.draw_map(screen)  
-    MummyExplorer.update_player(screen)
+    player_turn_completed=MummyExplorer.update_player(screen)
     MummyZombie.update_zombie(screen)
     MummyMazeMap.draw_walls(screen)
-    
-
+    if player_turn_completed:
+        MummyZombie.zombie_movement(MummyExplorer.grid_position) # chỉ khi xong lượt player thì zombie mới đuổi theo
 
     # x, y = pygame.mouse.get_pos()
     # print(x,y)
