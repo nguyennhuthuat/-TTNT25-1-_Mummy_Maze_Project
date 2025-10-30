@@ -275,7 +275,6 @@ class MummyMazePlayerManager:
         if facing_direction == DOWN:
             return (y+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (self.map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
         if facing_direction == LEFT:
-            print(self.map_data[y-1][x-1], self.map_data[y-1][x-2])
             return (x-1 > 0) and (self.map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (self.map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
         if facing_direction == RIGHT:
             return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
