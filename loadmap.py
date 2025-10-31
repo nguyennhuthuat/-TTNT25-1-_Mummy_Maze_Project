@@ -36,7 +36,7 @@ map_data = clean_map_data(map_data)
                 
 class MummyMazeMapManager:  
     
-    def __init__(self, length,map_data):
+    def __init__(self, length,stair_position: tuple, map_data):
 
         self.length = length
         self.database = { # dictionary to link tile id to drawing function
@@ -55,13 +55,13 @@ class MummyMazeMapManager:
         
         self.map_data = map_data
         
-        self.stair_positions = (7, 5) # (row, column) position of the stair tile in the map_data
+        self.stair_positions = stair_position # (row, column) position of the stair tile in the map_data
         
         # Load background and game square images
         self.backdrop = pygame.image.load(os.path.join("assets","image", "backdrop.png")).convert()
         self.backdrop = pygame.transform.scale(self.backdrop, (backdrop_width, backdrop_height))
-        self.game_square = pygame.image.load(os.path.join("assets","image", "floor" + str(self.length) + ".png")).convert_alpha()
-        self.game_square = pygame.transform.scale(self.game_square, (TILE_SIZE*6, TILE_SIZE*6)) 
+        self.game_floor = pygame.image.load(os.path.join("assets","image", "floor" + str(self.length) + ".png")).convert_alpha()
+        self.game_floor = pygame.transform.scale(self.game_floor, (TILE_SIZE*self.length, TILE_SIZE*self.length)) 
 
 
         self.load_tiles()
@@ -195,7 +195,7 @@ class MummyMazeMapManager:
 
     def draw_map(self, screen):
         screen.blit(self.backdrop, ((screen_width-backdrop_width)//2, (screen_height-backdrop_height)//2))
-        screen.blit(self.game_square, ( margin_left, margin_top)) 
+        screen.blit(self.game_floor, ( margin_left, margin_top)) 
 
         #draw stair
         self.draw_stair(screen)
@@ -488,12 +488,13 @@ backdrop_width = 575 # Set width  size for the backdrop
 backdrop_height = 558 # Set height size for the backdrop
 margin_left = 78 + (screen_width - backdrop_width)//2 # distance from left edge to game square left edge
 margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge to game square top edge
-
+stair_position = (7,5)
+map_length = 6
   
-MummyMazeMap = MummyMazeMapManager(6, map_data)
+MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
 MummyExplorer_position=[6,6]
-MummyExplorer = MummyMazePlayerManager(6, MummyExplorer_position, map_data)
-MummyZombie= MummyMazeZombieManager(6, [2,3], map_data)
+MummyExplorer = MummyMazePlayerManager(map_length, MummyExplorer_position, map_data)
+MummyZombie= MummyMazeZombieManager(map_length, [2,3], map_data)
 
 running = True
 player_turn_completed=False
