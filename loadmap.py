@@ -1,6 +1,7 @@
 import pygame
 import os
 import time
+from maps import maps_collection # Import a collection of maps
 
 RIGHT = "RIGHT"
 LEFT = "LEFT"
@@ -490,11 +491,53 @@ margin_left = 78 + (screen_width - backdrop_width)//2 # distance from left edge 
 margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge to game square top edge
 stair_position = (7,5)
 map_length = 6
-  
+
+
+
+
+
+def get_winning_position(stair_pos, map_len):
+    """Determines the grid cell in front of the stair to win."""
+    row, col = stair_pos
+    if col == 0:  # Stair is at the top edge
+        return [row, 1]
+    elif col == map_len + 1:  # Stair is at the bottom edge
+        return [row, map_len]
+    elif row == 0:  # Stair is at the left edge
+        return [1, col]
+    elif row == map_len + 1:  # Stair is at the right edge
+        return [map_len, col]
+    return None # Should not happen with current map design
+
+def load_level(level_index):
+    if level_index < 0 or level_index >= len(maps_collection):
+        print(f"Error: Level {level_index} is out of range.")
+        return None, None, None, None, None
+    
+    level_data = maps_collection[level_index]
+    
+    # Clean the map data to remove extra whitespace
+    cleaned_map_data = clean_map_data(level_data["map_data"])
+    
+    return (
+        level_data["map_length"],
+        level_data["stair_position"],
+        cleaned_map_data,
+        level_data["player_start"],
+        level_data["zombie_starts"],
+    )
+
+
+
+
+# --- Game State and Level Loading ---
+current_level_index = 0
+map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+winning_position = get_winning_position(stair_position, map_length)
+
 MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
-MummyExplorer_position=[6,6]
-MummyExplorer = MummyMazePlayerManager(map_length, MummyExplorer_position, map_data)
-MummyZombie= MummyMazeZombieManager(map_length, [2,3], map_data)
+MummyExplorer = MummyMazePlayerManager(map_length, player_start, map_data)
+MummyZombies = [MummyMazeZombieManager(map_length, pos, map_data) for pos in zombie_starts]
 
 running = True
 player_turn_completed=False
@@ -523,11 +566,30 @@ while running:
 
     MummyMazeMap.draw_map(screen)  
     player_turn_completed=MummyExplorer.update_player(screen)
-    MummyZombie.update_zombie(screen)
+    for zombie in MummyZombies:
+        zombie.update_zombie(screen)
     MummyMazeMap.draw_walls(screen)
+    
     if player_turn_completed:
-        MummyZombie.zombie_movement(MummyExplorer.grid_position) # chỉ khi xong lượt player thì zombie mới đuổi theo
+        for zombie in MummyZombies:
+            zombie.zombie_movement(MummyExplorer.grid_position)
 
+    # Check for win condition
+    if winning_position and MummyExplorer.grid_position == winning_position:
+        print("You Won! Loading next level...")
+        current_level_index += 1
+        if current_level_index < len(maps_collection):
+            # Load the next level data
+            map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+            winning_position = get_winning_position(stair_position, map_length)
+            
+            # Load new charactor position
+            MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
+            MummyExplorer = MummyMazePlayerManager(map_length, player_start, map_data)
+            MummyZombies = [MummyMazeZombieManager(map_length, pos, map_data) for pos in zombie_starts]
+        else:
+            print("Congratulations! You have completed all levels!")
+            running = False
     # x, y = pygame.mouse.get_pos()
     # print(x,y)
     
@@ -537,4 +599,5 @@ while running:
     time.sleep(0.03)
 
 pygame.quit()
+
 
