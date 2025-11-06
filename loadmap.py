@@ -542,7 +542,7 @@ def load_level(level_index):
 
 
 # --- Game State and Level Loading ---
-current_level_index = 0
+current_level_index = 3
 map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
 winning_position = get_winning_position(stair_position, map_length)
 
