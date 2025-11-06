@@ -415,14 +415,14 @@ class MummyMazeZombieManager:
                 moved_this_step = True
             elif player_position[0] > next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, RIGHT):
                 self.facing_direction=RIGHT
-                break
+                continue
             elif player_position[0] < next_zombie_position[0] and self.zombie_can_move(next_zombie_position, LEFT):
                 self.movement_list.append(LEFT)
                 next_zombie_position[0] -= 1
                 moved_this_step = True
             elif player_position[0] < next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, LEFT):
                 self.facing_direction=LEFT
-                break
+                continue
             else:
                 if player_position[1] > next_zombie_position[1] and self.zombie_can_move(next_zombie_position, DOWN):
                     self.movement_list.append(DOWN)
@@ -433,6 +433,15 @@ class MummyMazeZombieManager:
                     next_zombie_position[1] -= 1
                     moved_this_step = True
             if not moved_this_step:
+                if player_position[0] > next_zombie_position[0]:
+                    self.facing_direction = RIGHT
+                elif player_position[0] < next_zombie_position[0]:
+                    self.facing_direction = LEFT
+                else:
+                    if player_position[1] > next_zombie_position[1]:
+                        self.facing_direction = DOWN
+                    elif player_position[1] < next_zombie_position[1]:
+                        self.facing_direction = UP
                 break  #Nếu không đi đâu được, thì dừng
         return len(self.movement_list) > 0
     
@@ -478,8 +487,10 @@ class MummyMazeZombieManager:
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
         else:
+            # FIX: Update current_frame based on facing_direction when idle
+            self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
             screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + 4 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
-        print(f'position of explorer: {self.grid_position}')
+        print(f'position of zombie: {self.grid_position}')
 
 
 
@@ -597,7 +608,6 @@ while running:
     pygame.display.flip()
     clock.tick(60)
     time.sleep(0.03)
-
 pygame.quit()
 
 
