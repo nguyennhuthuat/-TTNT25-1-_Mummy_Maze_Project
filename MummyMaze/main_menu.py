@@ -1,5 +1,8 @@
 import pygame
 import sys
+import os
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # --- 1. Import Pygame và tạo settings ---
 pygame.init()
