@@ -87,7 +87,7 @@ class Button:
         """Kiểm tra xem chuột có đang ở trên nút không."""
         self.is_hovered = self.rect.collidepoint(mouse_pos)
         if self.mask:
-            self.is_hovered = False # Mặc định là không hover
+            self.is_hovered = False 
             
             if self.rect.collidepoint(mouse_pos):
                 
@@ -166,16 +166,16 @@ def main_menu():
 
             # Kiểm tra sự kiện click cho từng nút
             if start_button.is_clicked(event):
-                print("ACTION: Bắt đầu trò chơi!")
+                print("ACTION: Start the game!")
             
             if badges_button.is_clicked(event):
-                print("ACTION: Tiếp tục trò chơi!")
+                print("ACTION: Let's see your achievements!")
 
             if story_button.is_clicked(event):
-                print("ACTION: Mở cốt truyện!")
+                print("ACTION: Let's read the plots!")
 
             if sound_icon.is_clicked(event):
-                print("ACTION: Bật/Tắt âm thanh!")
+                print("ACTION: On/Off the sound!")
 
         # 2. Cập nhật trạng thái (Update)
         # Cập nhật trạng thái hover cho tất cả các nút
