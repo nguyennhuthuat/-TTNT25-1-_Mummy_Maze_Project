@@ -110,7 +110,7 @@ class Button:
         return False
 
 # --- 4. Tạo các nút ---
-BTN_WIDTH = 180
+BTN_WIDTH = 300
 BTN_HEIGHT = 190
 BTN_MARGIN = -110 # Khoảng cách giữa các nút
 
@@ -121,31 +121,32 @@ BTN_START_Y = (SCREEN_HEIGHT - total_height) // 2 + 100
 start_button = Button(BTN_START_X, BTN_START_Y, BTN_WIDTH, BTN_HEIGHT, 
                       image_path="main_menu_assets/start_icon.png",
                       hover_image_path="main_menu_assets/h_start_icon.png")
-badges_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 1, BTN_WIDTH, BTN_HEIGHT, 
+'''badges_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 1, BTN_WIDTH, BTN_HEIGHT, 
                        image_path="main_menu_assets/badges_icon.png",
-                       hover_image_path="main_menu_assets/h_badges_icon.png")
-guides_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 2, BTN_WIDTH, BTN_HEIGHT, 
+                       hover_image_path="main_menu_assets/h_badges_icon.png")'''
+guides_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 1, BTN_WIDTH, BTN_HEIGHT, 
                        image_path="main_menu_assets/guides_icon.png",
                        hover_image_path="main_menu_assets/h_guides_icon.png")
-story_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 3, BTN_WIDTH, BTN_HEIGHT, 
+story_button = Button(BTN_START_X, BTN_START_Y + (BTN_HEIGHT + BTN_MARGIN) * 2, BTN_WIDTH, BTN_HEIGHT, 
                       image_path="main_menu_assets/story_icon.png",
                       hover_image_path="main_menu_assets/h_story_icon.png")
 # Danh sách các nút chính
-main_menu_buttons = [start_button, badges_button, guides_button, story_button]
+main_menu_buttons = [start_button, guides_button, story_button] 
+'''badges_button'''
 
 # Tạo các icon bên phải
 ICON_SIZE = 90
 ICON_X = SCREEN_WIDTH - ICON_SIZE - 15 # Căn lề phải
-setting_icon = Button(ICON_X, 50, ICON_SIZE, ICON_SIZE, "", 
+setting_icon = Button(ICON_X, 100, ICON_SIZE, ICON_SIZE, "", 
                       image_path="main_menu_assets/setting_icon.png",
                       hover_image_path="main_menu_assets/h_setting_icon.png")
-account_icon = Button(ICON_X, 150, ICON_SIZE, ICON_SIZE, "", 
+account_icon = Button(ICON_X, 175, ICON_SIZE, ICON_SIZE, "", 
                       image_path="main_menu_assets/account_icon.png",
                       hover_image_path="main_menu_assets/h_account_icon.png")
 sound_icon = Button(ICON_X, 250, ICON_SIZE, ICON_SIZE, "", 
                     image_path="main_menu_assets/sound_icon.png",
                     hover_image_path="main_menu_assets/h_sound_icon.png")
-lang_icon = Button(ICON_X, 350, ICON_SIZE, ICON_SIZE, "", 
+lang_icon = Button(ICON_X, 325, ICON_SIZE, ICON_SIZE, "", 
                    image_path="main_menu_assets/language_icon.png",
                    hover_image_path="main_menu_assets/h_language_icon.png")
 
@@ -168,8 +169,8 @@ def main_menu():
             if start_button.is_clicked(event):
                 print("ACTION: Start the game!")
             
-            if badges_button.is_clicked(event):
-                print("ACTION: Let's see your achievements!")
+            '''if badges_button.is_clicked(event):
+                print("ACTION: Let's see your achievements!")'''
 
             if story_button.is_clicked(event):
                 print("ACTION: Let's read the plots!")
