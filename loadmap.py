@@ -410,7 +410,7 @@ class Player(AnimatedSprite):
         """
         if not map_data or y < 0 or y >= len(map_data):
             return False
-        if not map_data[0] or x < 0 or x >= len(map_data[0]):
+        if y >= len(map_data) or not map_data[y] or x < 0 or x >= len(map_data[y]):
             return False
         
         tile = map_data[y][x]
@@ -501,25 +501,36 @@ class GameLevel:
         map_width = len(self.map_data[0]) if self.map_data and self.map_data[0] else 0
         
         # Initialize player (convert from 1-based to 0-based indexing)
+        # Support both list [x, y] and tuple (x, y) formats
         player_start = level_data.get('player_start', [1, 1])
-        player_x = max(0, min(map_width - 1, player_start[0] - 1)) if map_width > 0 else 0
-        player_y = max(0, min(map_height - 1, player_start[1] - 1)) if map_height > 0 else 0
+        if player_start and len(player_start) >= 2:
+            player_x = max(0, min(map_width - 1, player_start[0] - 1)) if map_width > 0 else 0
+            player_y = max(0, min(map_height - 1, player_start[1] - 1)) if map_height > 0 else 0
+        else:
+            player_x, player_y = 0, 0  # Default to origin if invalid
         self.player = Player(player_x, player_y)
         
         # Initialize zombies (convert from 1-based to 0-based indexing)
         self.zombies: List[Zombie] = []
         zombie_starts = level_data.get('zombie_starts', [])
         for i, zombie_pos in enumerate(zombie_starts):
+            # Validate zombie position format
+            if not zombie_pos or len(zombie_pos) < 2:
+                continue  # Skip invalid zombie positions
             zombie_type = i % 4  # Cycle through zombie types
             zombie_x = max(0, min(map_width - 1, zombie_pos[0] - 1)) if map_width > 0 else 0
             zombie_y = max(0, min(map_height - 1, zombie_pos[1] - 1)) if map_height > 0 else 0
             self.zombies.append(Zombie(zombie_x, zombie_y, zombie_type))
         
         # Stair position (goal) - may be outside map boundaries as exit point
+        # Support both list [x, y] and tuple (x, y) formats
         stair_pos = level_data.get('stair_position', (0, 0))
-        # Don't clamp stair position - it can be outside the map as an exit
-        self.stair_x = stair_pos[0] - 1
-        self.stair_y = stair_pos[1] - 1
+        if stair_pos and len(stair_pos) >= 2:
+            # Don't clamp stair position - it can be outside the map as an exit
+            self.stair_x = stair_pos[0] - 1
+            self.stair_y = stair_pos[1] - 1
+        else:
+            self.stair_x, self.stair_y = 0, 0  # Default if invalid
         
         # Initialize tile renderer
         self.tile_renderer = TileRenderer()
