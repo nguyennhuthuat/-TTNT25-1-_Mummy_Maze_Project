@@ -481,19 +481,24 @@ class GameLevel:
         self.map_length = level_data.get('map_length', 6)
         self.map_data = clean_map_data(level_data.get('map_data', []))
         
-        # Initialize player
+        # Initialize player (convert from 1-based to 0-based indexing)
         player_start = level_data.get('player_start', [1, 1])
-        self.player = Player(player_start[0] - 1, player_start[1] - 1)
+        player_x = max(0, player_start[0] - 1)
+        player_y = max(0, player_start[1] - 1)
+        self.player = Player(player_x, player_y)
         
-        # Initialize zombies
+        # Initialize zombies (convert from 1-based to 0-based indexing)
         self.zombies: List[Zombie] = []
         zombie_starts = level_data.get('zombie_starts', [])
         for i, zombie_pos in enumerate(zombie_starts):
             zombie_type = i % 4  # Cycle through zombie types
-            self.zombies.append(Zombie(zombie_pos[0] - 1, zombie_pos[1] - 1, zombie_type))
+            zombie_x = max(0, min(self.map_length - 1, zombie_pos[0] - 1))
+            zombie_y = max(0, min(self.map_length - 1, zombie_pos[1] - 1))
+            self.zombies.append(Zombie(zombie_x, zombie_y, zombie_type))
         
-        # Stair position (goal)
+        # Stair position (goal) - may be outside map boundaries as exit point
         stair_pos = level_data.get('stair_position', (0, 0))
+        # Don't clamp stair position - it can be outside the map as an exit
         self.stair_x = stair_pos[0] - 1
         self.stair_y = stair_pos[1] - 1
         
