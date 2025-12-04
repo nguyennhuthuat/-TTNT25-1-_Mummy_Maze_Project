@@ -134,12 +134,25 @@ class TileRenderer:
     
     def _load_tile_images(self):
         """Load tile images from assets folder."""
-        tile_types = ['t', 'b', 'l', 'r', 'tl', 'tr', 'bl', 'br', 
-                     't*', 'b*', 'l*', 'r*']
+        # Mapping of tile types to safe filenames
+        tile_filename_map = {
+            't': 'tile_t.png',
+            'b': 'tile_b.png',
+            'l': 'tile_l.png',
+            'r': 'tile_r.png',
+            'tl': 'tile_tl.png',
+            'tr': 'tile_tr.png',
+            'bl': 'tile_bl.png',
+            'br': 'tile_br.png',
+            't*': 'tile_t_special.png',
+            'b*': 'tile_b_special.png',
+            'l*': 'tile_l_special.png',
+            'r*': 'tile_r_special.png',
+        }
         
-        for tile_type in tile_types:
+        for tile_type, filename in tile_filename_map.items():
             try:
-                path = os.path.join('Assets', 'Images', f'tile_{tile_type}.png')
+                path = os.path.join('Assets', 'Images', filename)
                 if os.path.exists(path):
                     image = pygame.image.load(path).convert_alpha()
                     self.tile_images[tile_type] = pygame.transform.scale(
@@ -148,7 +161,7 @@ class TileRenderer:
                 else:
                     # Create placeholder if image doesn't exist
                     self.tile_images[tile_type] = self._create_placeholder_tile(tile_type)
-            except Exception as e:
+            except Exception:
                 self.tile_images[tile_type] = self._create_placeholder_tile(tile_type)
     
     def _create_placeholder_tile(self, tile_type: str) -> pygame.Surface:
@@ -395,7 +408,9 @@ class Player(AnimatedSprite):
         Returns:
             True if movement is valid
         """
-        if y < 0 or y >= len(map_data) or x < 0 or x >= len(map_data[0]):
+        if not map_data or y < 0 or y >= len(map_data):
+            return False
+        if not map_data[0] or x < 0 or x >= len(map_data[0]):
             return False
         
         tile = map_data[y][x]
@@ -481,10 +496,14 @@ class GameLevel:
         self.map_length = level_data.get('map_length', 6)
         self.map_data = clean_map_data(level_data.get('map_data', []))
         
+        # Get actual map dimensions
+        map_height = len(self.map_data) if self.map_data else 0
+        map_width = len(self.map_data[0]) if self.map_data and self.map_data[0] else 0
+        
         # Initialize player (convert from 1-based to 0-based indexing)
         player_start = level_data.get('player_start', [1, 1])
-        player_x = max(0, player_start[0] - 1)
-        player_y = max(0, player_start[1] - 1)
+        player_x = max(0, min(map_width - 1, player_start[0] - 1)) if map_width > 0 else 0
+        player_y = max(0, min(map_height - 1, player_start[1] - 1)) if map_height > 0 else 0
         self.player = Player(player_x, player_y)
         
         # Initialize zombies (convert from 1-based to 0-based indexing)
@@ -492,8 +511,8 @@ class GameLevel:
         zombie_starts = level_data.get('zombie_starts', [])
         for i, zombie_pos in enumerate(zombie_starts):
             zombie_type = i % 4  # Cycle through zombie types
-            zombie_x = max(0, min(self.map_length - 1, zombie_pos[0] - 1))
-            zombie_y = max(0, min(self.map_length - 1, zombie_pos[1] - 1))
+            zombie_x = max(0, min(map_width - 1, zombie_pos[0] - 1)) if map_width > 0 else 0
+            zombie_y = max(0, min(map_height - 1, zombie_pos[1] - 1)) if map_height > 0 else 0
             self.zombies.append(Zombie(zombie_x, zombie_y, zombie_type))
         
         # Stair position (goal) - may be outside map boundaries as exit point
@@ -552,11 +571,12 @@ class GameLevel:
                 y = row_idx * TILE_SIZE
                 self.tile_renderer.draw_tile(self.screen, tile, x, y)
         
-        # Draw stair
-        stair_rect = pygame.Rect(self.stair_x * TILE_SIZE, 
-                                 self.stair_y * TILE_SIZE,
-                                 TILE_SIZE, TILE_SIZE)
-        pygame.draw.rect(self.screen, (255, 215, 0), stair_rect)
+        # Draw stair (only if within visible bounds)
+        if self.stair_x >= 0 and self.stair_y >= 0:
+            stair_rect = pygame.Rect(self.stair_x * TILE_SIZE, 
+                                     self.stair_y * TILE_SIZE,
+                                     TILE_SIZE, TILE_SIZE)
+            pygame.draw.rect(self.screen, (255, 215, 0), stair_rect)
         
         # Draw zombies
         for zombie in self.zombies:
