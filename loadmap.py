@@ -190,51 +190,75 @@ class TileRenderer:
     
     def draw_top_wall(self, screen: pygame.Surface, x: int, y: int):
         """Draw top wall."""
-        screen.blit(self.tile_images.get('t'), (x, y))
+        tile = self.tile_images.get('t')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_bottom_wall(self, screen: pygame.Surface, x: int, y: int):
         """Draw bottom wall."""
-        screen.blit(self.tile_images.get('b'), (x, y))
+        tile = self.tile_images.get('b')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_left_wall(self, screen: pygame.Surface, x: int, y: int):
         """Draw left wall."""
-        screen.blit(self.tile_images.get('l'), (x, y))
+        tile = self.tile_images.get('l')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_right_wall(self, screen: pygame.Surface, x: int, y: int):
         """Draw right wall."""
-        screen.blit(self.tile_images.get('r'), (x, y))
+        tile = self.tile_images.get('r')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_top_left_corner(self, screen: pygame.Surface, x: int, y: int):
         """Draw top-left corner."""
-        screen.blit(self.tile_images.get('tl'), (x, y))
+        tile = self.tile_images.get('tl')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_top_right_corner(self, screen: pygame.Surface, x: int, y: int):
         """Draw top-right corner."""
-        screen.blit(self.tile_images.get('tr'), (x, y))
+        tile = self.tile_images.get('tr')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_bottom_left_corner(self, screen: pygame.Surface, x: int, y: int):
         """Draw bottom-left corner."""
-        screen.blit(self.tile_images.get('bl'), (x, y))
+        tile = self.tile_images.get('bl')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_bottom_right_corner(self, screen: pygame.Surface, x: int, y: int):
         """Draw bottom-right corner."""
-        screen.blit(self.tile_images.get('br'), (x, y))
+        tile = self.tile_images.get('br')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_top_wall_special(self, screen: pygame.Surface, x: int, y: int):
         """Draw special top wall."""
-        screen.blit(self.tile_images.get('t*'), (x, y))
+        tile = self.tile_images.get('t*')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_bottom_wall_special(self, screen: pygame.Surface, x: int, y: int):
         """Draw special bottom wall."""
-        screen.blit(self.tile_images.get('b*'), (x, y))
+        tile = self.tile_images.get('b*')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_left_wall_special(self, screen: pygame.Surface, x: int, y: int):
         """Draw special left wall."""
-        screen.blit(self.tile_images.get('l*'), (x, y))
+        tile = self.tile_images.get('l*')
+        if tile:
+            screen.blit(tile, (x, y))
     
     def draw_right_wall_special(self, screen: pygame.Surface, x: int, y: int):
         """Draw special right wall."""
-        screen.blit(self.tile_images.get('r*'), (x, y))
+        tile = self.tile_images.get('r*')
+        if tile:
+            screen.blit(tile, (x, y))
 
 
 # =============================================================================
