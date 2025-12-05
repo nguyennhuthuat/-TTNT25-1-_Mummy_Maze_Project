@@ -1,381 +1,616 @@
-import pygame
 import os
 import time
+from typing import List, Tuple
 
+import pygame
+
+from maps import maps_collection  # Import a collection of maps
+
+# Direction constants
 RIGHT = "RIGHT"
 LEFT = "LEFT"
-UP = "UP"    
+UP = "UP"
 DOWN = "DOWN"
-IDLE_status = "IDLE" 
-UP_status = "UP"
-DOWN_status = "DOWN"  
-LEFT_status = "LEFT"
-RIGHT_status = "RIGHT"
-map_data = [['l', 'r', 't', 'b', 'bl', 'br'],
-            ['tr', 'tl', 't*', 'b*', 'r*', 'l*'],
-            ['', 'r', '   bl   ', '', '', 't'],
-            ['', '', '', '', '   ', ''],
-            ['', 'l', '', 'tl', 't*', ''],
-            ['', '     ', '', '', 'r', '']]
 
-
-pygame.init()
+# Layout constants (kept module-level so classes can use them)
+TILE_SIZE = 70  # Size of each tile in the grid
+backdrop_width = 575
+backdrop_height = 558
 screen_width = 1000
 screen_height = 600
-screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
-pygame.display.set_caption("Load Map Example")
-clock = pygame.time.Clock() # For controlling frame rate
+margin_left = 78 + (screen_width - backdrop_width) // 2
+margin_top = 93 + (screen_height - backdrop_height) // 2
 
-def clean_map_data(map_data):
-    for col_index, col in enumerate(map_data): #dr aw walls based on map_data
-            for row_index, tile_id in enumerate(col):
-                map_data[col_index][row_index] = map_data[col_index][row_index].strip()
-    print(map_data)
-    return map_data
-map_data = clean_map_data(map_data)
-                
-class MummyMazeMapManager:  
-    
-    def __init__(self, length,map_data):
+# --------------------------------------------------- #
+# --------------------- HELPERS --------------------- #
+# --------------------------------------------------- #
+def clean_map_data(map_data: List[List[str]]) -> List[List[str]]:
+    """Return a cleaned copy of map_data with whitespace stripped from each tile id."""
+    return [[(cell or "").strip() for cell in col] for col in map_data]
 
-        self.length = length
-        self.database = { # dictionary to link tile id to drawing function
-            't': 'draw_top_wall_tile',
-            'b': 'draw_bottom_wall_tile',
-            'l': 'draw_left_wall_tile',
-            'r': 'draw_right_wall_tile',
-            'tr': 'draw_top_right_wall_tile',
-            'tl': 'draw_top_left_wall_tile',
-            'br': 'draw_bottom_right_wall_tile',
-            'bl': 'draw_bottom_left_wall_tile',
-            'l*': 'draw_left_t_wall_tile',
-            'r*': 'draw_right_t_wall_tile',
-            't*': 'draw_top_t_wall_tile',
-            'b*': 'draw_bottom_t_wall_tile'}
-        
+
+def extract_sprite_frames(sheet: pygame.Surface, frame_width: int, frame_height: int) -> List[pygame.Surface]:
+    """Extract frames from a sprite sheet given each frame's width and height."""
+    sheet_width, sheet_height = sheet.get_size()
+    frames: List[pygame.Surface] = []
+    for y in range(0, sheet_height, frame_height):
+        for x in range(0, sheet_width, frame_width):
+            frames.append(sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height)))
+    return frames
+
+def double_list(input_list: List[pygame.Surface]) -> List[pygame.Surface]:
+    """Duplicate each element in the list (used to expand animation frames)."""
+    return [item for item in input_list for _ in range(2)]
+
+
+# ------------------------------------------------------- #
+# --------------------- MAP MANAGER --------------------- #
+# ------------------------------------------------------- #
+
+class MummyMazeMapManager:
+    """Handles tile/stair drawing and tile graphics loading."""
+
+    def __init__(self, length: int, stair_position: Tuple[int, int], map_data: List[List[str]]):
+        self.length = length # size of square map (length x length)
+        # Map from tile id to a bound drawing method (set up using bound methods)
+        # Will be populated after methods are available (we can set here using bound methods)
         self.map_data = map_data
-        
-        self.stair_positions = (7, 5) # (row, column) position of the stair tile in the map_data
-        
-        # Load background and game square images
-        self.backdrop = pygame.image.load(os.path.join("assets","image", "backdrop.png")).convert()
+        self.stair_positions = stair_position
+
+        # Load background and floor images (pygame must be initialized before calling)
+        self.backdrop = pygame.image.load(os.path.join("assets", "image", "backdrop.png")).convert()
         self.backdrop = pygame.transform.scale(self.backdrop, (backdrop_width, backdrop_height))
-        self.game_square = pygame.image.load(os.path.join("assets","image", "floor" + str(self.length) + ".png")).convert_alpha()
-        self.game_square = pygame.transform.scale(self.game_square, (TILE_SIZE*6, TILE_SIZE*6)) 
+        self.game_floor = pygame.image.load(os.path.join("assets", "image", "floor" + str(self.length) + ".png")).convert_alpha()
+        self.game_floor = pygame.transform.scale(self.game_floor, (TILE_SIZE * self.length, TILE_SIZE * self.length))
 
-
+        # Prepare tile images
         self.load_tiles()
-       
-    
-    def load_tiles(self):
-        #seperate wall image to cut from walls6.png 
-        area_surface = pygame.image.load(os.path.join("assets","image", "walls" + str(self.length) + ".png")).convert_alpha()
 
-        area_to_cut = pygame.Rect(0, 0, 12,78)
-        self.down_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14,91))
+        # Populate the database mapping tile ids to bound functions
+        self.database = {
+            't': self.draw_top_wall_tile,
+            'b': self.draw_bottom_wall_tile,
+            'l': self.draw_left_wall_tile,
+            'r': self.draw_right_wall_tile,
+            'tr': self.draw_top_right_wall_tile,
+            'tl': self.draw_top_left_wall_tile,
+            'br': self.draw_bottom_right_wall_tile,
+            'bl': self.draw_bottom_left_wall_tile,
+            'l*': self.draw_left_t_wall_tile,
+            'r*': self.draw_right_t_wall_tile,
+            't*': self.draw_top_t_wall_tile,
+            'b*': self.draw_bottom_t_wall_tile,
+        }
 
-        area_to_cut = pygame.Rect(12, 0, 72,18)
-        self.lying_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (84,21))
+    def load_tiles(self) -> None:
+        """Cut and scale wall/stair images from spritesheets according to map size."""
+        area_surface = pygame.image.load(os.path.join("assets", "image", "walls" + str(self.length) + ".png")).convert_alpha()
 
-        area_to_cut = pygame.Rect(84, 0, 12,74)
-        self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14,87)) ### bottom col wall = 14x91, rol wall = 84x21, top col wall = 14x87
-        
-        #seperate stair image to cut from stairs.png
-        area_stair_surface = pygame.image.load(os.path.join("assets","image", "stairs" + str(self.length) + ".png")).convert_alpha()
-        
+        area_to_cut = pygame.Rect(0, 0, 12, 78)
+        self.down_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14, 91))
+
+        area_to_cut = pygame.Rect(12, 0, 72, 18)
+        self.lying_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (84, 21))
+
+        area_to_cut = pygame.Rect(84, 0, 12, 74)
+        self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (14, 87))
+
+        area_stair_surface = pygame.image.load(os.path.join("assets", "image", "stairs" + str(self.length) + ".png")).convert_alpha()
+
         area_to_cut = pygame.Rect(2, 0, 54, 66)
-        self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
+        self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63, 77))
 
         area_to_cut = pygame.Rect(60, 0, 54, 66)
-        self.right_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77))
+        self.right_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63, 77))
 
         area_to_cut = pygame.Rect(114, 0, 54, 34)
-        self.bottom_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,36))
+        self.bottom_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63, 36))
 
         area_to_cut = pygame.Rect(170, 0, 54, 66)
-        self.left_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63,77)) 
-        #bottom, left, right : 54x66 scaled to 63x77; top: 54x36 scaled to 63x42
-        return 0
-    
-    def draw_top_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))  
-    def draw_bottom_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_left_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-    def draw_right_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))
-    def draw_bottom_left_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_top_left_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-    def draw_bottom_right_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_top_right_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))
-    def draw_left_t_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_right_t_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_top_t_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y + TILE_SIZE - 14))
-    def draw_bottom_t_wall_tile(self, screen, x, y): # x,y: the cell at row x, column y in a square table/board
-        x -= 1
-        y -= 1
-        screen.blit(self.lying_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x - 3, margin_top + TILE_SIZE*y - 14))
-        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE*x + TILE_SIZE - 3, margin_top + TILE_SIZE*y - 14))    
+        self.left_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (63, 77))
 
-    def draw_stair(self, screen):
-        def draw_bottom_stair(self, screen, row, col):
-            x = margin_left + TILE_SIZE*(row - 1) 
-            y = margin_top + TILE_SIZE*(col - 1) - 2
-            screen.blit(self.bottom_stair, (x, y))
+    # Tile drawing methods (x and y are 1-based grid coordinates)
+    def draw_top_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
 
-        def draw_top_stair(self, screen, row, col):
-            x = margin_left + TILE_SIZE*(row - 1) - self.top_stair.get_width() - 3
-            y = margin_top + TILE_SIZE*(col - 1) - self.top_stair.get_height()  + TILE_SIZE
-            screen.blit(self.top_stair, (x, y))
+    def draw_bottom_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
 
-        def draw_left_stair(self, screen, row, col):
-            x = margin_left + TILE_SIZE*(row - 1) 
-            y = margin_top + TILE_SIZE*(col - 1) - 5
-            screen.blit(self.left_stair, (x, y))
+    def draw_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
 
-        def draw_right_stair(self, screen, row, col):
-            x = margin_left + TILE_SIZE*(row - 1) 
-            y = margin_top + TILE_SIZE*(col - 1) - 5
-            screen.blit(self.right_stair, (x, y))
-        
-        
+    def draw_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+
+    def draw_bottom_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
+
+    def draw_top_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+
+    def draw_bottom_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
+
+    def draw_top_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+
+    def draw_left_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
+
+    def draw_right_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
+
+    def draw_top_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.up_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y + TILE_SIZE - 14))
+
+    def draw_bottom_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
+        x -= 1
+        y -= 1
+        screen.blit(self.lying_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x - 3, margin_top + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (margin_left + TILE_SIZE * x + TILE_SIZE - 3, margin_top + TILE_SIZE * y - 14))
+
+    def draw_stair(self, screen: pygame.Surface) -> None:
+        """Draw the stair graphic according to stair_positions."""
         row, col = self.stair_positions
 
-      #   DRAW STAIRCheck position and draw corresponding stair
+        def draw_bottom_stair(screen_inner: pygame.Surface, row_i: int, col_i: int) -> None:
+            x = margin_left + TILE_SIZE * (row_i - 1)
+            y = margin_top + TILE_SIZE * (col_i - 1) - 2
+            screen_inner.blit(self.bottom_stair, (x, y))
+
+        def draw_top_stair(screen_inner: pygame.Surface, row_i: int, col_i: int) -> None:
+            x = margin_left + TILE_SIZE * (row_i - 1) - self.top_stair.get_width() - 3
+            y = margin_top + TILE_SIZE * (col_i - 1) - self.top_stair.get_height() + TILE_SIZE
+            screen_inner.blit(self.top_stair, (x, y))
+
+        def draw_left_stair(screen_inner: pygame.Surface, row_i: int, col_i: int) -> None:
+            x = margin_left + TILE_SIZE * (row_i - 1)
+            y = margin_top + TILE_SIZE * (col_i - 1) - 5
+            screen_inner.blit(self.left_stair, (x, y))
+
+        def draw_right_stair(screen_inner: pygame.Surface, row_i: int, col_i: int) -> None:
+            x = margin_left + TILE_SIZE * (row_i - 1)
+            y = margin_top + TILE_SIZE * (col_i - 1) - 5
+            screen_inner.blit(self.right_stair, (x, y))
+
+        # Check position and draw corresponding stair
         if col == len(self.map_data[0]) + 1:
-            draw_bottom_stair(self, screen, row, col)
+            draw_bottom_stair(screen, row, col)
         elif col == 0:
-            draw_top_stair(self, screen, row, col)
+            draw_top_stair(screen, row, col)
         elif row == 0:
-            draw_left_stair(self, screen, row, col)
+            draw_left_stair(screen, row, col)
         elif row == len(self.map_data[0]) + 1:
-            draw_right_stair(self, screen, row, col)
-    
+            draw_right_stair(screen, row, col)
 
-    def draw_map(self, screen):
-        screen.blit(self.backdrop, ((screen_width-backdrop_width)//2, (screen_height-backdrop_height)//2))
-        screen.blit(self.game_square, ( margin_left, margin_top)) 
-
-        #draw stair
+    def draw_map(self, screen: pygame.Surface) -> None:
+        screen.blit(self.backdrop, ((screen_width - backdrop_width) // 2, (screen_height - backdrop_height) // 2))
+        screen.blit(self.game_floor, (margin_left, margin_top))
         self.draw_stair(screen)
 
-    def draw_walls(self, screen):
-        for col_index, col in enumerate(self.map_data): #dr aw walls based on map_data
+    def draw_walls(self, screen: pygame.Surface) -> None:
+        """Draw all walls according to map_data."""
+        for col_index, col in enumerate(self.map_data):
             for row_index, tile_id in enumerate(col):
-                if tile_id.strip() and (tile_id in self.database.keys()):  # Only draw if tile_id is not empty
-                    getattr(self, self.database[tile_id])(screen, row_index + 1, col_index + 1) # Call the drawing function based on tile_id
-                    #getattr(object, name[, default]) -> value
-                elif tile_id.strip() and tile_id not in self.database.keys():
-                    print(f"Warning: tile_id '{tile_id}' at ({col_index}, {row_index}) not found in database. Skipping drawing.")
-                    continue
+                tid = (tile_id or "").strip()
+                if tid and (tid in self.database):
+                    # Call the bound drawing function
+                    self.database[tid](screen, row_index + 1, col_index + 1)
+                elif tid:
+                    # If tile id is unknown, warn and skip
+                    print(f"Warning: tile_id '{tid}' at ({col_index}, {row_index}) not found in database. Skipping drawing.")
 
+
+# ---------------------------------------------------------- #
+# --------------------- PLAYER MANAGER --------------------- #
+# ---------------------------------------------------------- #
 class MummyMazePlayerManager:
+    """Player handling: loading frames, movement, and rendering."""
+
     class MummyMazeFramesManager:
-        def __init__(self,UP, DOWN, LEFT, RIGHT):
+        def __init__(self, UP, DOWN, LEFT, RIGHT):
             self.UP = UP
             self.DOWN = DOWN
             self.LEFT = LEFT
             self.RIGHT = RIGHT
 
-    def __init__(self, length, grid_position :list, map_data):
+    def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
         self.length = length
         self.player_frames = self.load_player_images()
         self.map_data = map_data
 
         self.grid_position = grid_position  # [row, column] position of the player in the grid
-        
-        self.movement_list = []  # List to store movement directions
-        self.movement_frame_index = 0  # Index to track the current frame in the movement animation ( 0 -> 9)
-        self.facing_direction = DOWN  # Initial facing direction
-        self.total_frames = 10  # Total frames per movement direction
-        self.current_frame = getattr(self.player_frames,self.facing_direction)[self.total_frames - 1]  # Start with the first frame facing down
+
+        self.movement_list: List[str] = []
+        self.movement_frame_index = 0
+        self.facing_direction = DOWN
+        self.total_frames = 10
+        self.current_frame = getattr(self.player_frames, self.facing_direction)[self.total_frames - 1]
         self.Speed = 70
 
-    def get_player_position(self,grid_position): ###!!!!!!!!
-        return [(margin_left + TILE_SIZE*(grid_position[0] - 1) + 4), (margin_top + TILE_SIZE*(grid_position[1]-1) + 4)]
-    
-    def load_player_images(self):
-        def double_list(input_list):
-            return [item for item in input_list for _ in range(2)]
-        def extract_sprite_frames(sheet, frame_width, frame_height):
-            sheet_width, sheet_height = sheet.get_size()
-            frames = []
-            for y in range(0, sheet_height, frame_height):
-                for x in range(0, sheet_width, frame_width):
-                    frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
-                    frames.append(frame)
-            return frames
-        player_surface = pygame.image.load(os.path.join("assets","image", "explorer" + str(self.length) + ".png")).convert_alpha()
-        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width(), player_surface.get_height()))
-        
-        # sperate player sprite sheet into frames, each movement direction has 5 frames, total 20 frames
-        # visit assets/image/mummy_white6.png to see the sprite sheet
-        player_frame = extract_sprite_frames(player_surface, player_surface.get_width()//5, player_surface.get_height()//4) 
-        player_go_up_frames = player_frame[1:5]
-        player_go_up_frames.append(player_frame[0])
-        # self.player_go_up_frames.append(self.player_go_up_frames[0])
-        player_go_right_frames = player_frame[6:10]
-        player_go_right_frames.append(player_frame[5])
-        # self.player_go_right_frames.append(self.player_go_right_frames[0])
-        player_go_down_frames = player_frame[11:15]
-        player_go_down_frames.append(player_frame[10])
-        # self.player_go_down_frames.append(self.player_go_down_frames[0])
-        player_go_left_frames = player_frame[16:20]
-        player_go_left_frames.append(player_frame[15])
-        # self.player_go_left_frames.append(self.player_go_left_frames[0])
-        return self.MummyMazeFramesManager(double_list(player_go_up_frames), double_list(player_go_down_frames), double_list(player_go_left_frames), double_list(player_go_right_frames))
+    def get_player_position(self, grid_position: List[int]) -> List[int]:
+        """Return pixel (x, y) for the given grid_position (helper)."""
+        return [margin_left + TILE_SIZE * (grid_position[0] - 1) + 4, margin_top + TILE_SIZE * (grid_position[1] - 1) + 4]
 
-    def player_can_move(self, direction, facing_direction): #check if have walls on the way
-        
+    def load_player_images(self) -> 'MummyMazePlayerManager.MummyMazeFramesManager':
+        """Load player sprite sheet and split into directional frames."""
+        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer" + str(self.length) + ".png")).convert_alpha()
+        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width() * 7 // 6, player_surface.get_height() * 7 // 6))
+
+        player_frame = extract_sprite_frames(player_surface, player_surface.get_width() // 5, player_surface.get_height() // 4)
+        player_go_up_frames = player_frame[1:5] + [player_frame[0]]
+        player_go_right_frames = player_frame[6:10] + [player_frame[5]]
+        player_go_down_frames = player_frame[11:15] + [player_frame[10]]
+        player_go_left_frames = player_frame[16:20] + [player_frame[15]]
+
+        return self.MummyMazeFramesManager(
+            double_list(player_go_up_frames),
+            double_list(player_go_down_frames),
+            double_list(player_go_left_frames),
+            double_list(player_go_right_frames),
+        )
+
+    def player_can_move(self, direction: List[int], facing_direction: str) -> bool:
+        """Check if player can move in facing_direction considering wall tiles."""
         x = direction[0]
         y = direction[1]
         if facing_direction == UP:
-            return (y-1 > 0) and (self.map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (self.map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
+            return (y - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and (
+                self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
         if facing_direction == DOWN:
-            return (y+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (self.map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
+            return (y + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and (
+                self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
         if facing_direction == LEFT:
-            return (x-1 > 0) and (self.map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (self.map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
+            return (x - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and (
+                self.map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
         if facing_direction == RIGHT:
-            return (x+1 <= len(self.map_data[0])) and (self.map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (self.map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
+            return (x + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and (
+                self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
         return True
-    
-    def update_player(self, screen):
-        move_distance_x = 0 # sai so khoang cach tinh theo pixel
+
+    def update_player(self, screen: pygame.Surface) -> bool:
+        """
+        Update player animation and position.
+        Returns True when a movement step completes.
+        """
+        move_completed = False
+        move_distance_x = 0
         move_distance_y = 0
-        grid_x = 0  #sai so khoang cach tinh theo o vuon don vi
+        grid_x = 0
         grid_y = 0
 
         if self.movement_list:
-            self.facing_direction = self.movement_list[0] # Get the current movement direction
+            self.facing_direction = self.movement_list[0]
             self.current_frame = getattr(self.player_frames, str(self.facing_direction))[self.movement_frame_index]
 
             if self.player_can_move(self.grid_position, self.facing_direction):
                 if self.facing_direction == UP:
-                    move_distance_x = 0
-                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed//self.total_frames)   
-                    print(self.movement_frame_index)     
-                    grid_x = 0
-                    grid_y = -1            
+                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
+                    grid_y = -1
                 elif self.facing_direction == DOWN:
-                    move_distance_x = 0
-                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
-                    grid_x = 0
+                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_y = 1
                 elif self.facing_direction == LEFT:
-                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
-                    move_distance_y = 0
+                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = -1
-                    grid_y = 0
                 elif self.facing_direction == RIGHT:
-                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed//self.total_frames) 
-                    move_distance_y = 0
+                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = 1
-                    grid_y = 0            
 
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                             margin_top + 4 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
                 self.movement_frame_index = 0
-                self.movement_list.pop(0)  # Remove the completed movement
+                self.movement_list.pop(0)
+                self.grid_position[0] += grid_x
+                self.grid_position[1] += grid_y
+                move_completed = True
+        else:
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE * (self.grid_position[0] - 1),
+                                             margin_top + 4 + TILE_SIZE * (self.grid_position[1] - 1)))
+
+        return move_completed
+
+
+# ---------------------------------------------------------- #
+# --------------------- ZOMBIE MANAGER --------------------- #
+# ---------------------------------------------------------- #
+class MummyMazeZombieManager:
+    """Zombie handling: loading frames, simple chasing movement, and rendering."""
+
+    class MummyMazeFramesManager:
+        def __init__(self, UP, DOWN, LEFT, RIGHT):
+            self.UP = UP
+            self.DOWN = DOWN
+            self.LEFT = LEFT
+            self.RIGHT = RIGHT
+
+    def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
+        self.length = length
+        self.zombie_frames = self.load_zombie_images()
+        self.map_data = map_data
+
+        self.grid_position = grid_position
+
+        self.movement_list: List[str] = []
+        self.movement_frame_index = 0
+        self.facing_direction = DOWN
+        self.total_frames = 10
+        self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
+        self.Speed = 70
+
+    def get_zombie_position(self, grid_position: List[int]) -> List[int]:
+        return [margin_left + TILE_SIZE * (grid_position[0] - 1) + 4, margin_top + TILE_SIZE * (grid_position[1] - 1) + 4]
+
+    def load_zombie_images(self) -> 'MummyMazeZombieManager.MummyMazeFramesManager':
+        zombie_surface = pygame.image.load(os.path.join("assets", "image", "mummy_white" + str(self.length) + ".png")).convert_alpha()
+        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width() * 7 // 6, zombie_surface.get_height() * 7 // 6))
+
+        zombie_frame = extract_sprite_frames(zombie_surface, zombie_surface.get_width() // 5, zombie_surface.get_height() // 4)
+
+        zombie_go_up_frames = zombie_frame[1:5] + [zombie_frame[0]]
+        zombie_go_right_frames = zombie_frame[6:10] + [zombie_frame[5]]
+        zombie_go_down_frames = zombie_frame[11:15] + [zombie_frame[10]]
+        zombie_go_left_frames = zombie_frame[16:20] + [zombie_frame[15]]
+
+        return self.MummyMazeFramesManager(
+            double_list(zombie_go_up_frames),
+            double_list(zombie_go_down_frames),
+            double_list(zombie_go_left_frames),
+            double_list(zombie_go_right_frames),
+        )
+
+    def zombie_can_move(self, direction: List[int], facing_direction: str) -> bool:
+        """Check if zombie can move in facing_direction considering wall tiles."""
+        x = direction[0]
+        y = direction[1]
+        if facing_direction == UP:
+            return (y - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and (
+                self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
+        if facing_direction == DOWN:
+            return (y + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and (
+                self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
+        if facing_direction == LEFT:
+            return (x - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and (
+                self.map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
+        if facing_direction == RIGHT:
+            return (x + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and (
+                self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+        return True
+
+    def zombie_movement(self, player_position: List[int]) -> bool:
+        """Determine next movement(s) for the zombie to approach the player (up to 2 steps)."""
+        if self.movement_list:
+            return False
+
+        next_zombie_position = self.grid_position[:]
+        for _ in range(2):
+            if next_zombie_position == player_position:
+                break
+
+            moved_this_step = False
+
+            # Prefer horizontal movement
+            if player_position[0] > next_zombie_position[0] and self.zombie_can_move(next_zombie_position, RIGHT):
+                self.movement_list.append(RIGHT)
+                next_zombie_position[0] += 1
+                moved_this_step = True
+            elif player_position[0] > next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, RIGHT):
+                self.facing_direction = RIGHT
+                continue
+            elif player_position[0] < next_zombie_position[0] and self.zombie_can_move(next_zombie_position, LEFT):
+                self.movement_list.append(LEFT)
+                next_zombie_position[0] -= 1
+                moved_this_step = True
+            elif player_position[0] < next_zombie_position[0] and not self.zombie_can_move(next_zombie_position, LEFT):
+                self.facing_direction = LEFT
+                continue
+            else:
+                if player_position[1] > next_zombie_position[1] and self.zombie_can_move(next_zombie_position, DOWN):
+                    self.movement_list.append(DOWN)
+                    next_zombie_position[1] += 1
+                    moved_this_step = True
+                elif player_position[1] < next_zombie_position[1] and self.zombie_can_move(next_zombie_position, UP):
+                    self.movement_list.append(UP)
+                    next_zombie_position[1] -= 1
+                    moved_this_step = True
+
+            if not moved_this_step:
+                # Set facing direction toward player
+                if player_position[0] > next_zombie_position[0]:
+                    self.facing_direction = RIGHT
+                elif player_position[0] < next_zombie_position[0]:
+                    self.facing_direction = LEFT
+                else:
+                    if player_position[1] > next_zombie_position[1]:
+                        self.facing_direction = DOWN
+                    elif player_position[1] < next_zombie_position[1]:
+                        self.facing_direction = UP
+                break
+
+        return len(self.movement_list) > 0
+
+    def update_zombie(self, screen: pygame.Surface) -> None:
+        """Render and animate the zombie according to its movement list."""
+        move_distance_x = 0
+        move_distance_y = 0
+        grid_x = 0
+        grid_y = 0
+
+        if self.movement_list:
+            self.facing_direction = self.movement_list[0]
+            self.current_frame = getattr(self.zombie_frames, str(self.facing_direction))[self.movement_frame_index]
+
+            if self.zombie_can_move(self.grid_position, self.facing_direction):
+                if self.facing_direction == UP:
+                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
+                    grid_y = -1
+                elif self.facing_direction == DOWN:
+                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
+                    grid_y = 1
+                elif self.facing_direction == LEFT:
+                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
+                    grid_x = -1
+                elif self.facing_direction == RIGHT:
+                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
+                    grid_x = 1
+
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                             margin_top + 4 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+
+            self.movement_frame_index += 1
+            if self.movement_frame_index >= self.total_frames:
+                self.movement_frame_index = 0
+                self.movement_list.pop(0)
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
         else:
-            screen.blit(self.current_frame, (margin_left + 6 + TILE_SIZE*(self.grid_position[0] - 1) + move_distance_x, margin_top + -7 + TILE_SIZE*(self.grid_position[1] - 1) + move_distance_y))
-        print(f'position of explorer: {self.grid_position}')
+            # Idle frame based on facing direction
+            self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
+            screen.blit(self.current_frame, (margin_left + 4 + TILE_SIZE * (self.grid_position[0] - 1),
+                                             margin_top + 4 + TILE_SIZE * (self.grid_position[1] - 1)))
 
-        
+
+# ------------------------------------------------------- #
+# --------------------- LEVEL HELPER--------------------- #
+# ------------------------------------------------------- #
+def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> List[int] or None:
+    """Determines the grid cell in front of the stair to win."""
+    row, col = stair_pos
+    if col == 0:  # Stair is at the top edge
+        return [row, 1]
+    elif col == map_len + 1:  # Stair is at the bottom edge
+        return [row, map_len]
+    elif row == 0:  # Stair is at the left edge
+        return [1, col]
+    elif row == map_len + 1:  # Stair is at the right edge
+        return [map_len, col]
+    return None
 
 
-    
-TILE_SIZE = 70 # Size of each tile in the grid
-backdrop_width = 575 # Set width  size for the backdrop
-backdrop_height = 558 # Set height size for the backdrop
-margin_left = 78 + (screen_width - backdrop_width)//2 # distance from left edge to game square left edge
-margin_top = 93 + (screen_height - backdrop_height)//2 # distance from top edge to game square top edge
-    
-MummyMazeMap = MummyMazeMapManager(6, map_data)
-MummyExplorer = MummyMazePlayerManager(6, [6,6], map_data)
+def load_level(level_index: int):
+    """Load a level from maps_collection and return its components (cleaned)."""
+    if level_index < 0 or level_index >= len(maps_collection):
+        print(f"Error: Level {level_index} is out of range.")
+        return None, None, None, None, None
 
-running = True
+    level_data = maps_collection[level_index]
+    cleaned_map_data = clean_map_data(level_data["map_data"])
+    return (
+        level_data["map_length"],
+        level_data["stair_position"],
+        cleaned_map_data,
+        level_data["player_start"],
+        level_data["zombie_starts"],
+    )
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+# ----------------------------------------------------- #
+# --------------------- MAIN LOOP --------------------- #
+# ----------------------------------------------------- #
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+    pygame.display.set_caption("Load Map Example")
+    clock = pygame.time.Clock()
 
-        if event.type == pygame.KEYDOWN:
+    current_level_index = 0
+    map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+    winning_position = get_winning_position(stair_position, map_length)
+
+    MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
+    MummyExplorer = MummyMazePlayerManager(map_length, player_start, map_data)
+    MummyZombies = [MummyMazeZombieManager(map_length, pos, map_data) for pos in zombie_starts]
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    if MummyExplorer.movement_list == []:
-                        MummyExplorer.movement_list.append(UP)                    
+                    if not MummyExplorer.movement_list:
+                        MummyExplorer.movement_list.append(UP)
                         MummyExplorer.facing_direction = UP
                 elif event.key == pygame.K_DOWN:
-                    if MummyExplorer.movement_list == []:
+                    if not MummyExplorer.movement_list:
                         MummyExplorer.movement_list.append(DOWN)
                         MummyExplorer.facing_direction = DOWN
                 elif event.key == pygame.K_LEFT:
-                    if MummyExplorer.movement_list == []:
+                    if not MummyExplorer.movement_list:
                         MummyExplorer.movement_list.append(LEFT)
                         MummyExplorer.facing_direction = LEFT
                 elif event.key == pygame.K_RIGHT:
-                    if MummyExplorer.movement_list == []:
+                    if not MummyExplorer.movement_list:
                         MummyExplorer.movement_list.append(RIGHT)
                         MummyExplorer.facing_direction = RIGHT
 
-    MummyMazeMap.draw_map(screen)  
-    MummyMazeMap.draw_walls(screen)
-    MummyExplorer.update_player(screen)
-    
+        MummyMazeMap.draw_map(screen)
+        player_turn_completed = MummyExplorer.update_player(screen)
+        for zombie in MummyZombies:
+            zombie.update_zombie(screen)
+        MummyMazeMap.draw_walls(screen)
+
+        if player_turn_completed:
+            for zombie in MummyZombies:
+                zombie.zombie_movement(MummyExplorer.grid_position)
+
+        # Check for win condition
+        if winning_position and MummyExplorer.grid_position == winning_position:
+            print("You Won! Loading next level...")
+            current_level_index += 1
+            if current_level_index < len(maps_collection):
+                map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+                winning_position = get_winning_position(stair_position, map_length)
+
+                MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
+                MummyExplorer = MummyMazePlayerManager(map_length, player_start, map_data)
+                MummyZombies = [MummyMazeZombieManager(map_length, pos, map_data) for pos in zombie_starts]
+            else:
+                print("Congratulations! You have completed all levels!")
+                running = False
+
+        pygame.display.flip()
+        clock.tick(60)
+        time.sleep(0.03)
+
+    pygame.quit()
 
 
-    # x, y = pygame.mouse.get_pos()
-    # print(x,y)
-    
-
-    pygame.display.flip()
-    clock.tick(60)
-    time.sleep(0.03)
-
-pygame.quit()
-
+if __name__ == "__main__":
+    main()
