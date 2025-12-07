@@ -1,6 +1,7 @@
 import os
 import time
 from typing import List, Optional, Tuple
+from dataclasses import dataclass
 
 import pygame
 
@@ -13,7 +14,7 @@ UP = "UP"
 DOWN = "DOWN"
 
 # Layout constants (kept module-level so classes can use them)
-TILE_SIZE = 48  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
+TILE_SIZE = 60  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
 BACKDROP_WIDTH = 657 #575
 BACKDROP_HEIGHT = 638 #558
 GAME_FLOOR_WIDTH = 480
@@ -256,7 +257,9 @@ class MummyMazePlayerManager:
 
     def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
         self.length = length
-        self.player_frames = self.load_player_images()
+        self.player_frames, self.shadow_player_frames = self.load_player_frames()
+        self.finding_frames, self.shadow_finding_frames = self.load_player_finding_frames()
+        
         self.map_data = map_data
 
         self.grid_position = grid_position  # [row, column] position of the player in the grid
@@ -266,29 +269,90 @@ class MummyMazePlayerManager:
         self.facing_direction = DOWN
         self.total_frames = 10
         self.current_frame = getattr(self.player_frames, self.facing_direction)[self.total_frames - 1]
+        self.current_shadow_frame = getattr(self.shadow_player_frames, str(self.facing_direction))[self.total_frames - 1]
+
         self.Speed = TILE_SIZE
 
-    def get_player_position(self, grid_position: List[int]) -> List[int]:
-        """Return pixel (x, y) for the given grid_position (helper)."""
-        return [MARGIN_LEFT + TILE_SIZE * (grid_position[0] - 1) + 4, MARGIN_TOP + TILE_SIZE * (grid_position[1] - 1) + 4]
+        self.load_player_finding_frames()
 
-    def load_player_images(self) -> 'MummyMazePlayerManager.MummyMazeFramesManager':
+    def get_black_shadow_surface(self,frame: pygame.Surface) -> pygame.Surface:
+        """Convert a origin shadow surface to black shadow surface version."""
+
+        image = frame.copy()
+        image.set_colorkey((0,0,0))
+
+        mask = pygame.mask.from_surface(image)
+
+        # 2. Đổ lại thành hình ảnh
+        # setcolor=(0, 0, 0) -> Màu đen tuyệt đối
+        # unsetcolor=None    -> Vùng nền giữ nguyên trong suốt
+        black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
+        return black_silhouette
+
+    def load_player_frames(self) -> ('MummyMazePlayerManager.MummyMazeFramesManager', 'MummyMazePlayerManager.MummyMazeFramesManager'): # type: ignore
+
         """Load player sprite sheet and split into directional frames."""
-        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer6.png")).convert_alpha()
+
+        shadow_player_frames_dict = self.MummyMazeFramesManager([], [], [], [])
+        player_frames_dict = self.MummyMazeFramesManager([], [], [], [])
+
+        # Load and scale player sprite sheet
+        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer.gif"))
+        player_surface.set_colorkey((0,0,0))
         player_surface = pygame.transform.scale(player_surface, (player_surface.get_width() *TILE_SIZE//60, player_surface.get_height() *TILE_SIZE//60))
 
-        player_frame = extract_sprite_frames(player_surface, player_surface.get_width() // 5, player_surface.get_height() // 4)
-        player_go_up_frames = player_frame[1:5] + [player_frame[0]]
-        player_go_right_frames = player_frame[6:10] + [player_frame[5]]
-        player_go_down_frames = player_frame[11:15] + [player_frame[10]]
-        player_go_left_frames = player_frame[16:20] + [player_frame[15]]
+        #load and scale shadow sprite sheet
+        shadow_surface = pygame.image.load(os.path.join("assets", "image", "_explorer.gif"))
+        shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
+        shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
-        return self.MummyMazeFramesManager(
-            double_list(player_go_up_frames),
-            double_list(player_go_down_frames),
-            double_list(player_go_left_frames),
-            double_list(player_go_right_frames),
-        )
+        player_frames = extract_sprite_frames(player_surface, player_surface.get_width() // 5, player_surface.get_height() // 4)
+        shadow_frames = extract_sprite_frames(shadow_surface, shadow_surface.get_width() // 5, shadow_surface.get_height() // 4 )
+
+        player_frames_dict.UP = double_list(player_frames[1:5] + [player_frames[0]])
+        player_frames_dict.RIGHT = double_list(player_frames[6:10] + [player_frames[5]])
+        player_frames_dict.DOWN = double_list(player_frames[11:15] + [player_frames[10]])
+        player_frames_dict.LEFT = double_list(player_frames[16:20] + [player_frames[15]])
+        
+
+        shadow_player_frames_dict.UP = double_list(shadow_frames[1:5] + [shadow_frames[0]])
+        shadow_player_frames_dict.RIGHT = double_list(shadow_frames[6:10] + [shadow_frames[5]])
+        shadow_player_frames_dict.DOWN = double_list(shadow_frames[11:15] + [shadow_frames[10]])
+        shadow_player_frames_dict.LEFT = double_list(shadow_frames[16:20] + [shadow_frames[15]])
+
+        return player_frames_dict, shadow_player_frames_dict
+
+    def load_player_finding_frames(self) -> ('MummyMazePlayerManager.MummyMazeFramesManager', 'MummyMazePlayerManager.MummyMazeFramesManager'): # type: ignore
+
+        def extract_finding_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
+            """Extract frames from a sprite sheet given each frame's width and height."""
+            sheet_width, sheet_height = sheet.get_size()
+            frames: List[pygame.Surface] = []   
+            
+            for x in range(0, sheet_width, frame_size):
+                frames.append(sheet.subsurface(pygame.Rect(x, 0, frame_size, frame_size)))
+
+            return frames
+        
+        """Load player finding sprite sheet and split into directional frames."""
+        
+
+        # Load and scale player finding sprite sheet
+        finding_surface = pygame.image.load(os.path.join("assets", "image", "explorer_finding.gif")).convert_alpha()
+        finding_surface.set_colorkey((0,0,0))
+        finding_surface = pygame.transform.scale(finding_surface, (finding_surface.get_width() *TILE_SIZE//60, finding_surface.get_height() *TILE_SIZE//60))
+
+        # load and scale shadow finding sprite sheet
+        shadow_finding_surface = pygame.image.load(os.path.join("assets", "image", "_explorer_finding.gif")).convert_alpha()
+        shadow_finding_surface = pygame.transform.scale(shadow_finding_surface, (shadow_finding_surface.get_width() *TILE_SIZE//60, shadow_finding_surface.get_height() *TILE_SIZE//60))
+        shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
+
+        finding_frames = extract_finding_frames(finding_surface, finding_surface.get_height())
+        shadow_finding_frames = extract_finding_frames(shadow_finding_surface, shadow_finding_surface.get_height())
+
+        return finding_frames, shadow_finding_frames
+
+
 
     def player_can_move(self, direction: List[int], facing_direction: str) -> bool:
         """Check if player can move in facing_direction considering wall tiles."""
@@ -322,7 +386,7 @@ class MummyMazePlayerManager:
         if self.movement_list:
             self.facing_direction = self.movement_list[0]
             self.current_frame = getattr(self.player_frames, str(self.facing_direction))[self.movement_frame_index]
-
+            self.current_shadow_frame = getattr(self.shadow_player_frames, str(self.facing_direction))[self.movement_frame_index]
             if self.player_can_move(self.grid_position, self.facing_direction):
                 if self.facing_direction == UP:
                     move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
@@ -337,8 +401,10 @@ class MummyMazePlayerManager:
                     move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = 1
 
+            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
             screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + 4 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -348,8 +414,10 @@ class MummyMazePlayerManager:
                 self.grid_position[1] += grid_y
                 move_completed = True
         else:
+            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
             screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
-                                             MARGIN_TOP + 4 + TILE_SIZE * (self.grid_position[1] - 1)))
+                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1)))
 
         return move_completed
 
@@ -369,38 +437,75 @@ class MummyMazeZombieManager:
 
     def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
         self.length = length
-        self.zombie_frames = self.load_zombie_images()
+        
+        # 1. Load both zombie frames and shadow frames
+        self.zombie_frames, self.shadow_zombie_frames = self.load_zombie_frames()
+        
         self.map_data = map_data
-
         self.grid_position = grid_position
 
         self.movement_list: List[str] = []
         self.movement_frame_index = 0
         self.facing_direction = DOWN
         self.total_frames = 10
+        
+        # Current zombie frame
         self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
+        self.current_shadow_frame = getattr(self.shadow_zombie_frames, str(self.facing_direction))[self.total_frames - 1]
+        
+        # 2. Current shadow frame (similar to Player logic)
+        self.current_shadow_frame = getattr(self.shadow_zombie_frames, str(self.facing_direction))[self.total_frames - 1]
+
         self.Speed = TILE_SIZE
 
-    def get_zombie_position(self, grid_position: List[int]) -> List[int]:
-        return [MARGIN_LEFT + TILE_SIZE * (grid_position[0] - 1) + 4, MARGIN_TOP + TILE_SIZE * (grid_position[1] - 1) + 4]
+    def load_zombie_frames(self) -> ('MummyMazeZombieManager.MummyMazeFramesManager', 'MummyMazeZombieManager.MummyMazeFramesManager'): # type: ignore
+        
+        def get_black_shadow_surface(frame: pygame.Surface) -> pygame.Surface:
+            """Convert a origin shadow surface to black shadow surface version."""
+            image = frame.copy()
+            image.set_colorkey((0,0,0))
+            mask = pygame.mask.from_surface(image)
+    
+            # 2. Đổ lại thành hình ảnh
+            # setcolor=(0, 0, 0) -> Màu đen tuyệt đối
+            # unsetcolor=None    -> Vùng nền giữ nguyên trong suốt
+            black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
+            return black_silhouette
 
-    def load_zombie_images(self) -> 'MummyMazeZombieManager.MummyMazeFramesManager':
-        zombie_surface = pygame.image.load(os.path.join("assets", "image", "mummy_white6.png")).convert_alpha()
-        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width() *TILE_SIZE//60, zombie_surface.get_height() *TILE_SIZE//60))
+        """Load zombie sprite sheet and split into directional frames."""
 
-        zombie_frame = extract_sprite_frames(zombie_surface, zombie_surface.get_width() // 5, zombie_surface.get_height() // 4)
+        shadow_frames_dict = self.MummyMazeFramesManager([], [], [], [])
+        zombie_frames_dict = self.MummyMazeFramesManager([], [], [], [])
 
-        zombie_go_up_frames = zombie_frame[1:5] + [zombie_frame[0]]
-        zombie_go_right_frames = zombie_frame[6:10] + [zombie_frame[5]]
-        zombie_go_down_frames = zombie_frame[11:15] + [zombie_frame[10]]
-        zombie_go_left_frames = zombie_frame[16:20] + [zombie_frame[15]]
+        # --- Load and scale zombie sprite sheet ---
+        zombie_surface = pygame.image.load(os.path.join("assets", "image", "whitemummy.gif")).convert_alpha()
+        zombie_surface.set_colorkey((0,0,0))
+        zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width() * TILE_SIZE // 60, zombie_surface.get_height() * TILE_SIZE // 60))
 
-        return self.MummyMazeFramesManager(
-            double_list(zombie_go_up_frames),
-            double_list(zombie_go_down_frames),
-            double_list(zombie_go_left_frames),
-            double_list(zombie_go_right_frames),
-        )
+
+        #load and scale shadow sprite sheet
+        shadow_surface = pygame.image.load(os.path.join("assets", "image", "_whitemummy.gif"))
+        shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
+        shadow_surface = get_black_shadow_surface(shadow_surface)
+
+        # --- Extract frames ---
+        zombie_frames_list = extract_sprite_frames(zombie_surface, zombie_surface.get_width() // 5, zombie_surface.get_height() // 4)
+        shadow_frames_list = extract_sprite_frames(shadow_surface, shadow_surface.get_width() // 5, shadow_surface.get_height() // 4)
+
+        # --- Assign frames for Zombie ---
+        zombie_frames_dict.UP = double_list(zombie_frames_list[1:5] + [zombie_frames_list[0]])
+        zombie_frames_dict.RIGHT = double_list(zombie_frames_list[6:10] + [zombie_frames_list[5]])
+        zombie_frames_dict.DOWN = double_list(zombie_frames_list[11:15] + [zombie_frames_list[10]])
+        zombie_frames_dict.LEFT = double_list(zombie_frames_list[16:20] + [zombie_frames_list[15]])
+
+        # --- Assign frames for Shadow ---
+        shadow_frames_dict.UP = double_list(shadow_frames_list[1:5] + [shadow_frames_list[0]])
+        shadow_frames_dict.RIGHT = double_list(shadow_frames_list[6:10] + [shadow_frames_list[5]])
+        shadow_frames_dict.DOWN = double_list(shadow_frames_list[11:15] + [shadow_frames_list[10]])
+        shadow_frames_dict.LEFT = double_list(shadow_frames_list[16:20] + [shadow_frames_list[15]])
+
+        return zombie_frames_dict, shadow_frames_dict
+    
 
     def zombie_can_move(self, direction: List[int], facing_direction: str) -> bool:
         """Check if zombie can move in facing_direction considering wall tiles."""
@@ -482,7 +587,7 @@ class MummyMazeZombieManager:
         if self.movement_list:
             self.facing_direction = self.movement_list[0]
             self.current_frame = getattr(self.zombie_frames, str(self.facing_direction))[self.movement_frame_index]
-
+            self.current_shadow_frame = getattr(self.shadow_zombie_frames, str(self.facing_direction))[self.movement_frame_index]
             if self.zombie_can_move(self.grid_position, self.facing_direction):
                 if self.facing_direction == UP:
                     move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
@@ -496,9 +601,10 @@ class MummyMazeZombieManager:
                 elif self.facing_direction == RIGHT:
                     move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = 1
-
+            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                                    MARGIN_TOP +  + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
             screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + 4 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+                                             MARGIN_TOP +  + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -509,8 +615,12 @@ class MummyMazeZombieManager:
         else:
             # Idle frame based on facing direction
             self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
+            self.current_shadow_frame = getattr(self.shadow_zombie_frames, self.facing_direction)[self.total_frames - 1]
+
+            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
+                                                    MARGIN_TOP +  + TILE_SIZE * (self.grid_position[1] - 1)))
             screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
-                                             MARGIN_TOP + 4 + TILE_SIZE * (self.grid_position[1] - 1)))
+                                             MARGIN_TOP +  + TILE_SIZE * (self.grid_position[1] - 1)))
 
 
 # ------------------------------------------------------- #
@@ -554,7 +664,7 @@ def main():
     pygame.display.set_caption("Load Map Example")
     clock = pygame.time.Clock()
 
-    current_level_index = 9
+    current_level_index = 7
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
     winning_position = get_winning_position(stair_position, map_length)
 
@@ -613,7 +723,7 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
-        time.sleep(0.03)
+        time.sleep(0.04)
 
     pygame.quit()
 
