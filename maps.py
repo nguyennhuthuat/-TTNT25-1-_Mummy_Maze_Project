@@ -141,7 +141,7 @@ maps_collection = [
             ["r", "l", "r", "l", "r", "l", "r", "l"],
         ],
         "player_start": [1, 8],
-        "stair_position": (8, 1),
+        "stair_position": (9, 1),
         "zombie_starts": [[1, 1], [8, 8], [4, 4], [5, 5]],
     },
     # Màn 9: Rất khó
@@ -179,7 +179,7 @@ maps_collection = [
             ["", "r", "l", "t", "", "r", "l", "", "", ""],
         ],
         "player_start": [5, 10],
-        "stair_position": (5, 1),
+        "stair_position": (11, 1),
         "zombie_starts": [[1, 1], [10, 1], [1, 10], [10, 10], [5, 5]],
     },
 ]

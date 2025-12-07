@@ -1,6 +1,6 @@
 import os
 import time
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import pygame
 
@@ -13,7 +13,7 @@ UP = "UP"
 DOWN = "DOWN"
 
 # Layout constants (kept module-level so classes can use them)
-TILE_SIZE = 80  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
+TILE_SIZE = 48  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
 BACKDROP_WIDTH = 657 #575
 BACKDROP_HEIGHT = 638 #558
 GAME_FLOOR_WIDTH = 480
@@ -58,6 +58,10 @@ class MummyMazeMapManager:
         self.map_data = map_data
         self.stair_positions = stair_position
 
+        # padding to center walls/stairs based on map size
+        self.padding_left = SCREEN_WIDTH//(10*self.length) // 4
+        self.padding_top = SCREEN_HEIGHT//(10*self.length) * 2 + 1
+
         # Load background and floor images (pygame must be initialized before calling)
         self.backdrop = pygame.image.load(os.path.join("assets", "image", "backdrop.png")).convert()
         self.backdrop = pygame.transform.scale(self.backdrop, (BACKDROP_WIDTH, BACKDROP_HEIGHT))
@@ -85,7 +89,7 @@ class MummyMazeMapManager:
 
     def load_tiles(self) -> None:
         """Cut and scale wall/stair images from spritesheets according to map size."""
-        area_surface = pygame.image.load(os.path.join("assets", "image", "walls" + str(self.length) + ".png")).convert_alpha()
+        area_surface = pygame.image.load(os.path.join("assets", "image", "walls6.png")).convert_alpha()
 
         area_to_cut = pygame.Rect(0, 0, 12, 78)
         self.down_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (12*TILE_SIZE//60, 78*TILE_SIZE//60))
@@ -93,10 +97,10 @@ class MummyMazeMapManager:
         area_to_cut = pygame.Rect(12, 0, 72, 18)
         self.lying_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (72*TILE_SIZE//60, 18*TILE_SIZE//60))
 
-        area_to_cut = pygame.Rect(84, 0, 12, 74)
-        self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (12*TILE_SIZE//60, 74*TILE_SIZE//60))
+        area_to_cut = pygame.Rect(84, 0, 12, 78)
+        self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (12*TILE_SIZE//60, 78*TILE_SIZE//60))
 
-        area_stair_surface = pygame.image.load(os.path.join("assets", "image", "stairs" + str(self.length) + ".png")).convert_alpha()
+        area_stair_surface = pygame.image.load(os.path.join("assets", "image", "stairs6.png")).convert_alpha()
 
         area_to_cut = pygame.Rect(2, 0, 54, 66)
         self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (54*TILE_SIZE//60, 66*TILE_SIZE//60))
@@ -114,74 +118,74 @@ class MummyMazeMapManager:
     def draw_top_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_bottom_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_bottom_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_top_left_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_bottom_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_top_right_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_left_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_right_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_top_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - 14))
+        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.up_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y + TILE_SIZE - self.padding_top))
 
     def draw_bottom_t_wall_tile(self, screen: pygame.Surface, x: int, y: int) -> None:
         x -= 1
         y -= 1
-        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - 3, MARGIN_TOP + TILE_SIZE * y - 14))
-        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - 3, MARGIN_TOP + TILE_SIZE * y - 14))
+        screen.blit(self.lying_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
+        screen.blit(self.down_standing_wall, (MARGIN_LEFT + TILE_SIZE * x + TILE_SIZE - self.padding_left, MARGIN_TOP + TILE_SIZE * y - self.padding_top))
 
     def draw_stair(self, screen: pygame.Surface) -> None:
         """Draw the stair graphic according to stair_positions."""
@@ -216,7 +220,9 @@ class MummyMazeMapManager:
             draw_left_stair(screen, row, col)
         elif row == len(self.map_data[0]) + 1:
             draw_right_stair(screen, row, col)
-
+        else:
+            print(f"Warning: stair position {self.stair_positions} is invalid. No stair drawn.")
+            print("length of map_data:", len(self.map_data[0]))
     def draw_map(self, screen: pygame.Surface) -> None:
         screen.blit(self.backdrop, ((SCREEN_WIDTH - BACKDROP_WIDTH) // 2, (SCREEN_HEIGHT - BACKDROP_HEIGHT) // 2))
         screen.blit(self.game_floor, (MARGIN_LEFT, MARGIN_TOP))
@@ -260,7 +266,7 @@ class MummyMazePlayerManager:
         self.facing_direction = DOWN
         self.total_frames = 10
         self.current_frame = getattr(self.player_frames, self.facing_direction)[self.total_frames - 1]
-        self.Speed = 70
+        self.Speed = TILE_SIZE
 
     def get_player_position(self, grid_position: List[int]) -> List[int]:
         """Return pixel (x, y) for the given grid_position (helper)."""
@@ -268,7 +274,7 @@ class MummyMazePlayerManager:
 
     def load_player_images(self) -> 'MummyMazePlayerManager.MummyMazeFramesManager':
         """Load player sprite sheet and split into directional frames."""
-        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer" + str(self.length) + ".png")).convert_alpha()
+        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer6.png")).convert_alpha()
         player_surface = pygame.transform.scale(player_surface, (player_surface.get_width() *TILE_SIZE//60, player_surface.get_height() *TILE_SIZE//60))
 
         player_frame = extract_sprite_frames(player_surface, player_surface.get_width() // 5, player_surface.get_height() // 4)
@@ -373,13 +379,13 @@ class MummyMazeZombieManager:
         self.facing_direction = DOWN
         self.total_frames = 10
         self.current_frame = getattr(self.zombie_frames, self.facing_direction)[self.total_frames - 1]
-        self.Speed = 70
+        self.Speed = TILE_SIZE
 
     def get_zombie_position(self, grid_position: List[int]) -> List[int]:
         return [MARGIN_LEFT + TILE_SIZE * (grid_position[0] - 1) + 4, MARGIN_TOP + TILE_SIZE * (grid_position[1] - 1) + 4]
 
     def load_zombie_images(self) -> 'MummyMazeZombieManager.MummyMazeFramesManager':
-        zombie_surface = pygame.image.load(os.path.join("assets", "image", "mummy_white" + str(self.length) + ".png")).convert_alpha()
+        zombie_surface = pygame.image.load(os.path.join("assets", "image", "mummy_white6.png")).convert_alpha()
         zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width() *TILE_SIZE//60, zombie_surface.get_height() *TILE_SIZE//60))
 
         zombie_frame = extract_sprite_frames(zombie_surface, zombie_surface.get_width() // 5, zombie_surface.get_height() // 4)
@@ -510,7 +516,7 @@ class MummyMazeZombieManager:
 # ------------------------------------------------------- #
 # --------------------- LEVEL HELPER--------------------- #
 # ------------------------------------------------------- #
-def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> List[int] or None:
+def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> Optional[List[int]]:
     """Determines the grid cell in front of the stair to win."""
     row, col = stair_pos
     if col == 0:  # Stair is at the top edge
@@ -548,7 +554,7 @@ def main():
     pygame.display.set_caption("Load Map Example")
     clock = pygame.time.Clock()
 
-    current_level_index = 0
+    current_level_index = 9
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
     winning_position = get_winning_position(stair_position, map_length)
 
