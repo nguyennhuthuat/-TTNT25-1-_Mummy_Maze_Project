@@ -19,6 +19,11 @@ def main():
 
 
     pygame.init()
+    pygame.mixer.init() # Initialize the mixer module for sound
+    
+    expwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "expwalk60b.wav"))
+    mumwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mumwalk60b.wav"))
+
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Load Map Example")
     clock = pygame.time.Clock()
@@ -41,18 +46,21 @@ def main():
                     if event.key == pygame.K_UP:
                         if not MummyExplorer.movement_list:
                             MummyExplorer.update_player_status(UP)
+                            expwalk_sound.play()
                     elif event.key == pygame.K_DOWN:
                         if not MummyExplorer.movement_list:
                             MummyExplorer.update_player_status(DOWN)
+                            expwalk_sound.play()
 
                     elif event.key == pygame.K_LEFT:
                         if not MummyExplorer.movement_list:
                             MummyExplorer.update_player_status(LEFT)
+                            expwalk_sound.play()
 
                     elif event.key == pygame.K_RIGHT:
                         if not MummyExplorer.movement_list:
                             MummyExplorer.update_player_status(RIGHT)
-
+                            expwalk_sound.play()
 
         MummyMazeMap.draw_map(screen)
 
@@ -65,6 +73,8 @@ def main():
         if player_turn_completed:
             for zombie in MummyZombies:
                 zombie.zombie_movement(MummyExplorer.grid_position)
+                if zombie.movement_list and zombie.movement_frame_index == 0:
+                    mumwalk_sound.play()
 
         # Check for win condition
         if winning_position and MummyExplorer.grid_position == winning_position:
