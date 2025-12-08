@@ -2,6 +2,7 @@ import os
 import time
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
+import random
 
 import pygame
 
@@ -64,9 +65,9 @@ class MummyMazeMapManager:
         self.padding_top = SCREEN_HEIGHT//(10*self.length) * 2 + 1
 
         # Load background and floor images (pygame must be initialized before calling)
-        self.backdrop = pygame.image.load(os.path.join("assets", "image", "backdrop.png")).convert()
+        self.backdrop = pygame.image.load(os.path.join("assets", "images", "backdrop.png")).convert()
         self.backdrop = pygame.transform.scale(self.backdrop, (BACKDROP_WIDTH, BACKDROP_HEIGHT))
-        self.game_floor = pygame.image.load(os.path.join("assets", "image", "floor" + str(self.length) + ".png")).convert_alpha()
+        self.game_floor = pygame.image.load(os.path.join("assets", "images", "floor" + str(self.length) + ".png")).convert_alpha()
         self.game_floor = pygame.transform.scale(self.game_floor, (GAME_FLOOR_WIDTH, GAME_FLOOR_HEIGHT))
 
         # Prepare tile images
@@ -90,7 +91,7 @@ class MummyMazeMapManager:
 
     def load_tiles(self) -> None:
         """Cut and scale wall/stair images from spritesheets according to map size."""
-        area_surface = pygame.image.load(os.path.join("assets", "image", "walls6.png")).convert_alpha()
+        area_surface = pygame.image.load(os.path.join("assets", "images", "walls6.png")).convert_alpha()
 
         area_to_cut = pygame.Rect(0, 0, 12, 78)
         self.down_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (12*TILE_SIZE//60, 78*TILE_SIZE//60))
@@ -101,7 +102,7 @@ class MummyMazeMapManager:
         area_to_cut = pygame.Rect(84, 0, 12, 78)
         self.up_standing_wall = pygame.transform.scale(area_surface.subsurface(area_to_cut), (12*TILE_SIZE//60, 78*TILE_SIZE//60))
 
-        area_stair_surface = pygame.image.load(os.path.join("assets", "image", "stairs6.png")).convert_alpha()
+        area_stair_surface = pygame.image.load(os.path.join("assets", "images", "stairs6.png")).convert_alpha()
 
         area_to_cut = pygame.Rect(2, 0, 54, 66)
         self.top_stair = pygame.transform.scale(area_stair_surface.subsurface(area_to_cut), (54*TILE_SIZE//60, 66*TILE_SIZE//60))
@@ -265,7 +266,11 @@ class MummyMazePlayerManager:
         self.grid_position = grid_position  # [row, column] position of the player in the grid
 
         self.movement_list: List[str] = []
+        self.standing = True ## indicates if the player is standing still
+
         self.movement_frame_index = 0
+        self.finding_frame_index = 0
+
         self.facing_direction = DOWN
         self.total_frames = 10
         self.current_frame = getattr(self.player_frames, self.facing_direction)[self.total_frames - 1]
@@ -274,6 +279,15 @@ class MummyMazePlayerManager:
         self.Speed = TILE_SIZE
 
         self.load_player_finding_frames()
+
+        ### timing variable
+
+        self.idle_time_threshold = random.randint(3,8) ## time threshold (in seconds) to trigger idle finding animation
+        self.start_moving = time.time()
+        self.end_moving = time.time()
+
+        self.start_standing = time.time()
+        self.end_standing = time.time()
 
     def get_black_shadow_surface(self,frame: pygame.Surface) -> pygame.Surface:
         """Convert a origin shadow surface to black shadow surface version."""
@@ -297,12 +311,12 @@ class MummyMazePlayerManager:
         player_frames_dict = self.MummyMazeFramesManager([], [], [], [])
 
         # Load and scale player sprite sheet
-        player_surface = pygame.image.load(os.path.join("assets", "image", "explorer.gif"))
+        player_surface = pygame.image.load(os.path.join("assets", "images", "explorer.gif"))
         player_surface.set_colorkey((0,0,0))
         player_surface = pygame.transform.scale(player_surface, (player_surface.get_width() *TILE_SIZE//60, player_surface.get_height() *TILE_SIZE//60))
 
         #load and scale shadow sprite sheet
-        shadow_surface = pygame.image.load(os.path.join("assets", "image", "_explorer.gif"))
+        shadow_surface = pygame.image.load(os.path.join("assets", "images", "_explorer.gif"))
         shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
@@ -338,12 +352,12 @@ class MummyMazePlayerManager:
         
 
         # Load and scale player finding sprite sheet
-        finding_surface = pygame.image.load(os.path.join("assets", "image", "explorer_finding.gif")).convert_alpha()
+        finding_surface = pygame.image.load(os.path.join("assets", "images", "explorer_finding.gif")).convert_alpha()
         finding_surface.set_colorkey((0,0,0))
         finding_surface = pygame.transform.scale(finding_surface, (finding_surface.get_width() *TILE_SIZE//60, finding_surface.get_height() *TILE_SIZE//60))
 
         # load and scale shadow finding sprite sheet
-        shadow_finding_surface = pygame.image.load(os.path.join("assets", "image", "_explorer_finding.gif")).convert_alpha()
+        shadow_finding_surface = pygame.image.load(os.path.join("assets", "images", "_explorer_finding.gif")).convert_alpha()
         shadow_finding_surface = pygame.transform.scale(shadow_finding_surface, (shadow_finding_surface.get_width() *TILE_SIZE//60, shadow_finding_surface.get_height() *TILE_SIZE//60))
         shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
 
@@ -372,6 +386,16 @@ class MummyMazePlayerManager:
                 self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
         return True
 
+    def update_player_status(self, facing_direction: str) -> None:
+        """Update player facing direction when standing still."""
+        self.facing_direction = facing_direction
+        self.movement_list.append(facing_direction)
+
+        self.standing = False
+        self.finding_frame_index = 0 ## reset finding frame index
+        
+        self.start_moving = time.time()
+        
     def update_player(self, screen: pygame.Surface) -> bool:
         """
         Update player animation and position.
@@ -385,8 +409,10 @@ class MummyMazePlayerManager:
 
         if self.movement_list:
             self.facing_direction = self.movement_list[0]
+
             self.current_frame = getattr(self.player_frames, str(self.facing_direction))[self.movement_frame_index]
             self.current_shadow_frame = getattr(self.shadow_player_frames, str(self.facing_direction))[self.movement_frame_index]
+
             if self.player_can_move(self.grid_position, self.facing_direction):
                 if self.facing_direction == UP:
                     move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
@@ -409,11 +435,31 @@ class MummyMazePlayerManager:
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
                 self.movement_frame_index = 0
+
+                self.end_moving = time.time()
+                self.start_standing = time.time()
+                print("Time taken to move one step:", self.end_moving - self.start_moving)
+                self.idle_time_threshold = random.randint(3,8) ## reset idle time threshold after moving
+
                 self.movement_list.pop(0)
                 self.grid_position[0] += grid_x
                 self.grid_position[1] += grid_y
+
                 move_completed = True
+                self.standing = True
         else:
+
+            if self.standing == True and self.facing_direction == DOWN and time.time() - self.start_standing >= self.idle_time_threshold:
+                self.current_frame = self.finding_frames[self.finding_frame_index]
+                self.current_shadow_frame = self.shadow_finding_frames[self.finding_frame_index]
+                self.finding_frame_index += 1
+
+                if self.finding_frame_index >= len(self.finding_frames):
+                    self.finding_frame_index = 0
+                    self.start_standing = time.time() ## reset standing timer
+                    self.idle_time_threshold = random.randint(8,16) ## random time threshold for next finding animation
+
+
             screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
                                                     MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
             screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
@@ -478,13 +524,13 @@ class MummyMazeZombieManager:
         zombie_frames_dict = self.MummyMazeFramesManager([], [], [], [])
 
         # --- Load and scale zombie sprite sheet ---
-        zombie_surface = pygame.image.load(os.path.join("assets", "image", "whitemummy.gif")).convert_alpha()
+        zombie_surface = pygame.image.load(os.path.join("assets", "images", "whitemummy.gif")).convert_alpha()
         zombie_surface.set_colorkey((0,0,0))
         zombie_surface = pygame.transform.scale(zombie_surface, (zombie_surface.get_width() * TILE_SIZE // 60, zombie_surface.get_height() * TILE_SIZE // 60))
 
 
         #load and scale shadow sprite sheet
-        shadow_surface = pygame.image.load(os.path.join("assets", "image", "_whitemummy.gif"))
+        shadow_surface = pygame.image.load(os.path.join("assets", "images", "_whitemummy.gif"))
         shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
         shadow_surface = get_black_shadow_surface(shadow_surface)
 
@@ -659,6 +705,8 @@ def load_level(level_index: int):
 # --------------------- MAIN LOOP --------------------- #
 # ----------------------------------------------------- #
 def main():
+
+
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Load Map Example")
@@ -681,20 +729,19 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     if not MummyExplorer.movement_list:
-                        MummyExplorer.movement_list.append(UP)
-                        MummyExplorer.facing_direction = UP
+                        MummyExplorer.update_player_status(UP)
                 elif event.key == pygame.K_DOWN:
                     if not MummyExplorer.movement_list:
-                        MummyExplorer.movement_list.append(DOWN)
-                        MummyExplorer.facing_direction = DOWN
+                        MummyExplorer.update_player_status(DOWN)
+
                 elif event.key == pygame.K_LEFT:
                     if not MummyExplorer.movement_list:
-                        MummyExplorer.movement_list.append(LEFT)
-                        MummyExplorer.facing_direction = LEFT
+                        MummyExplorer.update_player_status(LEFT)
+
                 elif event.key == pygame.K_RIGHT:
                     if not MummyExplorer.movement_list:
-                        MummyExplorer.movement_list.append(RIGHT)
-                        MummyExplorer.facing_direction = RIGHT
+                        MummyExplorer.update_player_status(RIGHT)
+
 
         MummyMazeMap.draw_map(screen)
         player_turn_completed = MummyExplorer.update_player(screen)
