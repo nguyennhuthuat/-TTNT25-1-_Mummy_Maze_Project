@@ -1,231 +1,258 @@
 import os
 import time
-from typing import List
-
+from typing import List, Tuple, Optional, Any
 import random
-
 import pygame
-
 from .utils import *
 from .settings import *
 
-class MummyMazePlayerManager:
-    """Player handling: loading frames, movement, and rendering."""
 
-    def __init__(self, length = 6, grid_position = [1,2], map_data = None):
+# Giả định import các hằng số và hàm helper
+# from settings import UP, DOWN, LEFT, RIGHT, TILE_SIZE, MARGIN_LEFT, MARGIN_TOP
+# from utils import FrameSet, double_list, extract_sprite_frames
+
+class MummyMazePlayerManager:
+    """
+    Player handling: loading frames, movement, and rendering.
+    """
+
+    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None):
         self.length = length
+        
+        # Fix: Mutable default argument
+        self.grid_position = grid_position if grid_position is not None else [1, 2]
+        self.map_data = map_data
+
+        # 1. Load Resources
+        # Giữ nguyên logic load riêng biệt để đảm bảo shadow không bị lỗi
         self.player_frames, self.shadow_player_frames = self.load_player_frames()
         self.finding_frames, self.shadow_finding_frames = self.load_player_finding_frames()
         
-        self.map_data = map_data
-
-        self.grid_position = grid_position  # [row, column] position of the player in the grid
-
-        self.movement_list: List[str] = []
-        self.is_standing = True ## indicates if the player is standing still
-
-        self.movement_frame_index = 0
-        self.finding_frame_index = 0
-
-        self.facing_direction = DOWN
-        self.total_frames = 10
-
-        self.current_frame = getattr(self.player_frames, self.facing_direction)[self.total_frames - 1]
-        self.current_shadow_frame = getattr(self.shadow_player_frames, str(self.facing_direction))[self.total_frames - 1]
-
-        self.Speed = TILE_SIZE
-
-        # ----- timing variable ----- #
-        self.idle_time_threshold = random.randint(3,8) ## time threshold (in seconds) to trigger idle finding animation
-        self.start_moving = time.time()
-        self.end_moving = time.time()
-
-        self.start_standing = time.time()
-        self.end_standing = time.time()
-
-        # ----- sound variable ----- #
         self.expwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "expwalk60b.wav"))
 
+        # 2. Movement State
+        self.movement_list: List[str] = []
+        self.is_standing: bool = True
+        self.facing_direction: str = DOWN
+        self.speed = TILE_SIZE  # Renamed from Speed
 
-    def get_black_shadow_surface(self,frame: pygame.Surface) -> pygame.Surface:
-        """Convert a origin shadow surface to black shadow surface version."""
+        # 3. Animation State
+        self.total_frames = 10
+        self.movement_frame_index = 0
+        
+        # Idle/Finding State
+        self.finding_frame_index = 0
+        self.idle_time_threshold = random.randint(3, 8)
+        self.start_standing = time.time()
 
+        # 4. Set initial frames
+        self.update_current_frames(frame_index=self.total_frames - 1)
+
+    def update_current_frames(self, frame_index: int) -> None:
+        """Helper to update both sprite and shadow frames based on direction."""
+        direction_key = str(self.facing_direction)
+        self.current_frame = getattr(self.player_frames, direction_key)[frame_index]
+        self.current_shadow_frame = getattr(self.shadow_player_frames, direction_key)[frame_index]
+
+    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
+        """Convert an original shadow surface to a black silhouette."""
         image = frame.copy()
-        image.set_colorkey((0,0,0))
-
+        image.set_colorkey((0, 0, 0))
         mask = pygame.mask.from_surface(image)
+        # setcolor=(0, 0, 0) -> Absolute black
+        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
 
-        # 2. Đổ lại thành hình ảnh
-        # setcolor=(0, 0, 0) -> Màu đen tuyệt đối
-        # unsetcolor=None    -> Vùng nền giữ nguyên trong suốt
-        black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-        return black_silhouette
+    def _load_and_scale_image(self, filename: str) -> pygame.Surface:
+        """Helper just for loading and scaling, NOT applying shadow logic."""
+        path = os.path.join("assets", "images", filename)
+        surface = pygame.image.load(path).convert_alpha()
+        surface.set_colorkey((0, 0, 0))
+        
+        scale_factor = TILE_SIZE / 60
+        new_size = (int(surface.get_width() * scale_factor), 
+                    int(surface.get_height() * scale_factor))
+        
+        return pygame.transform.scale(surface, new_size)
 
-    def load_player_frames(self) -> (FrameSet, FrameSet): # type: ignore
+    def _create_frameset(self, frames_list: List[pygame.Surface]) -> Any:
+        """Helper to map a list of frames to UP/RIGHT/DOWN/LEFT logic."""
+        fs = FrameSet([], [], [], [])
+        # Indices based on original code logic
+        fs.UP = double_list(frames_list[1:5] + [frames_list[0]])
+        fs.RIGHT = double_list(frames_list[6:10] + [frames_list[5]])
+        fs.DOWN = double_list(frames_list[11:15] + [frames_list[10]])
+        fs.LEFT = double_list(frames_list[16:20] + [frames_list[15]])
+        return fs
 
+    def load_player_frames(self) -> Tuple[Any, Any]:
         """Load player sprite sheet and split into directional frames."""
+        
+        # 1. Load NORMAL sprite
+        player_surface = self._load_and_scale_image("explorer.gif")
 
-        shadow_player_frames_dict = FrameSet([], [], [], [])
-        player_frames_dict = FrameSet([], [], [], [])
-
-        # Load and scale player sprite sheet
-        player_surface = pygame.image.load(os.path.join("assets", "images", "explorer.gif"))
-        player_surface.set_colorkey((0,0,0))
-        player_surface = pygame.transform.scale(player_surface, (player_surface.get_width() *TILE_SIZE//60, player_surface.get_height() *TILE_SIZE//60))
-
-        #load and scale shadow sprite sheet
+        # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
         shadow_surface = pygame.image.load(os.path.join("assets", "images", "_explorer.gif"))
         shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
-        player_frames = extract_sprite_frames(player_surface, player_surface.get_width() // 5, player_surface.get_height() // 4)
-        shadow_frames = extract_sprite_frames(shadow_surface, shadow_surface.get_width() // 5, shadow_surface.get_height() // 4 )
-
-        player_frames_dict.UP = double_list(player_frames[1:5] + [player_frames[0]])
-        player_frames_dict.RIGHT = double_list(player_frames[6:10] + [player_frames[5]])
-        player_frames_dict.DOWN = double_list(player_frames[11:15] + [player_frames[10]])
-        player_frames_dict.LEFT = double_list(player_frames[16:20] + [player_frames[15]])
+        # 3. Extract Frames
+        w_frame = player_surface.get_width() // 5
+        h_frame = player_surface.get_height() // 4
         
+        player_frames_list = extract_sprite_frames(player_surface, w_frame, h_frame)
+        shadow_frames_list = extract_sprite_frames(shadow_surface, w_frame, h_frame)
 
-        shadow_player_frames_dict.UP = double_list(shadow_frames[1:5] + [shadow_frames[0]])
-        shadow_player_frames_dict.RIGHT = double_list(shadow_frames[6:10] + [shadow_frames[5]])
-        shadow_player_frames_dict.DOWN = double_list(shadow_frames[11:15] + [shadow_frames[10]])
-        shadow_player_frames_dict.LEFT = double_list(shadow_frames[16:20] + [shadow_frames[15]])
+        return self._create_frameset(player_frames_list), self._create_frameset(shadow_frames_list)
 
-        return player_frames_dict, shadow_player_frames_dict
-
-    def load_player_finding_frames(self) -> (List, List): # type: ignore
-
-        def extract_finding_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
-            """Extract frames from a sprite sheet given each frame's width and height."""
-            sheet_width, sheet_height = sheet.get_size()
-            frames: List[pygame.Surface] = []   
-            
+    def load_player_finding_frames(self) -> Tuple[List[pygame.Surface], List[pygame.Surface]]:
+        """Load player finding sprite sheet (horizontal strip)."""
+        
+        def extract_strip_frames(sheet: pygame.Surface) -> List[pygame.Surface]:
+            frame_size = sheet.get_height() # Square frames based on height
+            sheet_width = sheet.get_width()
+            frames = []
             for x in range(0, sheet_width, frame_size):
                 frames.append(sheet.subsurface(pygame.Rect(x, 0, frame_size, frame_size)))
-
             return frames
-        
-        """Load player finding sprite sheet and split into directional frames."""
-        
 
-        # Load and scale player finding sprite sheet
-        finding_surface = pygame.image.load(os.path.join("assets", "images", "explorer_finding.gif")).convert_alpha()
-        finding_surface.set_colorkey((0,0,0))
-        finding_surface = pygame.transform.scale(finding_surface, (finding_surface.get_width() *TILE_SIZE//60, finding_surface.get_height() *TILE_SIZE//60))
+        # 1. Load NORMAL finding
+        finding_surface = self._load_and_scale_image("explorer_finding.gif")
 
-        # load and scale shadow finding sprite sheet
-        shadow_finding_surface = pygame.image.load(os.path.join("assets", "images", "_explorer_finding.gif")).convert_alpha()
-        shadow_finding_surface = pygame.transform.scale(shadow_finding_surface, (shadow_finding_surface.get_width() *TILE_SIZE//60, shadow_finding_surface.get_height() *TILE_SIZE//60))
+        # 2. Load SHADOW finding
+        shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif")
         shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
 
-        finding_frames = extract_finding_frames(finding_surface, finding_surface.get_height())
-        shadow_finding_frames = extract_finding_frames(shadow_finding_surface, shadow_finding_surface.get_height())
+        return extract_strip_frames(finding_surface), extract_strip_frames(shadow_finding_surface)
 
-        return finding_frames, shadow_finding_frames
-
-
-    def player_can_move(self, direction: List[int], facing_direction: str) -> bool:
+    def player_can_move(self, position: List[int], facing_direction: str) -> bool:
         """Check if player can move in facing_direction considering wall tiles."""
-        x = direction[0]
-        y = direction[1]
-        if facing_direction == UP:
-            return (y - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and (
-                self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
-        if facing_direction == DOWN:
-            return (y + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and (
-                self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
-        if facing_direction == LEFT:
-            return (x - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and (
-                self.map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
-        if facing_direction == RIGHT:
-            return (x + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and (
-                self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+        x, y = position
+        map_w = len(self.map_data[0])
+        
+        try:
+            if facing_direction == UP:
+                if y - 1 <= 0: return False
+                return (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
+                       (self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
+            
+            if facing_direction == DOWN:
+                if y + 1 > map_w: return False
+                return (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
+                       (self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
+            
+            if facing_direction == LEFT:
+                if x - 1 <= 0: return False
+                return (self.map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and \
+                       (self.map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
+            
+            if facing_direction == RIGHT:
+                if x + 1 > map_w: return False
+                return (self.map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and \
+                       (self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+        except IndexError:
+            return False
         return True
 
     def update_player_status(self, facing_direction: str) -> None:
-        """Update player facing direction when standing still."""
+        """Update player facing direction when inputs are received."""
         self.facing_direction = facing_direction
         self.movement_list.append(facing_direction)
 
         self.is_standing = False
-        self.finding_frame_index = 0 ## reset finding frame index
+        self.finding_frame_index = 0 # reset finding animation
         
-        self.start_moving = time.time()
+        # Note: self.start_moving not strictly needed for logic, but kept if you debug speed
+        self.expwalk_sound.play()
 
-        self.expwalk_sound.play() # play walking sound effect
-
-    def draw_player(self, screen, move_distance_x, move_distance_y) -> None:
-        screen.blit(self.current_shadow_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                                    MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-        screen.blit(self.current_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+    def draw_player(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
+        """Render player and shadow with offset."""
+        base_x = MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + offset_x
+        base_y = MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + offset_y
+        
+        screen.blit(self.current_shadow_frame, (base_x, base_y))
+        screen.blit(self.current_frame, (base_x, base_y))
 
     def update_player(self, screen: pygame.Surface) -> bool:
         """
         Update player animation and position.
-        Returns True when a movement step completes.
+        Returns True when a movement step completes (for turn-based logic).
         """
         move_completed = False
         move_distance_x = 0
         move_distance_y = 0
-        grid_x = 0
-        grid_y = 0
+        grid_dx = 0
+        grid_dy = 0
 
+        # --- STATE 1: MOVING ---
         if self.movement_list:
-
             self.facing_direction = self.movement_list[0]
-            # print("Player is moving", self.facing_direction)
+            
+            # Update animation frames based on direction
+            self.update_current_frames(self.movement_frame_index)
 
-            self.current_frame = getattr(self.player_frames, str(self.facing_direction))[self.movement_frame_index]
-            self.current_shadow_frame = getattr(self.shadow_player_frames, str(self.facing_direction))[self.movement_frame_index]
-
+            # Calculate Movement Offsets
             if self.player_can_move(self.grid_position, self.facing_direction):
+                step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+                
                 if self.facing_direction == UP:
-                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_y = -1
+                    move_distance_y = -step_pixels
+                    grid_dy = -1
                 elif self.facing_direction == DOWN:
-                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_y = 1
+                    move_distance_y = step_pixels
+                    grid_dy = 1
                 elif self.facing_direction == LEFT:
-                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_x = -1
+                    move_distance_x = -step_pixels
+                    grid_dx = -1
                 elif self.facing_direction == RIGHT:
-                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_x = 1
+                    move_distance_x = step_pixels
+                    grid_dx = 1
 
             self.draw_player(screen, move_distance_x, move_distance_y)
 
+            # Update Frame Index
             self.movement_frame_index += 1
+            
+            # Check if step finished
             if self.movement_frame_index >= self.total_frames:
                 self.movement_frame_index = 0
-
-                self.end_moving = time.time()
-                self.start_standing = time.time()
-                print("Time taken to move one step:", self.end_moving - self.start_moving)
-                self.idle_time_threshold = random.randint(3,8) ## reset idle time threshold after moving
-
+                
+                # Logic: Update grid position only at end of animation
+                self.grid_position[0] += grid_dx
+                self.grid_position[1] += grid_dy
+                
                 self.movement_list.pop(0)
-                self.grid_position[0] += grid_x
-                self.grid_position[1] += grid_y
-
+                
+                # Reset idle timer after move
+                self.idle_time_threshold = random.randint(3, 8)
+                self.start_standing = time.time()
+                
                 move_completed = True
                 self.is_standing = True
-        else:
 
-            if self.is_standing == True and self.facing_direction == DOWN and time.time() - self.start_standing >= self.idle_time_threshold:
+        # --- STATE 2: IDLE / FINDING ANIMATION ---
+        else:
+            # Default to last frame (Standing still)
+            self.update_current_frames(self.total_frames - 1)
+
+            # Check Logic for Finding Animation (Look around)
+            # Condition: Standing + Facing DOWN + Time elapsed > Threshold
+            is_idle_timeout = (time.time() - self.start_standing >= self.idle_time_threshold)
+
+            if self.is_standing and self.facing_direction == DOWN and is_idle_timeout:
                 self.current_frame = self.finding_frames[self.finding_frame_index]
                 self.current_shadow_frame = self.shadow_finding_frames[self.finding_frame_index]
+                
                 self.finding_frame_index += 1
 
+                # If finding loop finishes
                 if self.finding_frame_index >= len(self.finding_frames):
                     self.finding_frame_index = 0
-                    self.start_standing = time.time() ## reset standing timer
-                    self.idle_time_threshold = random.randint(8,16) ## random time threshold for next finding animation
+                    self.start_standing = time.time() # Reset timer
+                    self.idle_time_threshold = random.randint(8, 16) # New random threshold
 
-
-            self.draw_player(screen, move_distance_x, move_distance_y)
+            self.draw_player(screen, 0, 0)
     
         return move_completed
+    
 
 pygame.quit()

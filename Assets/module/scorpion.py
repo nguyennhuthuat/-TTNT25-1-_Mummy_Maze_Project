@@ -1,210 +1,247 @@
 import os
 import time
-from typing import List
+from typing import List, Tuple, Optional, Any
 import pygame
 import random
 from .utils import *
 from .settings import *
 
 class MummyMazeScorpionManager:
-    """Scorpion handling: loading frames, simple chasing movement, and rendering."""
+    """
+    Scorpion handling: loading frames, simple chasing movement, and rendering.
+    """
 
-    def __init__(self, length = 6, grid_position = [1,2], map_data = None):
+    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None):
         self.length = length
         
-        # 1. Load both zombie frames and shadow frames
-        self.scorpion_frames, self.shadow_scorpion_frames = self.load_scorpion_frames()
-        
+        # Fix: Mutable default argument anti-pattern
+        self.grid_position = grid_position if grid_position is not None else [1, 2]
         self.map_data = map_data
-        self.grid_position = grid_position
 
-        self.movement_list: List[str] = []
-        self.is_standing = True # if not moving
-
-        self.movement_frame_index = 0
-        self.listening_frame_index = 0
-
-        self.facing_direction = DOWN
-        self.total_frames = 10
-        
-        # Current scorpion frame
-        self.current_frame = getattr(self.scorpion_frames, self.facing_direction)[self.total_frames - 1]
-        self.current_shadow_frame = getattr(self.shadow_scorpion_frames, str(self.facing_direction))[self.total_frames - 1]
-        
-        # 2. Current shadow frame (similar to Player logic)
-        self.current_shadow_frame = getattr(self.shadow_scorpion_frames, str(self.facing_direction))[self.total_frames - 1]
-
-        self.Speed = TILE_SIZE
-
-        #----- timing variable ----- #
-        self.idle_time_threshold = random.randint(3,8) # time threshold (in seconds) to trigger idle listening animation
-        self.start_moving = time.time()
-        self.end_moving = time.time()
-
-        self.start_standing = time.time()
-        self.end_standing = time.time()
-
-        # ----- sound variable ----- #
+        # 1. Load Resources
+        self.scorpion_frames, self.shadow_scorpion_frames = self.load_scorpion_frames()
         self.mumwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mumwalk60b.wav"))
 
+        # 2. Movement State
+        self.movement_list: List[str] = []
+        self.is_standing: bool = True
+        self.facing_direction: str = DOWN
+        
+        # 3. Animation State
+        self.total_frames = 10
+        self.movement_frame_index = 0
+        self.speed = TILE_SIZE  # Renamed from Speed to speed (PEP 8)
+
+        # 4. Set initial frames
+        # Sử dụng logic để lấy frame cuối cùng (idle)
+        self.update_current_frames(frame_index=self.total_frames - 1)
+
+        # 5. Timing
+        # time threshold (in seconds) to trigger idle listening animation
+        self.idle_time_threshold = random.randint(3, 8) 
+        self.start_standing = time.time()
+
+    def update_current_frames(self, frame_index: int) -> None:
+        """Helper to update both sprite and shadow frames to avoid repetition."""
+        direction_key = str(self.facing_direction)
+        self.current_frame = getattr(self.scorpion_frames, direction_key)[frame_index]
+        self.current_shadow_frame = getattr(self.shadow_scorpion_frames, direction_key)[frame_index]
 
     def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
-        """Convert a origin shadow surface to black shadow surface version."""
+        """Convert an original shadow surface to a pure black silhouette."""
         image = frame.copy()
-        image.set_colorkey((0,0,0))
+        image.set_colorkey((0, 0, 0))
         mask = pygame.mask.from_surface(image)
-    
-        # 2. Đổ lại thành hình ảnh
-        # setcolor=(0, 0, 0) -> Màu đen tuyệt đối
-        # unsetcolor=None    -> Vùng nền giữ nguyên trong suốt
-        black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-        return black_silhouette
-    
-    def load_scorpion_frames(self) -> (FrameSet, FrameSet): # type: ignore
-        
+        # setcolor=(0, 0, 0) -> Absolute black
+        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
 
+    def load_scorpion_frames(self) -> Tuple[Any, Any]:
         """Load scorpion sprite sheet and split into directional frames."""
-
-        shadow_frames_dict = FrameSet([], [], [], [])
-        scorpion_frames_dict = FrameSet([], [], [], [])
-
+        
         # --- Load and scale scorpion sprite sheet ---
-        scorpion_surface = pygame.image.load(os.path.join("assets", "images", "scorpion.gif")).convert_alpha()
-        scorpion_surface.set_colorkey((0,0,0))
-        scorpion_surface = pygame.transform.scale(scorpion_surface, (scorpion_surface.get_width() * TILE_SIZE // 60, scorpion_surface.get_height() * TILE_SIZE // 60))
+        scorpion_path = os.path.join("assets", "images", "scorpion.gif")
+        scorpion_surface = pygame.image.load(scorpion_path).convert_alpha()
+        scorpion_surface.set_colorkey((0, 0, 0))
+        
+        scale_factor = TILE_SIZE / 60
+        new_size = (int(scorpion_surface.get_width() * scale_factor), 
+                    int(scorpion_surface.get_height() * scale_factor))
+        
+        scorpion_surface = pygame.transform.scale(scorpion_surface, new_size)
 
-        #load and scale shadow sprite sheet
-        shadow_surface = pygame.image.load(os.path.join("assets", "images", "_scorpion.gif"))
-        shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
+        # --- Load and scale shadow sprite sheet ---
+        shadow_path = os.path.join("assets", "images", "_scorpion.gif")
+        shadow_surface = pygame.image.load(shadow_path)
+        shadow_surface = pygame.transform.scale(shadow_surface, new_size)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # --- Extract frames ---
-        scorpion_frames_list = extract_sprite_frames(scorpion_surface, scorpion_surface.get_width() // 5, scorpion_surface.get_height() // 4)
-        shadow_frames_list = extract_sprite_frames(shadow_surface, shadow_surface.get_width() // 5, shadow_surface.get_height() // 4)
+        w_frame = scorpion_surface.get_width() // 5
+        h_frame = scorpion_surface.get_height() // 4
+        
+        sc_frames = extract_sprite_frames(scorpion_surface, w_frame, h_frame)
+        sh_frames = extract_sprite_frames(shadow_surface, w_frame, h_frame)
 
-        # --- Assign frames for Scorpion ---
-        scorpion_frames_dict.UP = double_list(scorpion_frames_list[1:5] + [scorpion_frames_list[0]])
-        scorpion_frames_dict.RIGHT = double_list(scorpion_frames_list[6:10] + [scorpion_frames_list[5]])
-        scorpion_frames_dict.DOWN = double_list(scorpion_frames_list[11:15] + [scorpion_frames_list[10]])
-        scorpion_frames_dict.LEFT = double_list(scorpion_frames_list[16:20] + [scorpion_frames_list[15]])
+        # --- Assign frames using dictionary mapping to reduce code duplication ---
+        # Assuming FrameSet structure: UP, RIGHT, DOWN, LEFT
+        # Indices based on original code: UP(1-5), RIGHT(6-10), DOWN(11-15), LEFT(16-20)
+        
+        def create_frameset(source_list):
+            fs = FrameSet([], [], [], [])
+            fs.UP = double_list(source_list[1:5] + [source_list[0]])
+            fs.RIGHT = double_list(source_list[6:10] + [source_list[5]])
+            fs.DOWN = double_list(source_list[11:15] + [source_list[10]])
+            fs.LEFT = double_list(source_list[16:20] + [source_list[15]])
+            return fs
 
-        # --- Assign frames for Shadow ---
-        shadow_frames_dict.UP = double_list(shadow_frames_list[1:5] + [shadow_frames_list[0]])
-        shadow_frames_dict.RIGHT = double_list(shadow_frames_list[6:10] + [shadow_frames_list[5]])
-        shadow_frames_dict.DOWN = double_list(shadow_frames_list[11:15] + [shadow_frames_list[10]])
-        shadow_frames_dict.LEFT = double_list(shadow_frames_list[16:20] + [shadow_frames_list[15]])
+        return create_frameset(sc_frames), create_frameset(sh_frames)
 
-        return scorpion_frames_dict, shadow_frames_dict
-    
-    def scorpion_can_move(self, direction: List[int], facing_direction: str) -> bool:
-        """Check if scorpion can move in facing_direction considering wall tiles."""
-        x = direction[0]
-        y = direction[1]
-        if facing_direction == UP:
-            return (y - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and (
-                self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
-        if facing_direction == DOWN:
-            return (y + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and (
-                self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
-        if facing_direction == LEFT:
-            return (x - 1 > 0) and (self.map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and (
-                self.map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
-        if facing_direction == RIGHT:
-            return (x + 1 <= len(self.map_data[0])) and (self.map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and (
-                self.map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+    def scorpion_can_move(self, position: List[int], facing_direction: str) -> bool:
+        """
+        Check if scorpion can move in facing_direction considering wall tiles.
+        Logic preserved from original code.
+        """
+        x, y = position
+        map_w = len(self.map_data[0])
+        # Note: In the original code, map_data usage implies map_data[y][x]
+        
+        # Define blocking walls for each direction based on original logic
+        # format: (offset_y, offset_x, blocked_tiles_list)
+        try:
+            if facing_direction == UP:
+                if y - 1 <= 0: return False
+                tile_curr = self.map_data[y - 1][x - 1]
+                tile_next = self.map_data[y - 2][x - 1]
+                return (tile_curr not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
+                       (tile_next not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
+
+            if facing_direction == DOWN:
+                if y + 1 > map_w: return False # Note: Original used len(map_data[0]) for Y check? Kept as is.
+                tile_curr = self.map_data[y - 1][x - 1]
+                tile_next = self.map_data[y][x - 1]
+                return (tile_curr not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
+                       (tile_next not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
+
+            if facing_direction == LEFT:
+                if x - 1 <= 0: return False
+                tile_curr = self.map_data[y - 1][x - 1]
+                tile_next = self.map_data[y - 1][x - 2]
+                return (tile_curr not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and \
+                       (tile_next not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
+
+            if facing_direction == RIGHT:
+                if x + 1 > map_w: return False
+                tile_curr = self.map_data[y - 1][x - 1]
+                tile_next = self.map_data[y - 1][x]
+                return (tile_curr not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and \
+                       (tile_next not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+        except IndexError:
+            return False
+            
         return True
 
     def scorpion_movement(self, player_position: List[int]) -> bool:
-        """Determine next movement(s) for the scorpion to approach the player (up to 2 steps)."""
-        if self.movement_list: # Nếu vẫn còn di chuyển dở thì không tính toán gì thêm
+        """Determine next movement(s) to approach player (max 2 steps)."""
+        if self.movement_list:
             return False
 
-        next_pos = self.grid_position[:] # Bắt đầu từ vị trí hiện tại của scorpion
+        next_pos = self.grid_position[:]
         
         for _ in range(2):
-            # Nếu đã bắt được người chơi thì dừng
             if next_pos == player_position:
                 break
             
-            # Tính khoảng cách
             diff_x = player_position[0] - next_pos[0]
             diff_y = player_position[1] - next_pos[1]
+            moved = False
 
-            # --- 1. Ưu tiên đi Ngang (Horizontal) ---
+            # --- 1. Horizontal Priority ---
             if diff_x != 0:
                 direction = RIGHT if diff_x > 0 else LEFT
                 self.movement_list.append(direction)
                 if self.scorpion_can_move(next_pos, direction):
                     next_pos[0] += (1 if diff_x > 0 else -1)
+                    moved = True
             
-            # --- 2. Nếu ngang thẳng hàng, đi Dọc (Vertical) ---
-            # Lưu ý: Mummy Maze chỉ đi dọc khi diff_x == 0
+            # --- 2. Vertical (Only if aligned horizontally per Mummy Maze rules) ---
             elif diff_y != 0:
-                print("Scorpion is moving", DOWN if diff_y > 0 else UP)
                 direction = DOWN if diff_y > 0 else UP
                 self.movement_list.append(direction)
                 if self.scorpion_can_move(next_pos, direction):
                     next_pos[1] += (1 if diff_y > 0 else -1)
-
+                    moved = True
+            
+            # If logic requires stopping if blocked, handling is implicit by just appending dir
+            # but not updating next_pos for the next loop iteration.
 
         return len(self.movement_list) > 0
-    
-    def draw_scorpion(self, screen, move_distance_x, move_distance_y) -> None:
-        screen.blit(self.current_shadow_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                                    MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-        screen.blit(self.current_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
 
+    def draw_scorpion(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
+        """Render the scorpion and its shadow."""
+        base_x = MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + offset_x
+        base_y = MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + offset_y
+        
+        screen.blit(self.current_shadow_frame, (base_x, base_y))
+        screen.blit(self.current_frame, (base_x, base_y))
 
     def update_scorpion(self, screen: pygame.Surface) -> None:
         """Render and animate the scorpion according to its movement list."""
         move_distance_x = 0
         move_distance_y = 0
-        grid_x = 0
-        grid_y = 0
+        grid_dx = 0
+        grid_dy = 0
 
         if self.movement_list:
-            if self.movement_frame_index == 0: # check if starting movement
+            # --- START MOVING ---
+            if self.movement_frame_index == 0:
                 self.is_standing = False
                 self.mumwalk_sound.play()
+                # Set direction for this move step
+                self.facing_direction = self.movement_list[0]
 
-            self.facing_direction = self.movement_list[0]
-            print("Scorpion is moving (1)", self.facing_direction)
-            self.current_frame = getattr(self.scorpion_frames, str(self.facing_direction))[self.movement_frame_index]
-            self.current_shadow_frame = getattr(self.shadow_scorpion_frames, str(self.facing_direction))[self.movement_frame_index]
+            # Update frames based on current direction and index
+            self.update_current_frames(self.movement_frame_index)
 
-            # Calculate movement offsets
-            if self.scorpion_can_move(self.grid_position, self.facing_direction):
+            # --- CALCULATE OFFSETS ---
+            # Calculate pixel offset for smooth animation
+            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+            
+            can_move = self.scorpion_can_move(self.grid_position, self.facing_direction)
+
+            if can_move:
                 if self.facing_direction == UP:
-                    move_distance_y = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_y = -1
+                    move_distance_y = -step_pixels
+                    grid_dy = -1
                 elif self.facing_direction == DOWN:
-                    move_distance_y = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_y = 1
+                    move_distance_y = step_pixels
+                    grid_dy = 1
                 elif self.facing_direction == LEFT:
-                    move_distance_x = - (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_x = -1
+                    move_distance_x = -step_pixels
+                    grid_dx = -1
                 elif self.facing_direction == RIGHT:
-                    move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
-                    grid_x = 1
+                    move_distance_x = step_pixels
+                    grid_dx = 1
 
+            # Draw with offset
             self.draw_scorpion(screen, move_distance_x, move_distance_y)
             
+            # --- ADVANCE FRAME ---
             self.movement_frame_index += 1
+            
+            # --- FINISH ONE STEP ---
             if self.movement_frame_index >= self.total_frames:
                 self.movement_frame_index = 0
                 self.movement_list.pop(0)
-                self.grid_position[0] += grid_x
-                self.grid_position[1] += grid_y
+                
+                # Update logical grid position only if movement was valid
+                if can_move:
+                    self.grid_position[0] += grid_dx
+                    self.grid_position[1] += grid_dy
 
                 self.is_standing = True
-                self.start_standing = time.time()  ## start standing timer
+                self.start_standing = time.time()
         else:
-
-            self.current_frame = getattr(self.scorpion_frames, str(self.facing_direction))[self.total_frames - 1]
-            self.current_shadow_frame = getattr(self.shadow_scorpion_frames, str(self.facing_direction))[self.total_frames - 1]
-
-            
-            self.draw_scorpion(screen, move_distance_x, move_distance_y)
-
-pygame.quit()
+            # --- IDLE STATE ---
+            # Show the last frame (standing still)
+            self.update_current_frames(self.total_frames - 1)
+            self.draw_scorpion(screen, 0, 0)
