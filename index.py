@@ -10,7 +10,7 @@ def main():
     pygame.display.set_caption("MUMMY MAZE")
 
     # Load and scale background image
-    background_image = pygame.image.load(os.path.join('Assets', 'image', 'background.png')).convert()
+    background_image = pygame.image.load(os.path.join('Assets', 'images', 'background.png')).convert()
     background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
 
 

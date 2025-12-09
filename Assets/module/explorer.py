@@ -6,20 +6,13 @@ import random
 
 import pygame
 
-from .utils import extract_sprite_frames, double_list
-from .settings import TILE_SIZE, MARGIN_LEFT, MARGIN_TOP, UP, DOWN, LEFT, RIGHT
+from .utils import *
+from .settings import *
 
 class MummyMazePlayerManager:
     """Player handling: loading frames, movement, and rendering."""
 
-    class MummyMazeFramesManager:
-        def __init__(self, UP, DOWN, LEFT, RIGHT):
-            self.UP = UP
-            self.DOWN = DOWN
-            self.LEFT = LEFT
-            self.RIGHT = RIGHT
-
-    def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
+    def __init__(self, length = 6, grid_position = [1,2], map_data = None):
         self.length = length
         self.player_frames, self.shadow_player_frames = self.load_player_frames()
         self.finding_frames, self.shadow_finding_frames = self.load_player_finding_frames()
@@ -43,13 +36,16 @@ class MummyMazePlayerManager:
         self.Speed = TILE_SIZE
 
         # ----- timing variable ----- #
-
         self.idle_time_threshold = random.randint(3,8) ## time threshold (in seconds) to trigger idle finding animation
         self.start_moving = time.time()
         self.end_moving = time.time()
 
         self.start_standing = time.time()
         self.end_standing = time.time()
+
+        # ----- sound variable ----- #
+        self.expwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "expwalk60b.wav"))
+
 
     def get_black_shadow_surface(self,frame: pygame.Surface) -> pygame.Surface:
         """Convert a origin shadow surface to black shadow surface version."""
@@ -65,12 +61,12 @@ class MummyMazePlayerManager:
         black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
         return black_silhouette
 
-    def load_player_frames(self) -> ('MummyMazePlayerManager.MummyMazeFramesManager', 'MummyMazePlayerManager.MummyMazeFramesManager'): # type: ignore
+    def load_player_frames(self) -> (FrameSet, FrameSet): # type: ignore
 
         """Load player sprite sheet and split into directional frames."""
 
-        shadow_player_frames_dict = self.MummyMazeFramesManager([], [], [], [])
-        player_frames_dict = self.MummyMazeFramesManager([], [], [], [])
+        shadow_player_frames_dict = FrameSet([], [], [], [])
+        player_frames_dict = FrameSet([], [], [], [])
 
         # Load and scale player sprite sheet
         player_surface = pygame.image.load(os.path.join("assets", "images", "explorer.gif"))
@@ -98,7 +94,7 @@ class MummyMazePlayerManager:
 
         return player_frames_dict, shadow_player_frames_dict
 
-    def load_player_finding_frames(self) -> ('MummyMazePlayerManager.MummyMazeFramesManager', 'MummyMazePlayerManager.MummyMazeFramesManager'): # type: ignore
+    def load_player_finding_frames(self) -> (List, List): # type: ignore
 
         def extract_finding_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
             """Extract frames from a sprite sheet given each frame's width and height."""
@@ -156,7 +152,15 @@ class MummyMazePlayerManager:
         self.finding_frame_index = 0 ## reset finding frame index
         
         self.start_moving = time.time()
-        
+
+        self.expwalk_sound.play() # play walking sound effect
+
+    def draw_player(self, screen, move_distance_x, move_distance_y) -> None:
+        screen.blit(self.current_shadow_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                                    MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+        screen.blit(self.current_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                             MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+
     def update_player(self, screen: pygame.Surface) -> bool:
         """
         Update player animation and position.
@@ -169,6 +173,7 @@ class MummyMazePlayerManager:
         grid_y = 0
 
         if self.movement_list:
+
             self.facing_direction = self.movement_list[0]
             # print("Player is moving", self.facing_direction)
 
@@ -189,10 +194,7 @@ class MummyMazePlayerManager:
                     move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = 1
 
-            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-            screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+            self.draw_player(screen, move_distance_x, move_distance_y)
 
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
@@ -222,9 +224,8 @@ class MummyMazePlayerManager:
                     self.idle_time_threshold = random.randint(8,16) ## random time threshold for next finding animation
 
 
-            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-            screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
-                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1)))
-
+            self.draw_player(screen, move_distance_x, move_distance_y)
+    
         return move_completed
+
+pygame.quit()

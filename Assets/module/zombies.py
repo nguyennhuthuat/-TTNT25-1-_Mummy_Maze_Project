@@ -3,20 +3,13 @@ import time
 from typing import List
 import pygame
 import random
-from .utils import extract_sprite_frames, double_list
-from .settings import TILE_SIZE, MARGIN_LEFT, MARGIN_TOP, UP, DOWN, LEFT, RIGHT
+from .utils import *
+from .settings import *
 
 class MummyMazeZombieManager:
     """Zombie handling: loading frames, simple chasing movement, and rendering."""
 
-    class MummyMazeFramesManager:
-        def __init__(self, UP, DOWN, LEFT, RIGHT):
-            self.UP = UP
-            self.DOWN = DOWN
-            self.LEFT = LEFT
-            self.RIGHT = RIGHT
-
-    def __init__(self, length: int, grid_position: List[int], map_data: List[List[str]]):
+    def __init__(self, length = 6, grid_position = [1,2], map_data = None):
         self.length = length
         
         # 1. Load both zombie frames and shadow frames
@@ -52,6 +45,10 @@ class MummyMazeZombieManager:
         self.start_standing = time.time()
         self.end_standing = time.time()
 
+        # ----- sound variable ----- #
+        self.mumwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mumwalk60b.wav"))
+
+
     def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
         """Convert a origin shadow surface to black shadow surface version."""
         image = frame.copy()
@@ -64,13 +61,13 @@ class MummyMazeZombieManager:
         black_silhouette = mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
         return black_silhouette
     
-    def load_zombie_frames(self) -> ('MummyMazeZombieManager.MummyMazeFramesManager', 'MummyMazeZombieManager.MummyMazeFramesManager'): # type: ignore
+    def load_zombie_frames(self) -> (FrameSet, FrameSet): # type: ignore
         
 
         """Load zombie sprite sheet and split into directional frames."""
 
-        shadow_frames_dict = self.MummyMazeFramesManager([], [], [], [])
-        zombie_frames_dict = self.MummyMazeFramesManager([], [], [], [])
+        shadow_frames_dict = FrameSet([], [], [], [])
+        zombie_frames_dict = FrameSet([], [], [], [])
 
         # --- Load and scale zombie sprite sheet ---
         zombie_surface = pygame.image.load(os.path.join("assets", "images", "whitemummy.gif")).convert_alpha()
@@ -101,7 +98,7 @@ class MummyMazeZombieManager:
 
         return zombie_frames_dict, shadow_frames_dict
     
-    def load_zombie_listening_frames(self) -> ('MummyMazePlayerManager.MummyMazeFramesManager', 'MummyMazePlayerManager.MummyMazeFramesManager'): # type: ignore
+    def load_zombie_listening_frames(self) -> (List[pygame.Surface], List[pygame.Surface]): # type: ignore
 
         def extract_listening_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
             """Extract frames from a sprite sheet given each frame's width and height."""
@@ -184,6 +181,14 @@ class MummyMazeZombieManager:
 
 
         return len(self.movement_list) > 0
+    
+    def draw_zombie(self, screen, move_distance_x, move_distance_y) -> None:
+        screen.blit(self.current_shadow_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                                    MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+        screen.blit(self.current_frame, (MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
+                                             MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
+
+
     def update_zombie(self, screen: pygame.Surface) -> None:
         """Render and animate the zombie according to its movement list."""
         move_distance_x = 0
@@ -194,6 +199,7 @@ class MummyMazeZombieManager:
         if self.movement_list:
             if self.movement_frame_index == 0: # check if starting movement
                 self.is_standing = False
+                self.mumwalk_sound.play()
 
             self.facing_direction = self.movement_list[0]
             print("Zombie is moving (1)", self.facing_direction)
@@ -215,11 +221,8 @@ class MummyMazeZombieManager:
                     move_distance_x = (self.movement_frame_index + 1) * (self.Speed // self.total_frames)
                     grid_x = 1
 
-            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-            screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1) + move_distance_x,
-                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1) + move_distance_y))
-
+            self.draw_zombie(screen, move_distance_x, move_distance_y)
+            
             self.movement_frame_index += 1
             if self.movement_frame_index >= self.total_frames:
                 self.movement_frame_index = 0
@@ -245,7 +248,5 @@ class MummyMazeZombieManager:
                     self.idle_time_threshold = random.randint(8,16) ## random time threshold for next finding animation
 
 
-            screen.blit(self.current_shadow_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
-                                                    MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1)))
-            screen.blit(self.current_frame, (MARGIN_LEFT + 4 + TILE_SIZE * (self.grid_position[0] - 1),
-                                             MARGIN_TOP + 0 + TILE_SIZE * (self.grid_position[1] - 1)))
+            self.draw_zombie(screen, move_distance_x, move_distance_y)
+pygame.quit()

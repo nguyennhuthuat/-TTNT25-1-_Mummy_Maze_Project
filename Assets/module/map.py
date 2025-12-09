@@ -2,12 +2,12 @@ import os
 from typing import List, Tuple
 import pygame
 
-from .settings import SCREEN_WIDTH, SCREEN_HEIGHT, MARGIN_LEFT, MARGIN_TOP, TILE_SIZE, BACKDROP_WIDTH, BACKDROP_HEIGHT, GAME_FLOOR_WIDTH, GAME_FLOOR_HEIGHT
+from .settings import *
 
 class MummyMazeMapManager:
     """Handles tile/stair drawing and tile graphics loading."""
 
-    def __init__(self, length: int, stair_position: Tuple[int, int], map_data: List[List[str]]):
+    def __init__(self, length: int = 6, stair_position: Tuple[int, int] = (1,7), map_data: List[List[str]] = None):
         self.length = length # size of square map (length x length)
         # Map from tile id to a bound drawing method (set up using bound methods)
         # Will be populated after methods are available (we can set here using bound methods)
@@ -195,3 +195,5 @@ class MummyMazeMapManager:
                 elif tid:
                     # If tile id is unknown, warn and skip
                     print(f"Warning: tile_id '{tid}' at ({col_index}, {row_index}) not found in database. Skipping drawing.")
+
+pygame.quit()
