@@ -62,7 +62,6 @@ class MummyMazeZombieManager:
         """Helper to load, scale, and set colorkey for images."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
-        surface.set_colorkey((0, 0, 0))
         scale_factor = TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
@@ -72,10 +71,10 @@ class MummyMazeZombieManager:
         """Load zombie sprite sheet and split into directional frames."""
         # Load Resources
         zombie_surface = self._process_image_resource("whitemummy.gif")
+        zombie_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = pygame.image.load(os.path.join("assets", "images", "_whitemummy.gif"))
-        shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
+        shadow_surface = self._process_image_resource("_whitemummy.gif")
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # Extract Frames
@@ -108,6 +107,7 @@ class MummyMazeZombieManager:
 
         # Load Resources
         finding_surface = self._process_image_resource("whitelisten.gif")
+        finding_surface.set_colorkey((0, 0, 0))
         
         shadow_finding_surface = self._process_image_resource("_whitelisten.gif")
         shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
@@ -148,7 +148,7 @@ class MummyMazeZombieManager:
             return False
         return True
 
-    def zombie_movement(self, player_position: List[int]) -> bool:
+    def zombie_movement(self, player_position: List[int]) -> int:
         """Determine next movement(s) for the zombie to approach the player."""
         if self.movement_list:
             return False
@@ -192,7 +192,7 @@ class MummyMazeZombieManager:
         move_distance_y = 0
         grid_dx = 0
         grid_dy = 0
-
+        
         # --- STATE 1: MOVING ---
         if self.movement_list:
             if self.movement_frame_index == 0:

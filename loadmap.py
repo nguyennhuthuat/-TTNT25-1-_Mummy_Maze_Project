@@ -39,35 +39,31 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if MummyZombies[0].is_standing:  # Only allow player input if zombies are standing
+            if not MummyZombies[0].movement_list and not MummyExplorer.movement_list:  # Only allow player input if zombies are standing
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
-                        if not MummyExplorer.movement_list:
-                            MummyExplorer.update_player_status(UP)
+                        MummyExplorer.update_player_status(UP)
 
                     elif event.key == pygame.K_DOWN:
-                        if not MummyExplorer.movement_list:
-                            MummyExplorer.update_player_status(DOWN)
+                        MummyExplorer.update_player_status(DOWN)
 
                     elif event.key == pygame.K_LEFT:
-                        if not MummyExplorer.movement_list:
-                            MummyExplorer.update_player_status(LEFT)
+                        MummyExplorer.update_player_status(LEFT)
 
                     elif event.key == pygame.K_RIGHT:
-                        if not MummyExplorer.movement_list:
-                            MummyExplorer.update_player_status(RIGHT)
+                        MummyExplorer.update_player_status(RIGHT)
 
+            
         MummyMazeMap.draw_map(screen)
 
         player_turn_completed = MummyExplorer.update_player(screen)
 
         for zombie in MummyZombies:
+            if player_turn_completed:
+                zombie.zombie_movement(MummyExplorer.grid_position)
             zombie.update_zombie(screen)
         MummyMazeMap.draw_walls(screen)
 
-        if player_turn_completed:
-            for zombie in MummyZombies:
-                zombie.zombie_movement(MummyExplorer.grid_position)
 
         # Check for win condition
         if winning_position and MummyExplorer.grid_position == winning_position:

@@ -66,7 +66,6 @@ class MummyMazePlayerManager:
         """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
-        surface.set_colorkey((0, 0, 0))
         
         scale_factor = TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
@@ -89,10 +88,10 @@ class MummyMazePlayerManager:
         
         # 1. Load NORMAL sprite
         player_surface = self._load_and_scale_image("explorer.gif")
+        player_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
-        shadow_surface = pygame.image.load(os.path.join("assets", "images", "_explorer.gif"))
-        shadow_surface = pygame.transform.scale(shadow_surface, (shadow_surface.get_width() *TILE_SIZE//60, shadow_surface.get_height() *TILE_SIZE//60))
+        shadow_surface = self._load_and_scale_image("_explorer.gif")
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # 3. Extract Frames
@@ -117,6 +116,7 @@ class MummyMazePlayerManager:
 
         # 1. Load NORMAL finding
         finding_surface = self._load_and_scale_image("explorer_finding.gif")
+        finding_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW finding
         shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif")
