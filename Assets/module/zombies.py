@@ -6,17 +6,17 @@ import random
 from .utils import *
 from .settings import *
 
-# Giả định import các hằng số và hàm helper
-# from settings import UP, DOWN, LEFT, RIGHT, TILE_SIZE, MARGIN_LEFT, MARGIN_TOP
-# from utils import FrameSet, double_list, extract_sprite_frames
+
 
 class MummyMazeZombieManager:
     """
     Zombie handling: loading frames, chasing movement, and idle 'listening' animation.
     """
 
-    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None):
+    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
+        self.TILE_SIZE = tile_size
+
         
         # Fix: Mutable default argument anti-pattern
         self.grid_position = grid_position if grid_position is not None else [1, 2]
@@ -31,7 +31,7 @@ class MummyMazeZombieManager:
         self.movement_list: List[str] = []
         self.is_standing: bool = True
         self.facing_direction: str = DOWN
-        self.speed = TILE_SIZE  # Renamed from Speed (PEP 8)
+        self.speed = self.TILE_SIZE  # Renamed from Speed (PEP 8)
 
         # 3. Animation State
         self.total_frames = 10
@@ -62,7 +62,7 @@ class MummyMazeZombieManager:
         """Helper to load, scale, and set colorkey for images."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
-        scale_factor = TILE_SIZE / 60
+        scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
         return pygame.transform.scale(surface, new_size)
@@ -180,8 +180,8 @@ class MummyMazeZombieManager:
 
     def draw_zombie(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         """Render zombie and shadow."""
-        base_x = MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + offset_x
-        base_y = MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + offset_y
+        base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + offset_x
+        base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + offset_y
         
         screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))

@@ -7,18 +7,14 @@ from .utils import *
 from .settings import *
 
 
-# Giả định import các hằng số và hàm helper
-# from settings import UP, DOWN, LEFT, RIGHT, TILE_SIZE, MARGIN_LEFT, MARGIN_TOP
-# from utils import FrameSet, double_list, extract_sprite_frames
-
 class MummyMazePlayerManager:
     """
     Player handling: loading frames, movement, and rendering.
     """
 
-    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None):
+    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
-        
+        self.TILE_SIZE = tile_size
         # Fix: Mutable default argument
         self.grid_position = grid_position if grid_position is not None else [1, 2]
         self.map_data = map_data
@@ -34,7 +30,7 @@ class MummyMazePlayerManager:
         self.movement_list: List[str] = []
         self.is_standing: bool = True
         self.facing_direction: str = DOWN
-        self.speed = TILE_SIZE  # Renamed from Speed
+        self.speed = tile_size  # Renamed from Speed
 
         # 3. Animation State
         self.total_frames = 10
@@ -67,7 +63,7 @@ class MummyMazePlayerManager:
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
         
-        scale_factor = TILE_SIZE / 60
+        scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
         
@@ -166,8 +162,8 @@ class MummyMazePlayerManager:
 
     def draw_player(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
         """Render player and shadow with offset."""
-        base_x = MARGIN_LEFT + TILE_SIZE * (self.grid_position[0] - 1) + offset_x
-        base_y = MARGIN_TOP + TILE_SIZE * (self.grid_position[1] - 1) + offset_y
+        base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + offset_x
+        base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + offset_y
         
         screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))

@@ -26,13 +26,14 @@ def main():
     pygame.display.set_caption("Load Map Example")
     clock = pygame.time.Clock()
 
-    current_level_index = 7
+    current_level_index = 11
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
     winning_position = get_winning_position(stair_position, map_length)
-
-    MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data)
-    MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data)
-    MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data) for pos in zombie_starts]
+    
+    current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
+    MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
+    MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
+    MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts]
 
     running = True
     while running:
@@ -73,9 +74,10 @@ def main():
                 map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
                 winning_position = get_winning_position(stair_position, map_length)
 
-                MummyMazeMap = MummyMazeMapManager(map_length, stair_position, map_data)
-                MummyExplorer = MummyMazePlayerManager(map_length, player_start, map_data)
-                MummyZombies = [MummyMazeZombieManager(map_length, pos, map_data) for pos in zombie_starts]
+                current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
+                MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
+                MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
+                MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts]
             else:
                 print("Congratulations! You have completed all levels!")
                 running = False

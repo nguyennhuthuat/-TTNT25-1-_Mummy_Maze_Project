@@ -5,7 +5,7 @@ UP = "UP"
 DOWN = "DOWN"
 
 # Layout constants (kept module-level so classes can use them)
-TILE_SIZE = 60  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
+TILE_SIZE = 30  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
 BACKDROP_WIDTH = 657 #575
 BACKDROP_HEIGHT = 638 #558
 GAME_FLOOR_WIDTH = 480
