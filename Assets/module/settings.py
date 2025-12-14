@@ -1,0 +1,16 @@
+# Direction constants
+RIGHT = "RIGHT"
+LEFT = "LEFT"
+UP = "UP"
+DOWN = "DOWN"
+
+# Layout constants (kept module-level so classes can use them)
+TILE_SIZE = 30  # Size of each tile in the grid !!!!!!!! CHANGE WHEN LOADING DIFFERENT MAP SIZES !!!!!!!!!
+BACKDROP_WIDTH = 657 #575
+BACKDROP_HEIGHT = 638 #558
+GAME_FLOOR_WIDTH = 480
+GAME_FLOOR_HEIGHT = 480
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 670
+MARGIN_LEFT = 88 + (SCREEN_WIDTH - BACKDROP_WIDTH) // 2
+MARGIN_TOP = 106 + (SCREEN_HEIGHT - BACKDROP_HEIGHT) // 2
