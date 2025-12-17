@@ -15,7 +15,7 @@ def open_lose_window(screen):
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
-    #TẢI ẢNH
+    #TẢI ẢNH lên
     try:
         board_img = pygame.image.load('./MummyMaze/lose_window_assets/menufront.png').convert()
         
