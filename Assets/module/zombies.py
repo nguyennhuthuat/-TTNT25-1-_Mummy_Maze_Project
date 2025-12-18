@@ -5,26 +5,27 @@ import pygame
 import random
 from .utils import *
 from .settings import *
-
+from .game_algorithms import generate_next_zombie_positions
 
 
 class MummyMazeZombieManager:
     """
-    Zombie handling: loading frames, chasing movement, and idle 'listening' animation.
+    Zombie handling: loading frames, chasing movement, and idle 'effect' animation.
     """
 
-    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
+    def __init__(self, length: int = 6, grid_position: List[int] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
         self.TILE_SIZE = tile_size
 
         
         # Fix: Mutable default argument anti-pattern
-        self.grid_position = grid_position if grid_position is not None else [1, 2]
+        self.grid_position = [grid_position[0], grid_position[1]] if grid_position is not None else [1, 2]
+        self.zombie_type = grid_position[2] if grid_position is not None and len(grid_position) > 2 else 0 # Default type 0
         self.map_data = map_data
 
         # 1. Load Resources
         self.zombie_frames, self.shadow_zombie_frames = self.load_zombie_frames()
-        self.listen_frames, self.shadow_listen_frames = self.load_zombie_listening_frames()
+        self.effect_frames, self.shadow_effect_frames = self.load_zombie_effect_frames()
         self.mumwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mumwalk60b.wav"))
 
         # 2. Movement State
@@ -37,8 +38,8 @@ class MummyMazeZombieManager:
         self.total_frames = 10
         self.movement_frame_index = 0
         
-        # Idle/Listening State
-        self.listening_frame_index = 0
+        # Idle/Effect State
+        self.effect_frame_index = 0
         self.idle_time_threshold = random.randint(3, 8)
         self.start_standing = time.time()
 
@@ -69,12 +70,14 @@ class MummyMazeZombieManager:
 
     def load_zombie_frames(self) -> Tuple[Any, Any]:
         """Load zombie sprite sheet and split into directional frames."""
+
+        _path = "whitemummy.gif" if self.zombie_type in [0,1] else "redmummy.gif"
         # Load Resources
-        zombie_surface = self._process_image_resource("whitemummy.gif")
+        zombie_surface = self._process_image_resource(_path)
         zombie_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._process_image_resource("_whitemummy.gif")
+        shadow_surface = self._process_image_resource("_" + _path)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # Extract Frames
@@ -95,10 +98,10 @@ class MummyMazeZombieManager:
 
         return create_frameset(z_frames_list), create_frameset(s_frames_list)
 
-    def load_zombie_listening_frames(self) -> Tuple[List[pygame.Surface], List[pygame.Surface]]:
-        """Load special listening/idle animation frames."""
+    def load_zombie_effect_frames(self) -> Tuple[List[pygame.Surface], List[pygame.Surface]]:
+        """Load special effect/idle animation frames."""
         
-        def extract_listening_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
+        def extract_effect_frames(sheet: pygame.Surface, frame_size: int) -> List[pygame.Surface]:
             sheet_width, _ = sheet.get_size()
             frames = []
             for x in range(0, sheet_width, frame_size):
@@ -106,18 +109,18 @@ class MummyMazeZombieManager:
             return frames
 
         # Load Resources
-        finding_surface = self._process_image_resource("whitelisten.gif")
-        finding_surface.set_colorkey((0, 0, 0))
+
+        image_path = "whitelisten.gif" if self.zombie_type in [0,1] else "reddance.gif"
+        effect_surface = self._process_image_resource(image_path)
+        effect_surface.set_colorkey((0, 0, 0))
         
-        shadow_finding_surface = self._process_image_resource("_whitelisten.gif")
-        shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
-
+        shadow_effect_surface = self._process_image_resource("_" + image_path)
+        shadow_effect_surface = self.get_black_shadow_surface(shadow_effect_surface)
         # Extract
-        frame_h = finding_surface.get_height()
-        finding_frames = extract_listening_frames(finding_surface, frame_h)
-        shadow_finding_frames = extract_listening_frames(shadow_finding_surface, frame_h)
-
-        return finding_frames, shadow_finding_frames
+        frame_h = effect_surface.get_height()
+        effect_frames = extract_effect_frames(effect_surface, frame_h)
+        shadow_effect_frames = extract_effect_frames(shadow_effect_surface, frame_h)
+        return effect_frames, shadow_effect_frames
 
     def zombie_can_move(self, position: List[int], facing_direction: str) -> bool:
         """Check if zombie can move in facing_direction considering wall tiles."""
@@ -148,33 +151,35 @@ class MummyMazeZombieManager:
             return False
         return True
 
-    def zombie_movement(self, player_position: List[int]) -> int:
+    def zombie_movement(self, player_position: List[int] = [], type: int = 0) -> int:
         """Determine next movement(s) for the zombie to approach the player."""
         if self.movement_list:
             return False
 
-        next_pos = self.grid_position[:]
+        next_pos = self.grid_position[:]  # [:] to copy list 
         
-        for _ in range(2):
-            if next_pos == player_position:
-                break
+        move_list = generate_next_zombie_positions(self.map_data, [list(self.grid_position) + [self.zombie_type]], player_position, show_list=True)
+        self.movement_list += move_list
+        # for _ in range(2):
+        #     if next_pos == player_position:
+        #         break
             
-            diff_x = player_position[0] - next_pos[0]
-            diff_y = player_position[1] - next_pos[1]
+        #     diff_x = player_position[0] - next_pos[0]
+        #     diff_y = player_position[1] - next_pos[1]
 
-            # --- 1. Horizontal Priority ---
-            if diff_x != 0:
-                direction = RIGHT if diff_x > 0 else LEFT
-                self.movement_list.append(direction)
-                if self.zombie_can_move(next_pos, direction):
-                    next_pos[0] += (1 if diff_x > 0 else -1)
+        #     # --- 1. Horizontal Priority ---
+        #     if diff_x != 0:
+        #         direction = RIGHT if diff_x > 0 else LEFT
+        #         self.movement_list.append(direction)
+        #         if self.zombie_can_move(next_pos, direction):
+        #             next_pos[0] += (1 if diff_x > 0 else -1)
             
-            # --- 2. Vertical (Only if aligned horizontally) ---
-            elif diff_y != 0:
-                direction = DOWN if diff_y > 0 else UP
-                self.movement_list.append(direction)
-                if self.zombie_can_move(next_pos, direction):
-                    next_pos[1] += (1 if diff_y > 0 else -1)
+        #     # --- 2. Vertical (Only if aligned horizontally) ---
+        #     elif diff_y != 0:
+        #         direction = DOWN if diff_y > 0 else UP
+        #         self.movement_list.append(direction)
+        #         if self.zombie_can_move(next_pos, direction):
+        #             next_pos[1] += (1 if diff_y > 0 else -1)
 
         return len(self.movement_list) > 0
 
@@ -187,7 +192,7 @@ class MummyMazeZombieManager:
         screen.blit(self.current_frame, (base_x, base_y))
 
     def update_zombie(self, screen: pygame.Surface) -> None:
-        """Render and animate the zombie (Moving or Idle/Listening)."""
+        """Render and animate the zombie (Moving or Idle/Effect)."""
         move_distance_x = 0
         move_distance_y = 0
         grid_dx = 0
@@ -238,26 +243,26 @@ class MummyMazeZombieManager:
                 self.is_standing = True
                 self.start_standing = time.time()
 
-        # --- STATE 2: IDLE / LISTENING ---
+        # --- STATE 2: IDLE / EFFECT ---
         else:
             # Default idle frame (standing still)
             self.update_current_frames(self.total_frames - 1)
 
-            # Check logic for Listening Animation (Special Idle)
+            # Check logic for Effect Animation (Special Idle)
             # Conditions: Standing + Facing DOWN + Time elapsed > Threshold
             is_idle_timeout = (time.time() - self.start_standing >= self.idle_time_threshold)
             
             if self.is_standing and self.facing_direction == DOWN and is_idle_timeout:
                 
-                # Override with listening frames
-                self.current_frame = self.listen_frames[self.listening_frame_index]
-                self.current_shadow_frame = self.shadow_listen_frames[self.listening_frame_index]
+                # Override with effect frames
+                self.current_frame = self.effect_frames[self.effect_frame_index]
+                self.current_shadow_frame = self.shadow_effect_frames[self.effect_frame_index]
                 
-                self.listening_frame_index += 1
+                self.effect_frame_index += 1
 
-                # If listening animation finishes loop
-                if self.listening_frame_index >= len(self.listen_frames):
-                    self.listening_frame_index = 0
+                # If effect animation finishes loop
+                if self.effect_frame_index >= len(self.effect_frames):
+                    self.effect_frame_index = 0
                     self.start_standing = time.time() # Reset timer
                     self.idle_time_threshold = random.randint(8, 16) # New random threshold
 

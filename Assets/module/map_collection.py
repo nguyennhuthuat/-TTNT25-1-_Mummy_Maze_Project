@@ -226,7 +226,7 @@ maps_collection = [
         ],
         "player_start": [5, 10],
         "stair_position": (17, 1),
-        "zombie_starts": [[1, 1], [10, 1], [1, 10], [10, 10], [5, 5]],
+        "zombie_starts": [[1,2,3]],
     }
 
 ]

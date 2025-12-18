@@ -397,7 +397,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 move_list += generate_type_3(map_data, current_zombie_position, current_player_position, show_list=show_list)
                 print(generate_type_3(map_data, current_zombie_position, current_player_position, show_list=show_list))
         else: print(zombie_type)
-    if show_list == False:
+    if show_list == False:   
         return next_zombie_pos
     else:
         return move_list
