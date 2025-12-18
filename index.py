@@ -16,6 +16,8 @@ from Assets.module.scorpion import MummyMazeScorpionManager
 from Assets.module.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, UP, DOWN, LEFT, RIGHT
 )
+
+import Assets.module.game_algorithms as algorithms
 def main():
 
 
