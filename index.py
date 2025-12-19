@@ -16,8 +16,9 @@ from Assets.module.scorpion import MummyMazeScorpionManager
 from Assets.module.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, UP, DOWN, LEFT, RIGHT
 )
+from Assets.module.text import show_victory_window
 
-import Assets.module.game_algorithms as algorithms
+
 def main():
 
 
@@ -26,8 +27,12 @@ def main():
     
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Mummy Maze Deluxe")
-    clock = pygame.time.Clock()
 
+    clock = pygame.time.Clock()
+    level_start_time = time.time()  # Bắt đầu đếm thời gian
+
+    total_score = 0
+    
     current_level_index = 0
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
     winning_position = get_winning_position(stair_position, map_length)
@@ -70,7 +75,16 @@ def main():
 
         # Check for win condition
         if winning_position and MummyExplorer.grid_position == winning_position:
-            print("You Won! Loading next level...")
+            
+            elapsed_time = time.time() - level_start_time
+            continue_game, total_score = show_victory_window(
+                screen, clock, current_level_index + 1, elapsed_time, total_score
+            )
+
+            if not continue_game:
+                running = False
+                continue
+
             current_level_index += 1
             if current_level_index < len(maps_collection):
                 map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
