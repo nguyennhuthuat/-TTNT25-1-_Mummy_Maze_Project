@@ -1,6 +1,7 @@
 
 from typing import List, Tuple, Optional
 from .map_collection import maps_collection
+from .settings import *
 import pygame
 from dataclasses import dataclass
 
@@ -33,13 +34,13 @@ def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> Optional[L
     """Determines the grid cell in front of the stair to win."""
     row, col = stair_pos
     if col == 0:  # Stair is at the top edge
-        return [row, 1]
+        return [row, 1],  UP
     elif col == map_len + 1:  # Stair is at the bottom edge
-        return [row, map_len]
+        return [row, map_len], DOWN
     elif row == 0:  # Stair is at the left edge
-        return [1, col]
+        return [1, col], LEFT
     elif row == map_len + 1:  # Stair is at the right edge
-        return [map_len, col]
+        return [map_len, col], RIGHT
     return None
 
 def load_level(level_index: int):

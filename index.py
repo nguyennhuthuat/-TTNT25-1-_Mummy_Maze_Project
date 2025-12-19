@@ -35,7 +35,7 @@ def main():
     
     current_level_index = 0
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
-    winning_position = get_winning_position(stair_position, map_length)
+    winning_position, goal_direction = get_winning_position(stair_position, map_length)
     
     current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
     MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
@@ -60,6 +60,32 @@ def main():
 
                     elif event.key == pygame.K_RIGHT:
                         MummyExplorer.update_player_status(RIGHT)
+                    ### Check for win condition after player movement
+                    print("Kieemr tra khi di chuyen, facing direction dang o huong nao:", MummyExplorer.facing_direction, goal_direction)
+                    if winning_position and MummyExplorer.grid_position == winning_position and MummyExplorer.facing_direction == goal_direction:
+                        
+                        elapsed_time = time.time() - level_start_time
+                        continue_game, total_score = show_victory_window(
+                            screen, clock, current_level_index + 1, elapsed_time, total_score
+                        )
+
+                        if not continue_game:
+                            running = False
+                            continue
+
+                        current_level_index += 1
+                        if current_level_index < len(maps_collection):
+                            map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+                            winning_position, goal_direction = get_winning_position(stair_position, map_length)
+
+                            current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
+                            MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
+                            MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
+                            MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts]
+                        else:
+                            print("Congratulations! You have completed all levels!")
+                            running = False
+
 
             
         MummyMazeMap.draw_map(screen)
@@ -74,29 +100,6 @@ def main():
 
 
         # Check for win condition
-        if winning_position and MummyExplorer.grid_position == winning_position:
-            
-            elapsed_time = time.time() - level_start_time
-            continue_game, total_score = show_victory_window(
-                screen, clock, current_level_index + 1, elapsed_time, total_score
-            )
-
-            if not continue_game:
-                running = False
-                continue
-
-            current_level_index += 1
-            if current_level_index < len(maps_collection):
-                map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
-                winning_position = get_winning_position(stair_position, map_length)
-
-                current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
-                MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
-                MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
-                MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts]
-            else:
-                print("Congratulations! You have completed all levels!")
-                running = False
 
         pygame.display.flip()
         clock.tick(60)
