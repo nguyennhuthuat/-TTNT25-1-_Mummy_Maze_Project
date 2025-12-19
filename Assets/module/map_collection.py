@@ -22,9 +22,12 @@ maps_collection = [
             ["", "", "tl", "t", "", ""],
             ["", "", "", "", "", ""],
         ],
-        "player_start": [1, 1],
+        "player_start": [1, 6],
         "stair_position": (0, 6),
         "zombie_starts": [[6, 6,2], [3,3,3]],
+        "corpion_starts": [[2,2,0]],
+        "level_score": 1000,
+        "solution_hints":[],
     },
     # Màn 2: Dễ
     {

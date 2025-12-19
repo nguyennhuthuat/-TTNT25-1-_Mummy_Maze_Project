@@ -17,11 +17,11 @@ from Assets.module.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, UP, DOWN, LEFT, RIGHT
 )
 from Assets.module.text import show_victory_window
+from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 
 
 def main():
-
-
+    ################### PYGAME SETUP ###################
     pygame.init()
     pygame.mixer.init() # Initialize the mixer module for sound
     
@@ -34,15 +34,18 @@ def main():
     total_score = 0
     
     current_level_index = 0
-    map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+    map_length, stair_position, map_data, player_start, zombie_starts, BaseLevelScore = load_level(current_level_index)
     winning_position, goal_direction = get_winning_position(stair_position, map_length)
     
     current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
     MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
     MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
     MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts]
+    ScoreTracker = GlobalPointPackage(BaseLevelScore = BaseLevelScore)
+
 
     running = True
+    ################### MAIN GAME LOOP ##################
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -60,13 +63,14 @@ def main():
 
                     elif event.key == pygame.K_RIGHT:
                         MummyExplorer.update_player_status(RIGHT)
-                    ### Check for win condition after player movement
-                    print("Kieemr tra khi di chuyen, facing direction dang o huong nao:", MummyExplorer.facing_direction, goal_direction)
+
+                    ####################### CHECK WIN CONDITION #######################
                     if winning_position and MummyExplorer.grid_position == winning_position and MummyExplorer.facing_direction == goal_direction:
                         
-                        elapsed_time = time.time() - level_start_time
-                        continue_game, total_score = show_victory_window(
-                            screen, clock, current_level_index + 1, elapsed_time, total_score
+                        ScoreTracker.player._end_counting()
+
+                        continue_game, ScoreTracker.player.total_score = show_victory_window(
+                            screen, clock, current_level_index + 1, elapsed_time=ScoreTracker.player.elapsed_time, base_score=ScoreTracker.player.base_score, bonus_score=ScoreTracker.player.bonus_score, total_score=ScoreTracker.player.total_score
                         )
 
                         if not continue_game:

@@ -57,6 +57,7 @@ def load_level(level_index: int):
         cleaned_map_data,
         level_data["player_start"],
         level_data["zombie_starts"],
+        level_data["level_score"],
     )
 
 

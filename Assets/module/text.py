@@ -23,7 +23,7 @@ def draw_text_with_outline(
     screen.blit(text_surface, text_rect)
 
 
-def show_victory_window(screen, clock, current_level, elapsed_time=0, total_score=0):
+def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score = 0, bonus_score = 0, total_score=0):
     """
     Hiển thị cửa sổ chiến thắng với background Victorybackground.png.
     Text rõ ràng với viền đen để dễ đọc.
@@ -101,8 +101,8 @@ def show_victory_window(screen, clock, current_level, elapsed_time=0, total_scor
     time_str = f"Time: {minutes} minutes and {seconds} seconds"
 
     # Tính điểm màn này
-    base_points = 110
-    bonus_points = max(0, 100 - int(elapsed_time))
+    base_points = base_score
+    bonus_points = bonus_score
     level_points = base_points + bonus_points
 
     # Cộng vào tổng điểm
