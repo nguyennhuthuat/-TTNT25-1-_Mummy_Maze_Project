@@ -265,7 +265,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                     if h_dir is not None:
                         new_pos = try_move(map_data, zombie_pos, h_dir, h_dx, h_dy)
                         if new_pos != zombie_pos:
-                            move_list.append(move_dir)
+                            move_list.append(h_dir)
                     
                     # Note: If new_pos is still equal to zombie_pos here, 
                     # it means both Vertical and Horizontal were blocked (or aligned).
@@ -329,7 +329,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                     if v_dir is not None:
                         new_pos = try_move(map_data, zombie_pos, v_dir, v_dx, v_dy)
                         if new_pos != zombie_pos:
-                            move_list.append(move_dir)
+                            move_list.append(v_dir)
 
             # CASE 2: Already on Same Column (Only Vertical option)
             else:
