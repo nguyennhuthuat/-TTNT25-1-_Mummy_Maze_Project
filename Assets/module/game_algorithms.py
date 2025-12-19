@@ -138,7 +138,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 
                 # Attempt to move vertically
                 new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                if new_pos != zombie_pos:
+                if new_pos != zombie_pos and move_dir is not None:
                     move_list.append(move_dir)
 
                 # [FEATURE] Wall Stuck Logic:
@@ -154,13 +154,13 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 
                 if move_dir is not None:
                     new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos:
+                    if new_pos != zombie_pos and move_dir is not None:
                         move_list.append(move_dir)
 
             # Update the position for the next iteration of the loop
             zombie_pos = new_pos
 
-        if move_list == []: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
             move_list.append(move_dir)
 
         if show_list == False:
@@ -196,7 +196,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 
                 # Attempt to move horizontally
                 new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                if new_pos != zombie_pos:
+                if new_pos != zombie_pos and move_dir is not None:
                     move_list.append(move_dir)
                     
                 # [FEATURE] Wall Stuck Logic:
@@ -211,13 +211,13 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 
                 if move_dir is not None:
                     new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos:
+                    if new_pos != zombie_pos and move_dir is not None:
                         move_list.append(move_dir)
 
             # Update position for next iteration
             zombie_pos = new_pos
 
-        if move_list == []: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
             move_list.append(move_dir)
 
         if show_list == False:
@@ -256,7 +256,8 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 # Check if Vertical move succeeded
                 if attempt_pos != zombie_pos:
                     new_pos = attempt_pos
-                    move_list.append(move_dir)
+                    if move_dir is not None:
+                        move_list.append(move_dir)
                 else:
                     # 1.2 [SMART FALLBACK] Blocked Vertically -> Try Horizontal immediately
                     # Instead of breaking, check if we can slide Left/Right
@@ -264,7 +265,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                     
                     if h_dir is not None:
                         new_pos = try_move(map_data, zombie_pos, h_dir, h_dx, h_dy)
-                        if new_pos != zombie_pos:
+                        if new_pos != zombie_pos and h_dir is not None:
                             move_list.append(h_dir)
                     
                     # Note: If new_pos is still equal to zombie_pos here, 
@@ -276,13 +277,13 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 move_dir, dx, dy = get_horizontal_direction(z_x, p_x)
                 if move_dir is not None:
                     new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos:
+                    if new_pos != zombie_pos and move_dir is not None:
                         move_list.append(move_dir)
 
             # Update position
             zombie_pos = new_pos
 
-        if move_list == []: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
             move_list.append(move_dir)
 
         if show_list == False:
@@ -320,7 +321,8 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
 
                 if attempt_pos != zombie_pos:
                     new_pos = attempt_pos # Success
-                    move_list.append(move_dir)
+                    if move_dir is not None:
+                        move_list.append(move_dir)
 
                 else:
                     # 1.2 [SMART FALLBACK] Blocked Horizontally -> Try Vertical immediately
@@ -328,7 +330,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                     
                     if v_dir is not None:
                         new_pos = try_move(map_data, zombie_pos, v_dir, v_dx, v_dy)
-                        if new_pos != zombie_pos:
+                        if new_pos != zombie_pos and v_dir is not None:
                             move_list.append(v_dir)
 
             # CASE 2: Already on Same Column (Only Vertical option)
@@ -336,13 +338,13 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
                 move_dir, dx, dy = get_vertical_direction(z_y, p_y)
                 if move_dir is not None:
                     new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos:
+                    if new_pos != zombie_pos and move_dir is not None:
                         move_list.append(move_dir)
 
             # Update position for next iteration
             zombie_pos = new_pos
 
-        if move_list == []: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
             move_list.append(move_dir)
 
         if show_list == False:
