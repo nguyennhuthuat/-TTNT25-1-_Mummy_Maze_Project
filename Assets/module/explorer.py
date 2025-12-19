@@ -58,7 +58,7 @@ class MummyMazePlayerManager:
         # setcolor=(0, 0, 0) -> Absolute black
         return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
 
-    def _load_and_scale_image(self, filename: str) -> pygame.Surface:
+    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False) -> pygame.Surface:
         """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
@@ -66,8 +66,11 @@ class MummyMazePlayerManager:
         scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
-        
-        return pygame.transform.scale(surface, new_size)
+        if is_shadow:
+            return pygame.transform.scale(surface, new_size)
+        else: 
+            return pygame.transform.smoothscale(surface, new_size)
+
 
     def _create_frameset(self, frames_list: List[pygame.Surface]) -> Any:
         """Helper to map a list of frames to UP/RIGHT/DOWN/LEFT logic."""
@@ -83,11 +86,11 @@ class MummyMazePlayerManager:
         """Load player sprite sheet and split into directional frames."""
         
         # 1. Load NORMAL sprite
-        player_surface = self._load_and_scale_image("explorer.gif")
+        player_surface = self._load_and_scale_image("explorer.gif", is_shadow=False)
         player_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
-        shadow_surface = self._load_and_scale_image("_explorer.gif")
+        shadow_surface = self._load_and_scale_image("_explorer.gif", is_shadow=True)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # 3. Extract Frames
@@ -111,11 +114,11 @@ class MummyMazePlayerManager:
             return frames
 
         # 1. Load NORMAL finding
-        finding_surface = self._load_and_scale_image("explorer_finding.gif")
+        finding_surface = self._load_and_scale_image("explorer_finding.gif", is_shadow=False)
         finding_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW finding
-        shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif")
+        shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif", is_shadow=True)
         shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
 
         return extract_strip_frames(finding_surface), extract_strip_frames(shadow_finding_surface)

@@ -59,25 +59,29 @@ class MummyMazeZombieManager:
         mask = pygame.mask.from_surface(image)
         return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
 
-    def _process_image_resource(self, filename: str) -> pygame.Surface:
-        """Helper to load, scale, and set colorkey for images."""
+    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False) -> pygame.Surface:
+        """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
+        
         scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
-        return pygame.transform.scale(surface, new_size)
-
+        if is_shadow:
+            return pygame.transform.scale(surface, new_size)
+        else: 
+            return pygame.transform.smoothscale(surface, new_size)
+        
     def load_zombie_frames(self) -> Tuple[Any, Any]:
         """Load zombie sprite sheet and split into directional frames."""
 
         _path = "whitemummy.gif" if self.zombie_type in [0,1] else "redmummy.gif"
         # Load Resources
-        zombie_surface = self._process_image_resource(_path)
+        zombie_surface = self._load_and_scale_image(_path, is_shadow=False)
         zombie_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._process_image_resource("_" + _path)
+        shadow_surface = self._load_and_scale_image("_" + _path, is_shadow=True)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # Extract Frames
@@ -111,10 +115,10 @@ class MummyMazeZombieManager:
         # Load Resources
 
         image_path = "whitelisten.gif" if self.zombie_type in [0,1] else "reddance.gif"
-        effect_surface = self._process_image_resource(image_path)
+        effect_surface = self._load_and_scale_image(image_path, is_shadow=False)
         effect_surface.set_colorkey((0, 0, 0))
         
-        shadow_effect_surface = self._process_image_resource("_" + image_path)
+        shadow_effect_surface = self._load_and_scale_image("_" + image_path, is_shadow=True)
         shadow_effect_surface = self.get_black_shadow_surface(shadow_effect_surface)
         # Extract
         frame_h = effect_surface.get_height()
