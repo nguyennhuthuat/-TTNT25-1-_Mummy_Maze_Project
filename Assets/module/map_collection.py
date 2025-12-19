@@ -24,7 +24,7 @@ maps_collection = [
         ],
         "player_start": [1, 1],
         "stair_position": (0, 6),
-        "zombie_starts": [[6, 6]],
+        "zombie_starts": [[6, 6,2], [3,3,3]],
     },
     # Màn 2: Dễ
     {

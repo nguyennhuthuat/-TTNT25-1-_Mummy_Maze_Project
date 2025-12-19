@@ -28,7 +28,7 @@ def main():
     pygame.display.set_caption("Mummy Maze Deluxe")
     clock = pygame.time.Clock()
 
-    current_level_index = 11
+    current_level_index = 0
     map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
     winning_position = get_winning_position(stair_position, map_length)
     
