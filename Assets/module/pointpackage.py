@@ -61,6 +61,10 @@ class PersonalPointPackage:
     @property
     def total_score(self):
         return self._total_score
+    @total_score.setter
+    def total_score(self, value):
+        if value < 0: value = 0
+        self._total_score = value
 
     def _start_counting(self):
         self._start_counting = time.time()
@@ -69,7 +73,7 @@ class PersonalPointPackage:
         self._elapsed_time = time.time() - self._start_counting
 
         # Calculate total score
-        self._base_score = max(self._max_score//2, round(self._max_score - 10 * self._elapsed_time * 10 - self._hint_penalty * 0.01 * self._max_score + self._bonus_score))
+        self._base_score = max(self._max_score//2, round(self._max_score - 5 * self._elapsed_time - self._hint_penalty * 0.01 * self._max_score + self._bonus_score))
 
         return None
     
