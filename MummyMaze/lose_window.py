@@ -114,10 +114,10 @@ def open_lose_window(screen):
         ]
 
         for rect, text in buttons:
-            color = COLOR_BTN_HOVER if rect.collidepoint(mouse_pos) else COLOR_BTN
+            #color = COLOR_BTN_HOVER if rect.collidepoint(mouse_pos) else COLOR_BTN
             
-            pygame.draw.rect(screen, color, rect, border_radius=8)
-            pygame.draw.rect(screen, COLOR_BORDER, rect, 3, border_radius=8)
+            #pygame.draw.rect(screen, color, rect, border_radius=8)
+            #pygame.draw.rect(screen, COLOR_BORDER, rect, 3, border_radius=8)
             
             txt_surf = font_btn.render(text, True, TEXT_COLOR)
             txt_rect = txt_surf.get_rect(center=rect.center)
