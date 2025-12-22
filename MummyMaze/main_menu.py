@@ -89,20 +89,11 @@ class Button:
             surface.blit(text_surf, text_rect)
 
     def check_hover(self, mouse_pos):
-        """Kiểm tra xem chuột có đang ở trên nút không."""
-        if self.mask:
-            self.is_hovered = False 
-            if self.rect.collidepoint(mouse_pos):
-                relative_x = mouse_pos[0] - self.rect.x
-                relative_y = mouse_pos[1] - self.rect.y
-                if (0 <= relative_x < self.mask.get_size()[0]) and (0 <= relative_y < self.mask.get_size()[1]):
-                    if self.mask.get_at((relative_x, relative_y)):
-                        self.is_hovered = True
+        """Kiểm tra xem chuột có đang ở trên nút không (theo vùng hình chữ nhật)."""
+        if self.rect.collidepoint(mouse_pos):
+            self.is_hovered = True
         else:
-            # Nếu chỉ có text, tính hover dựa trên rect của text để khít
-            text_surf = main_font.render(self.text, True, COLOR_TEXT)
-            text_rect = text_surf.get_rect(center=self.rect.center)
-            self.is_hovered = text_rect.collidepoint(mouse_pos)
+            self.is_hovered = False
 
     def is_clicked(self, event):
         """Kiểm tra xem nút có được nhấp chuột trái không."""
@@ -181,9 +172,9 @@ def main_menu():
             pass
 
         try:
-            logo_image = pygame.image.load("main_menu_assets/MummyMaze_logo.png").convert_alpha()
-            logo_icon = pygame.transform.scale(logo_image, (160, 160))
-            screen.blit(logo_icon, (30, SCREEN_HEIGHT - 150))
+            logo_image = pygame.image.load("main_menu_assets/DudesChaseMoneyLogo.png").convert_alpha()
+            logo_icon = pygame.transform.scale(logo_image, (130, 130))
+            screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
         except:
             pass
 
