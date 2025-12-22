@@ -67,9 +67,11 @@ def main():
                     ####################### CHECK WIN CONDITION #######################
                     if winning_position and MummyExplorer.grid_position == winning_position and MummyExplorer.facing_direction == goal_direction:
                         
-                        ScoreTracker.player._end_counting()
+                        ScoreTracker.player.end_counting()
+                        print(ScoreTracker.player.total_score)
 
-                        continue_game, ScoreTracker.player.total_score = show_victory_window(
+
+                        continue_game = show_victory_window(
                             screen, clock, current_level_index + 1, elapsed_time=ScoreTracker.player.elapsed_time, base_score=ScoreTracker.player.base_score, bonus_score=ScoreTracker.player.bonus_score, total_score=ScoreTracker.player.total_score
                         )
 
@@ -79,7 +81,8 @@ def main():
 
                         current_level_index += 1
                         if current_level_index < len(maps_collection):
-                            map_length, stair_position, map_data, player_start, zombie_starts = load_level(current_level_index)
+                            ScoreTracker.player.reset()
+                            map_length, stair_position, map_data, player_start, zombie_starts, ScoreTracker.player.max_score = load_level(current_level_index)
                             winning_position, goal_direction = get_winning_position(stair_position, map_length)
 
                             current_tile_size = 480 // map_length  # Dynamically set tile size based on map length

@@ -413,4 +413,4 @@ def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score
 
         clock.tick(60)
 
-    return result, new_total_score
+    return result

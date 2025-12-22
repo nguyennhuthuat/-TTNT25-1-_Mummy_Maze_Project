@@ -41,6 +41,7 @@ maps_collection = [
             ["", "", "b", "", "r", "l"],
             ["", "", "t", "", "", ""],
         ],
+        "level_score": 2000,
         "player_start": [6, 6],
         "stair_position": (0, 1),
         "zombie_starts": [[3, 4]],
