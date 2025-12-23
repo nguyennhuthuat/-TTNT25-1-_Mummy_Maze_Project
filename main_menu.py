@@ -8,8 +8,8 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 pygame.init()
 
 # Set display 
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 670
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Mummy Maze - 25TNT1 - Dudes Chase Money")  
 
