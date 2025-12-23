@@ -21,7 +21,7 @@ def open_lose_window(screen, background_to_draw, logo_icon):
 
     # TẢI ẢNH BẢNG (Board)
     try:
-        board_img = pygame.image.load('./MummyMaze/main_menu_assets/window.png').convert_alpha()
+        board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
         scale_factor = 1.48
         new_w = int(board_img.get_width() * scale_factor)
         new_h = int(board_img.get_height() * scale_factor)
@@ -33,12 +33,12 @@ def open_lose_window(screen, background_to_draw, logo_icon):
 
     #TẢI TÊN GAME
     scale_size = 1.2
-    logo_img = pygame.image.load('./MummyMaze/main_menu_assets/menulogo.png').convert_alpha()
+    logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
     logo_img = pygame.transform.scale(logo_img, (logo_img.get_width() * scale_size, logo_img.get_height() * scale_size))
     logo_rect = logo_img.get_rect(center=(center_x, center_y - 250))
 
     #TẢI DÒNG "GAME OVER"
-    game_over_img = pygame.image.load('./MummyMaze/main_menu_assets/game_over.png').convert_alpha()
+    game_over_img = pygame.image.load('./assets/images/game_over.png').convert_alpha()
     game_over_img = pygame.transform.scale(game_over_img, (300, 300))
     game_over_rect = game_over_img.get_rect(center=(center_x - 50, center_y + 120))
 
@@ -132,13 +132,13 @@ if __name__ == "__main__":
 
     # Tải Background chính
     try:
-        bg = pygame.image.load('./MummyMaze/main_menu_assets/background_window.png').convert()
+        bg = pygame.image.load('./assets/images/background_window.png').convert()
         bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     except:
         bg = None
 
     try:
-        logo_image = pygame.image.load("./MummyMaze/main_menu_assets/DudesChaseMoneyLogo.png").convert_alpha()
+        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
     except:
         print("Can't load logo image")

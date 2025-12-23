@@ -113,12 +113,12 @@ center_x = SCREEN_WIDTH // 2
 center_y = SCREEN_HEIGHT // 2
 start_button = Button(
     0, # X tạm thời là 0
-    center_y + 235, # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
+    center_y + 250, # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
     100, # Width 
     35,  # Height
     text="", 
-    image_path="./main_menu_assets/click_here_to_enter_button.png",
-    hover_image_path="./main_menu_assets/h_click_here_to_enter_button.png"
+    image_path="./assets/images/click_here_to_enter_button.png",
+    hover_image_path="./assets/images/h_click_here_to_enter_button.png"
 )
 
 start_button.rect.centerx = SCREEN_WIDTH // 2
@@ -165,14 +165,14 @@ def main_menu():
 
         screen.fill(COLOR_BACKGROUND)
         try:
-            background_image = pygame.image.load("./main_menu_assets/mummymazedeluxetitle.png")
+            background_image = pygame.image.load("./assets/images/mummymazedeluxetitle.png")
             background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
             screen.blit(background_image, (0, 0))
         except:
             pass
 
         try:
-            logo_image = pygame.image.load("main_menu_assets/DudesChaseMoneyLogo.png").convert_alpha()
+            logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
             logo_icon = pygame.transform.scale(logo_image, (130, 130))
             screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
         except:
