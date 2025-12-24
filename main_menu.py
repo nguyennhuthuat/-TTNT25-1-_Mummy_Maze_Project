@@ -154,10 +154,7 @@ def main_menu():
                 sys.exit()
 
             if start_button.is_clicked(event):
-                print("ACTION: Enter!")
-            '''if quit_button.is_clicked(event):
-                pygame.quit()
-                sys.exit()'''
+                return "main_menu"
 
         for button in main_menu_buttons:
             button.check_hover(mouse_pos)

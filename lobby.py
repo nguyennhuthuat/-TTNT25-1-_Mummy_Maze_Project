@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-def open_lobby(screen, background_to_draw, logo_icon):
+def open_lobby(screen):
     try:
         main_font = pygame.font.SysFont("comic sans ms", 24) 
         footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
@@ -19,13 +19,27 @@ def open_lobby(screen, background_to_draw, logo_icon):
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
+    # Tải Background chính
+    try:
+        bg = pygame.image.load('./assets/images/background_window.png').convert()
+        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    except:
+        bg = None
+    
+    try:
+        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+        logo_icon = pygame.transform.scale(logo_image, (130, 130))
+    except:
+        print("Can't load logo image")
+
+
     # TẢI ẢNH WINDOW
     try:
         board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
         scale_factor = 1.48
         new_w = int(board_img.get_width() * scale_factor)
         new_h = int(board_img.get_height() * scale_factor)
-        board_img = pygame.transform.scale(board_img, (new_w, new_h))
+        board_img = pygame.transform.smoothscale(board_img, (new_w, new_h))
         board_rect = board_img.get_rect(center=(center_x, center_y))
     except:
         board_img = None
@@ -34,7 +48,7 @@ def open_lobby(screen, background_to_draw, logo_icon):
     #TẢI TÊN GAME
     scale_size = 1.2
     logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
-    logo_img = pygame.transform.scale(logo_img, (logo_img.get_width() * scale_size, logo_img.get_height() * scale_size))
+    # logo_img = pygame.transform.smoothscale(logo_img, (int(logo_img.get_width() * scale_size), int(logo_img.get_height() * scale_size)))
     logo_rect = logo_img.get_rect(center=(center_x, center_y - 230))
 
     # Định vị nút bấm
@@ -79,8 +93,8 @@ def open_lobby(screen, background_to_draw, logo_icon):
                     user_action = "quit game"; running = False
         
         # 1. Vẽ ảnh nền Game trước
-        if background_to_draw:
-            screen.blit(background_to_draw, (0, 0))
+        if bg:
+            screen.blit(bg, (0, 0))
         else:
             screen.fill((100, 150, 100))
 
@@ -123,20 +137,8 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Mummy Maze - 25TNT1 - Dudes Chase Money")  
 
-    # Tải Background chính
-    try:
-        bg = pygame.image.load('./assets/images/background_window.png').convert()
-        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    except:
-        bg = None
-    
-    try:
-        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
-        logo_icon = pygame.transform.scale(logo_image, (130, 130))
-    except:
-        print("Can't load logo image")
 
-    action = open_lobby(screen, bg, logo_icon)
+    action = open_lobby(screen)
     
     print(f"Action: {action}")
 

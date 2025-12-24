@@ -4,6 +4,7 @@ from .map_collection import maps_collection
 from .settings import *
 import pygame
 from dataclasses import dataclass
+from .settings import COLOR_BUTTON, COLOR_BUTTON_HOVER, COLOR_TEXT
 
 # --------------------------------------------------- #
 # --------------------- HELPERS --------------------- #
@@ -61,9 +62,9 @@ def load_level(level_index: int):
     )
 
 
-# --------------------------------------------------- #
-# --------------------- TESTING --------------------- #
-# --------------------------------------------------- #
+# -------------------------------------------------------- #
+# --------------------- CLASS HELPER --------------------- #
+# -------------------------------------------------------- #
 
 @dataclass
 class FrameSet:
@@ -71,3 +72,76 @@ class FrameSet:
     DOWN: List[pygame.Surface]
     LEFT: List[pygame.Surface]
     RIGHT: List[pygame.Surface]
+
+# -------------------------------------------------------- #
+# --------------------- CLASS HELPER --------------------- #
+# -------------------------------------------------------- #
+class Button:
+    
+    def __init__(self, x, y, width, height, text='', image_path=None, hover_image_path=None, color=COLOR_BUTTON, hover_color=COLOR_BUTTON_HOVER):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.color = color
+        self.hover_color = hover_color
+        self.is_hovered = False
+        self.mask = None
+        
+        # Tải hình ảnh cho nút
+        self.image = None
+        if image_path:
+            try:
+                img_orig = pygame.image.load(image_path).convert_alpha()
+                orig_w, orig_h = img_orig.get_size()
+                aspect_ratio = orig_w / orig_h
+                # Tính width mới để giữ đúng tỉ lệ ảnh dựa trên height bạn nhập
+                new_width = int(height * aspect_ratio)
+                
+                self.image = pygame.transform.scale(img_orig, (new_width, height))
+                # Cập nhật rect khớp với kích thước ảnh thực tế
+                self.rect = pygame.Rect(x, y, new_width, height)
+                self.mask = pygame.mask.from_surface(self.image)
+            except Exception as e:
+                print(f"Không tải được hình ảnh {image_path}. Lỗi: {e}")
+
+        self.hover_image = None
+        if hover_image_path:
+            try:
+                h_orig = pygame.image.load(hover_image_path).convert_alpha()
+                # Ép ảnh hover theo đúng kích thước rect đã tính
+                self.hover_image = pygame.transform.scale(h_orig, (self.rect.width, self.rect.height))
+            except Exception as e:
+                print(f"Không tải được hình ảnh hover {hover_image_path}. Lỗi: {e}")
+                
+    def draw(self, surface):
+        # Trường hợp 1: Có hình ảnh
+        if self.image:
+            surface.blit(self.image, self.rect.topleft)
+            # Vẽ đè ảnh hover lên nếu đang hover
+            if self.is_hovered and self.hover_image:
+                surface.blit(self.hover_image, self.rect.topleft)
+        
+        # Trường hợp 2: Không có hình ảnh (hoặc ảnh lỗi), vẽ hình chữ nhật màu
+        else:
+            current_color = self.hover_color if self.is_hovered else self.color
+            pygame.draw.rect(surface, current_color, self.rect)
+            pygame.draw.rect(surface, (255, 255, 255), self.rect, 2) # Viền trắng
+        
+        # Luôn vẽ Text nếu có (để debug hoặc dùng cho nút không ảnh)
+        if self.text != "":
+            text_surf = main_font.render(self.text, True, COLOR_TEXT)
+            text_rect = text_surf.get_rect(center=self.rect.center)
+            surface.blit(text_surf, text_rect)
+
+    def check_hover(self, mouse_pos):
+        """Kiểm tra xem chuột có đang ở trên nút không (theo vùng hình chữ nhật)."""
+        if self.rect.collidepoint(mouse_pos):
+            self.is_hovered = True
+        else:
+            self.is_hovered = False
+
+    def is_clicked(self, event):
+        """Kiểm tra xem nút có được nhấp chuột trái không."""
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.is_hovered:
+                return True
+        return False
