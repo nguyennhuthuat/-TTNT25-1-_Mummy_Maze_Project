@@ -1,5 +1,6 @@
 import pygame
 from .settings import SCREEN_WIDTH, SCREEN_HEIGHT
+import sys
 
 def draw_text_with_outline(
     screen, text, font, color, outline_color, center_pos, outline_width=2
@@ -248,7 +249,8 @@ def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score
     while waiting:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False, new_total_score
+                sys.exit()
+                return False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):

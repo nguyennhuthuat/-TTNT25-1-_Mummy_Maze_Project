@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-def open_lose_window(screen, background_to_draw, logo_icon):
+def open_lobby(screen, background_to_draw, logo_icon):
     try:
         main_font = pygame.font.SysFont("comic sans ms", 24) 
         footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
@@ -19,7 +19,7 @@ def open_lose_window(screen, background_to_draw, logo_icon):
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
-    # TẢI ẢNH BẢNG (Board)
+    # TẢI ẢNH WINDOW
     try:
         board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
         scale_factor = 1.48
@@ -29,34 +29,29 @@ def open_lose_window(screen, background_to_draw, logo_icon):
         board_rect = board_img.get_rect(center=(center_x, center_y))
     except:
         board_img = None
-        board_rect = pygame.Rect(center_x-250, center_y-150, 500, 300)
+        board_rect = pygame.Rect(center_x - 250, center_y - 150, 500, 300)
 
     #TẢI TÊN GAME
     scale_size = 1.2
     logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
     logo_img = pygame.transform.scale(logo_img, (logo_img.get_width() * scale_size, logo_img.get_height() * scale_size))
-    logo_rect = logo_img.get_rect(center=(center_x, center_y - 250))
-
-    #TẢI DÒNG "GAME OVER"
-    game_over_img = pygame.image.load('./assets/images/game_over.png').convert_alpha()
-    game_over_img = pygame.transform.scale(game_over_img, (300, 300))
-    game_over_rect = game_over_img.get_rect(center=(center_x - 50, center_y + 120))
+    logo_rect = logo_img.get_rect(center=(center_x, center_y - 230))
 
     # Định vị nút bấm
     btn_w, btn_h = 300, 100
     gap = 60            
 
-    rect_try_again = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_try_again.center = (center_x - (btn_w // 2 + gap), center_y + 190)
+    rect_classic_mode = pygame.Rect(0, 0, btn_w, btn_h)
+    rect_classic_mode.center = (center_x - (btn_w // 2 + gap), center_y + 190)
 
-    rect_undo_move = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_undo_move.center = (center_x - (btn_w // 2 + gap), center_y + 190 + 90)
+    rect_adventure = pygame.Rect(0, 0, btn_w, btn_h)
+    rect_adventure.center = (center_x - (btn_w // 2 + gap), center_y + 190 + 90)
     
-    rect_abandon_hope = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_abandon_hope.center = (center_x + (btn_w // 2 + gap), center_y + 190)
+    rect_tutorials = pygame.Rect(0, 0, btn_w, btn_h)
+    rect_tutorials.center = (center_x + (btn_w // 2 + gap), center_y + 190)
 
-    rect_save_and_quit = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_save_and_quit.center = (center_x + (btn_w // 2 + gap), center_y + 190 + 90)
+    rect_quit_game = pygame.Rect(0, 0, btn_w, btn_h)
+    rect_quit_game.center = (center_x + (btn_w // 2 + gap), center_y + 190 + 90)
 
     # Tạo lớp phủ mờ (Alpha)
     overlay = pygame.Surface((w, h))
@@ -74,15 +69,15 @@ def open_lose_window(screen, background_to_draw, logo_icon):
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if rect_try_again.collidepoint(mouse_pos):
-                    user_action = "let user try again"; running = False
-                elif rect_undo_move.collidepoint(mouse_pos):
-                    user_action = "undo the previous move"; running = False
-                elif rect_abandon_hope.collidepoint(mouse_pos):
-                    user_action = "left"; running = False
-                elif rect_save_and_quit.collidepoint(mouse_pos):
-                    user_action = "save the game status"; running = False
-
+                if rect_classic_mode.collidepoint(mouse_pos):
+                    user_action = "enter classic mode"; running = False
+                elif rect_tutorials.collidepoint(mouse_pos):
+                    user_action = "open tutorials"; running = False
+                elif rect_adventure.collidepoint(mouse_pos):
+                    user_action = "open adventure"; running = False
+                elif rect_quit_game.collidepoint(mouse_pos):
+                    user_action = "quit game"; running = False
+        
         # 1. Vẽ ảnh nền Game trước
         if background_to_draw:
             screen.blit(background_to_draw, (0, 0))
@@ -102,23 +97,21 @@ def open_lose_window(screen, background_to_draw, logo_icon):
         # Vẽ tên game
         screen.blit(logo_img, logo_rect)
 
-        # Vẽ "GAME OVER"
-        screen.blit(game_over_img, game_over_rect)
-
         # 3. Vẽ chữ lên các nút
-        for rect, text in [(rect_try_again, "TRY AGAIN"), 
-                           (rect_abandon_hope, "ABANDON HOPE"),
-                           (rect_save_and_quit, "SAVE AND QUIT"),
-                           (rect_undo_move, "UNDO MOVE")]:
+        for rect, text in [(rect_classic_mode, "CLASSIC MODE"), 
+                           (rect_tutorials, "TUTORIALS"),
+                           (rect_adventure, "ADVENTURE"),
+                           (rect_quit_game, "QUIT GAME")]:
             txt_surf = font_btn.render(text, True, TEXT_COLOR)
             txt_rect = txt_surf.get_rect(center=rect.center)
             screen.blit(txt_surf, txt_rect)
-        
+
         footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
         footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
         screen.blit(footer_text_surf, footer_text_rect)
-
+        
         screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
+
 
         pygame.display.flip()
         
@@ -136,18 +129,14 @@ if __name__ == "__main__":
         bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     except:
         bg = None
-
+    
     try:
         logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
     except:
         print("Can't load logo image")
 
-    action = open_lose_window(screen, bg, logo_icon)
-    
-    print(f"Action: {action}")
-
-    action = open_lose_window(screen, bg)
+    action = open_lobby(screen, bg, logo_icon)
     
     print(f"Action: {action}")
 
