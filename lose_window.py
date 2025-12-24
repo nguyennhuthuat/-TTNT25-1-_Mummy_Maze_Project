@@ -1,7 +1,21 @@
 import pygame
 import sys
 
-def open_lose_window(screen, background_to_draw, logo_icon):
+def open_lose_window(screen):
+
+    # Tải Background chính
+    try:
+        bg = pygame.image.load('./assets/images/background_window.png').convert()
+        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    except:
+        bg = None
+
+    try:
+        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+        logo_icon = pygame.transform.scale(logo_image, (130, 130))
+    except:
+        print("Can't load logo image")
+
     try:
         main_font = pygame.font.SysFont("comic sans ms", 24) 
         footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
@@ -84,8 +98,8 @@ def open_lose_window(screen, background_to_draw, logo_icon):
                     user_action = "save the game status"; running = False
 
         # 1. Vẽ ảnh nền Game trước
-        if background_to_draw:
-            screen.blit(background_to_draw, (0, 0))
+        if bg:
+            screen.blit(bg, (0, 0))
         else:
             screen.fill((100, 150, 100))
 
@@ -130,24 +144,13 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Mummy Maze - 25TNT1 - Dudes Chase Money")  
 
-    # Tải Background chính
-    try:
-        bg = pygame.image.load('./assets/images/background_window.png').convert()
-        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    except:
-        bg = None
+    
 
-    try:
-        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
-        logo_icon = pygame.transform.scale(logo_image, (130, 130))
-    except:
-        print("Can't load logo image")
-
-    action = open_lose_window(screen, bg, logo_icon)
+    action = open_lose_window(screen)
     
     print(f"Action: {action}")
 
-    action = open_lose_window(screen, bg)
+    action = open_lose_window(screen)
     
     print(f"Action: {action}")
 

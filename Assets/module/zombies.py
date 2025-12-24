@@ -46,6 +46,12 @@ class MummyMazeZombieManager:
         # 4. Set initial frames (Idle at start)
         self.update_current_frames(frame_index=self.total_frames - 1)
 
+    def get_x(self):
+        return self.grid_position[0]
+    
+    def get_y(self):
+        return self.grid_position[1]
+
     def update_current_frames(self, frame_index: int) -> None:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
