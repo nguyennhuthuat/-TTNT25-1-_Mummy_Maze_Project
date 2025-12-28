@@ -3,12 +3,23 @@ import sys
 import os
 
 class MetricFont:
-    def __init__(self, image_path, metrics_data, scale_height=None):
+    def __init__(self, font_name = "font1", scale_height=None):
         self.chars = {}
         
+        #0. Thiết lập tên font
+        if font_name in ["font1", "biggestfont", "headerfont", "pyramidfont", "scorefont"]:
+            image_path = os.path.join("assets", "fonts", f"{font_name}.png")
+            metrics_file = os.path.join("assets", "fonts", "data", f"{font_name}.txt")
+            metrics_data = read_metrics_from_file(metrics_file)
+        else:
+            print(f"Lỗi: Tên font '{font_name}' không hợp lệ.")
+            return
+
         # 1. Load ảnh
         try:
             self.sheet = pygame.image.load(image_path).convert_alpha()
+            self.sheet.set_colorkey((0, 0, 0))
+            print(f"Kích thước ảnh font '{font_name}': {self.sheet.get_size()}")
         except FileNotFoundError:
             print(f"Lỗi: Không tìm thấy file ảnh '{image_path}'")
             return
@@ -94,18 +105,8 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((800, 400))
     
-    # 1. Tên file cấu hình
-    font_img_file = os.path.join("assets", "fonts", "font1.png")  # Ảnh font của bạn
-    metrics_file = os.path.join("assets", "fonts","data", "font1.txt")        # File chứa số liệu
     
-    # 2. Đọc dữ liệu từ file txt
-    data_str = read_metrics_from_file(metrics_file)
-    
-    # 3. Khởi tạo Font (Chỉ chạy khi có dữ liệu)
-    my_font = None
-    if data_str:
-        # Scale chữ lên cao 30px
-        my_font = MetricFont(font_img_file, data_str)
+    my_font = MetricFont(font_name = "pyramidfont")
     
     running = True
     while running:
@@ -114,10 +115,10 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT: running = False
             
         if my_font:
-            my_font.render(screen, "Load from font1.txt success!", 50, 100)
+            my_font.render(screen, "CON CAC DIT ME MAY 1231223411", 50, 100)
             my_font.render(screen, "A + B = C", 50, 150)
             my_font.render(screen, "Special: # $ % &", 50, 200)
-            my_font.render(screen, "Space      cac  test", 50, 250)
+            my_font.render(screen, "Space      caAAaac  test", 50, 250)
         
         pygame.display.flip()
     pygame.quit()
