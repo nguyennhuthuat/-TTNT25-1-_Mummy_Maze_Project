@@ -56,8 +56,8 @@ def load_level(level_index: int):
         level_data["map_length"],
         level_data["stair_position"],
         cleaned_map_data,
-        level_data["player_start"],
-        level_data["zombie_starts"],
+        level_data["player_start"].copy(),
+        level_data["zombie_starts"].copy(),
         level_data["level_score"],
     )
 

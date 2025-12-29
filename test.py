@@ -1,5 +1,7 @@
-import time
-a = time.time()
-time.sleep(2)
-b = time.time()
-print(b - a)
+
+
+a = None
+if a: #if not empty
+    print("ok")
+else: 
+    print("not ok")

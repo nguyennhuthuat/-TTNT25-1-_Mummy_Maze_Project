@@ -13,6 +13,7 @@ class MummyMazeMapManager:
         # Will be populated after methods are available (we can set here using bound methods)
         self.map_data = map_data
         self.stair_positions = stair_position
+        self.is_opening_gate = False
 
         self.TILE_SIZE = tile_size
 

@@ -1,0 +1,25 @@
+{
+    "user_name": "Thuatdeptrai",
+    "level": 1,
+    "is_playing": false,
+    "play": {
+        "explorer_pos": [
+            0,
+            0
+        ],
+        "zombie_pos": [
+            [
+                0,
+                0
+            ],
+            [
+                1,
+                1
+            ]
+        ],
+        "is_opening_gate": false,
+        "time_pen": 0,
+        "hint_pen": 0,
+        "bonus_score": 0
+    }
+}

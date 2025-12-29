@@ -12,6 +12,16 @@ class PersonalPointPackage:
         self._total_score = 0
         self._base_score = 0
 
+    @property 
+    def start_counting(self):
+        return self._start_counting
+    @start_counting.setter
+    def start_counting(self, value):
+        self._start_counting = value
+    @property
+    def current_time_elapsed(self):
+        return time.time() - self._start_counting
+
     @property
     def max_score(self):
         return self._max_score
