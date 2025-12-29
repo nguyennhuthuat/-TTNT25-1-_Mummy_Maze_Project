@@ -440,7 +440,7 @@ def main():
     pygame.display.set_caption("Mummy Maze Deluxe")
     clock = pygame.time.Clock()
 
-    current_level_index = 44
+    current_level_index = 20
     level_start_time = time.time()  # Bắt đầu đếm thời gian
     total_score = 0  # Tổng điểm tích lũy
 
