@@ -1,11 +1,13 @@
 import pygame
+import math
 import sys
 import os
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# --- 1. Import Pygame và tạo settings ---
+# --- 1. Import Pygame và Pygame Mixe để chèn nhạc ---
 pygame.init()
+pygame.mixer.init()
 
 # Set display 
 SCREEN_WIDTH = 1200
@@ -24,12 +26,49 @@ COLOR_TEXT = (255, 255, 255)      # Màu chữ
 # Tải font chữ
 try:
     main_font = pygame.font.SysFont("comic sans ms", 24) 
-    footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
-    title_font = pygame.font.SysFont("comic sans ms", 50)
+    footer_font = pygame.font.SysFont("comic sans ms", 14) 
+    title_font = pygame.font.SysFont("Arial", 25, bold = True)
 except Exception as e:
     main_font = pygame.font.Font(None, 36)
-    footer_font = pygame.font.Font(None, 18) # Font mặc định nhỏ hơn
+    footer_font = pygame.font.Font(None, 18) 
     title_font = pygame.font.Font(None, 52)
+
+# --- TẢI ÂM THANH ---
+try:
+    # 1. Nhạc nền (Music) - Thường dùng cho nhạc dài
+    pygame.mixer.music.load("./assets/music/game.it")
+    pygame.mixer.music.set_volume(0.5) # Độ lớn từ 0.0 đến 1.0
+    
+    # 2. Hiệu ứng âm thanh (Sound) - Thường dùng cho tiếng động ngắn
+    click_sound = pygame.mixer.Sound("./assets/sounds/click.ogg")
+    finish_sound = pygame.mixer.Sound("./assets/sounds/click.ogg")
+except Exception as e:
+    print(f"Lỗi tải âm thanh: {e}")
+    click_sound = None
+    finish_sound = None
+
+# Tải thanh loading
+LOADING_BAR_X = 280 
+LOADING_BAR_Y = 546 
+
+# Kích thước mục tiêu
+BAR_TARGET_WIDTH = 630
+BAR_TARGET_HEIGHT = 22
+
+try:
+    # 1. Load ảnh gốc (340x24)
+    img_orig = pygame.image.load("./assets/images/titlebar.png").convert_alpha()
+    
+    # 2. Kéo dài nó ra đúng kích thước khung rỗng (630x22)
+    loading_bar_img = pygame.transform.scale(img_orig, (BAR_TARGET_WIDTH, BAR_TARGET_HEIGHT))
+    
+    # 3. Lưu lại kích thước mới để dùng cho hàm chạy
+    loading_bar_w = BAR_TARGET_WIDTH
+    loading_bar_h = BAR_TARGET_HEIGHT
+    
+except Exception as e:
+    loading_bar_img = None
+    print(f"Lỗi tải ảnh loading: {e}")
 
 # --- 3. Class cho Button ---
 class Button:
@@ -113,7 +152,7 @@ center_x = SCREEN_WIDTH // 2
 center_y = SCREEN_HEIGHT // 2
 start_button = Button(
     0, # X tạm thời là 0
-    center_y + 250, # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
+    center_y + 260, # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
     100, # Width 
     35,  # Height
     text="", 
@@ -125,23 +164,90 @@ start_button.rect.centerx = SCREEN_WIDTH // 2
 
 main_menu_buttons = [start_button]
 
-# Tạo các icon bên phải
-'''ICON_SIZE = 90
-ICON_X = SCREEN_WIDTH - ICON_SIZE - 15 
-setting_icon = Button(ICON_X, 100, ICON_SIZE, ICON_SIZE, "", 
-                      image_path="main_menu_assets/setting_icon.png",
-                      hover_image_path="main_menu_assets/h_setting_icon.png")
-account_icon = Button(ICON_X, 175, ICON_SIZE, ICON_SIZE, "", 
-                      image_path="main_menu_assets/account_icon.png",
-                      hover_image_path="main_menu_assets/h_account_icon.png")
-sound_icon = Button(ICON_X, 250, ICON_SIZE, ICON_SIZE, "", 
-                    image_path="main_menu_assets/sound_icon.png",
-                    hover_image_path="main_menu_assets/h_sound_icon.png")
-lang_icon = Button(ICON_X, 325, ICON_SIZE, ICON_SIZE, "", 
-                   image_path="main_menu_assets/language_icon.png",
-                   hover_image_path="main_menu_assets/h_language_icon.png")
 
-icon_buttons = [account_icon, sound_icon, lang_icon, setting_icon]'''
+def run_loading_screen():
+    # Phát nhạc nền (số -1 có nghĩa là lặp vô tận)
+    if pygame.mixer.music.get_busy() == False:
+        pygame.mixer.music.play(-1)
+
+    progress = 0
+    loading = True
+
+    # Hàm nội bộ để vẽ chữ sóng
+    def draw_wave_text(surface, text, font, color, outline_color, start_pos):
+        base_x, base_y = start_pos
+        current_x = base_x
+        
+        time_now = pygame.time.get_ticks()
+
+        for i, char in enumerate(text):
+            # --- TOÁN HỌC CHO HIỆU ỨNG SÓNG ---
+            bounce_y = math.sin(time_now * 0.01 + i * 0.5) * 3
+            
+            # Vị trí của từng chữ cái cụ thể
+            char_pos = (current_x, base_y + bounce_y)
+
+            # Vẽ viền cho từng chữ cái
+            offsets = [(-2,0), (2,0), (0,-2), (0,2)]
+            for ox, oy in offsets:
+                char_outline = font.render(char, True, outline_color)
+                surface.blit(char_outline, (char_pos[0] + ox, char_pos[1] + oy))
+
+            # Vẽ chữ cái chính
+            char_surf = font.render(char, True, color)
+            surface.blit(char_surf, char_pos)
+
+            # Cập nhật tọa độ X cho chữ cái tiếp theo
+            current_x += font.size(char)[0]
+    
+    # Tải background để vẽ (cho giống menu)
+    try:
+        bg_img = pygame.image.load("./assets/images/mummymazedeluxetitle.png")
+        bg_img = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    except:
+        bg_img = None
+
+    while loading:
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if progress < 100:
+            progress += 0.45
+        else:
+            if loading: # Chỉ phát 1 lần duy nhất khi vừa đầy
+                if finish_sound: finish_sound.play()
+            loading = False
+
+        # Vẽ Background
+        screen.fill(COLOR_BACKGROUND)
+        if bg_img: screen.blit(bg_img, (0, 0))
+        
+        # Vẽ Logo (Nếu muốn)
+        try:
+            logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+            logo_icon = pygame.transform.scale(logo_image, (130, 130))
+            screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
+        except:
+            pass
+
+        # 1. Vẽ Thanh Loading (Kéo dài 630x22)
+        if loading_bar_img:
+            current_w = int(BAR_TARGET_WIDTH * (progress / 100))
+            if current_w > 0:
+                screen.blit(loading_bar_img, (LOADING_BAR_X, LOADING_BAR_Y), (0, 0, current_w, BAR_TARGET_HEIGHT))
+
+        # 2. VẼ CHỮ NHẢY KIỂU SÓNG TRUYỀN
+        text_str = f"Loading... {int(progress)}%"
+        
+        start_x = 280 
+        start_y = 546 - 45 # Cách bên trên thanh bar 45 pixel
+        
+        draw_wave_text(screen, text_str, title_font, (255, 255, 255), (0, 0, 0), (start_x, start_y))
+
+        pygame.display.flip()
 
 # --- 5. Vòng lặp chính ---
 def main_menu():
@@ -154,13 +260,16 @@ def main_menu():
                 sys.exit()
 
             if start_button.is_clicked(event):
-                return "main_menu"
+                if click_sound: 
+                    click_sound.set_volume(1.0)
+                    click_sound.play() # Phát tiếng click
+                print("ACTION: Enter!")
 
         for button in main_menu_buttons:
             button.check_hover(mouse_pos)
-        '''+ icon_buttons:'''
 
         screen.fill(COLOR_BACKGROUND)
+
         try:
             background_image = pygame.image.load("./assets/images/mummymazedeluxetitle.png")
             background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -177,7 +286,10 @@ def main_menu():
 
         for button in main_menu_buttons: 
             button.draw(screen) 
-        '''+ icon_buttons'''
+
+        if loading_bar_img:
+            # Vẽ trực tiếp ảnh đã scale vào đúng vị trí X, Y
+            screen.blit(loading_bar_img, (LOADING_BAR_X, LOADING_BAR_Y))
 
         footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, COLOR_TEXT)
         footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
@@ -187,4 +299,5 @@ def main_menu():
         clock.tick(60)
 
 if __name__ == "__main__":
+    run_loading_screen()
     main_menu()
