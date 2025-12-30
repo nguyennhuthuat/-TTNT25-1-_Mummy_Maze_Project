@@ -1,58 +1,49 @@
 import pygame
 
-# 1. Khởi tạo
+# --- KHỞI TẠO ---
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Hiệu ứng Đèn Pin - Demo")
 clock = pygame.time.Clock()
 
-# Tải ảnh nền hoặc tự vẽ gì đó để test
-bg_color = (0, 120, 0) # Màu xanh cỏ
-player_rect = pygame.Rect(WIDTH//2, HEIGHT//2, 30, 30)
-
-# --- PHẦN QUAN TRỌNG NHẤT ---
+# --- HÀM VẼ ĐÈN PIN (Masking) ---
 def draw_spotlight(surface, pos, radius):
-    # Bước 1: Tạo một lớp phủ (mask) có hỗ trợ độ trong suốt (SRCALPHA)
-    # Kích thước bằng màn hình
-    darkness = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-    
-    # Bước 2: Tô đen lớp phủ này (Độ mờ tuỳ chỉnh, ở đây là 255 - tối đen)
-    # Nếu muốn mờ mờ kiểu trời tối (vẫn thấy đường) thì để khoảng 200
-    darkness.fill((0, 0, 0, 255)) 
-    
-    # Bước 3: "Đục lỗ"
-    # Vẽ một hình tròn trong suốt (alpha = 0) tại vị trí pos
-    # BLEND_RGBA_MIN: Sẽ lấy giá trị alpha thấp nhất giữa lớp phủ (255) và hình tròn (0)
-    # Kết quả -> Vùng giao nhau sẽ có alpha = 0 (nhìn xuyên qua được)
-    pygame.draw.circle(darkness, (0, 0, 0, 0), pos, radius)
-    
-    # Bước 4: Vẽ lớp phủ đã đục lỗ lên màn hình chính
-    # Dùng cờ BLEND_RGBA_MIN để áp dụng phép trừ alpha
-    surface.blit(darkness, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    # pygame.SRCALPHA cho phép tạo surface với kênh alpha (độ trong suốt)
+    mask = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+    mask.fill((0, 0, 0, 255)) 
 
-# Vòng lặp game
+    hole = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+    pygame.draw.circle(hole, (255, 255, 255, 255), pos, radius)
+
+    # special_flags=pygame.BLEND_RGBA_SUB sẽ trừ màu trắng (255) khỏi mask, tạo lỗ hổng trong suốt
+    mask.blit(hole, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+    surface.blit(mask, (0, 0))
+
+# --- VÒNG LẶP GAME ---
 running = True
 while running:
-    # Xử lý sự kiện
+    # 1. Xử lý sự kiện thoát
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Lấy vị trí chuột (để làm đèn pin)
+    # 2. Lấy vị trí chuột
     mouse_pos = pygame.mouse.get_pos()
 
-    # --- VẼ ---
-    # 1. Vẽ thế giới game trước
-    screen.fill(bg_color) 
-    pygame.draw.rect(screen, (255, 0, 0), player_rect) # Vẽ nhân vật màu đỏ
+    # 3. VẼ MỌI THỨ
+    # BƯỚC QUAN TRỌNG: Tô nền màu SÁNG (để thấy hiệu ứng đục lỗ)
+    screen.fill((50, 150, 50)) # Màu xanh lá cây
     
-    # Vẽ vài hình lung tung để thấy hiệu ứng
-    pygame.draw.rect(screen, (0, 0, 255), (100, 100, 50, 50))
-    pygame.draw.rect(screen, (255, 255, 0), (600, 400, 80, 80))
+    # Vẽ vài hình lung tung làm nền để nhìn cho rõ
+    pygame.draw.rect(screen, (255, 0, 0), (200, 200, 100, 100)) # Hình vuông Đỏ
+    pygame.draw.rect(screen, (0, 0, 255), (500, 300, 80, 150))  # Hình chữ nhật Xanh Dương
+    pygame.draw.circle(screen, (255, 255, 0), (400, 300), 50)   # Hình tròn Vàng giữa màn hình
 
-    # 2. Vẽ hiệu ứng đèn pin đè lên trên cùng
-    draw_spotlight(screen, mouse_pos, 150) # Bán kính 150
+    # 4. GỌI HÀM VẼ ĐÈN PIN (Vẽ cuối cùng để nó đè lên tất cả)
+    draw_spotlight(screen, mouse_pos, 150) # Bán kính 150 pixel
 
+    # 5. Cập nhật màn hình
     pygame.display.flip()
     clock.tick(60)
 

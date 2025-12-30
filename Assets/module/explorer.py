@@ -29,7 +29,7 @@ class MummyMazePlayerManager:
         # 2. Movement State
         self.movement_list: List[str] = []
         self.is_standing: bool = True
-        self.facing_direction: str = DOWN
+        self.facing_direction: str = UP
         self.speed = tile_size  # Renamed from Speed
 
         # 3. Animation State
@@ -49,8 +49,22 @@ class MummyMazePlayerManager:
     def get_y(self):
         return self.grid_position[1]
 
-    def start_game_effect(self,screen, goal: list, facing_direction: str = RIGHT) -> None:
-        print("Starting game effect animation...")
+    def start_game_effect(self,screen,image_screen, goal: list, facing_direction: str = RIGHT) -> None:
+        def draw_spotlight(surface: pygame.Surface, pos: Tuple[int, int], radius: int) -> None:
+            # pygame.SRCALPHA cho phép tạo surface với kênh alpha (độ trong suốt)
+            mask.fill((0, 0, 0, 255)) 
+
+
+            pygame.draw.circle(hole, (255, 255, 255, 255), pos, radius)
+
+            # special_flags=pygame.BLEND_RGBA_SUB sẽ trừ màu trắng (255) khỏi mask, tạo lỗ hổng trong suốt
+            mask.blit(hole, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+            surface.blit(mask, (0, 0))
+
+        # Create mask surfaces
+        mask = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        hole = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+
         start_pos = goal.copy()
 
         grid_dx = 0
@@ -58,38 +72,39 @@ class MummyMazePlayerManager:
         move_distance_x = 0
         move_distance_y = 0
 
+        # Sound 
+        Mummyhowl = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mummyhowl.wav"))
+
         end_effect = False
+        
         # Initialize start position based on facing direction
         match facing_direction:
             case 'UP':
-                start_pos[1] = self.length + 3
+                start_pos[1] = self.length + 2
                 grid_dx = 0 
                 grid_dy = -1
             case 'DOWN':
-                start_pos[1] = -2
+                start_pos[1] = -1
                 grid_dx = 0
                 grid_dy = 1
             case 'LEFT':
-                start_pos[0] = self.length + 3
+                start_pos[0] = self.length + 2
                 grid_dx = -1
                 grid_dy = 0
             case 'RIGHT':
-                start_pos[0] = -2
+                start_pos[0] = -1
                 grid_dx = 1
                 grid_dy = 0
 
         self.grid_position = start_pos
         self.facing_direction = facing_direction
         
+        # Explorer come in
         while not end_effect:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-
-            if self.grid_position == goal:
-                end_effect = True
-                return 
             
             # Sound effect
             if self.movement_frame_index == 0:
@@ -108,7 +123,6 @@ class MummyMazePlayerManager:
                 case 'UP':
                     move_distance_y = -step_pixels
                 case 'DOWN':
-
                     move_distance_y = step_pixels
                 case 'LEFT':
                     move_distance_x = -step_pixels
@@ -128,11 +142,45 @@ class MummyMazePlayerManager:
                 self.grid_position[0] += grid_dx
                 self.grid_position[1] += grid_dy
 
+            # Check if reach goal
+            if self.grid_position == goal:
+                end_effect = True
+
             pygame.display.flip()
             pygame.time.Clock().tick(60) 
             time.sleep(0.04)      
 
+        time.sleep(0.4)     # delay
+        # Show board game effect
+        radiant = 100
+        base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + self.TILE_SIZE // 2
+        base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + self.TILE_SIZE // 2
 
+        # Calculate max radiant needed
+        max_radiant = max(max(base_x, SCREEN_WIDTH - base_x), max(base_y, SCREEN_HEIGHT - base_y))
+        print("Starting board reveal effect...", max_radiant)
+
+
+        while radiant < max_radiant:  # Continue until full screen is revealed
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+
+            # Draw previous game state
+            screen.blit(image_screen, (0,0))
+
+            # Draw spotlight
+            draw_spotlight(screen, (base_x, base_y), radiant)
+
+            radiant = int(radiant * 1.3)
+
+            pygame.display.flip()
+            pygame.time.Clock().tick(60) 
+            time.sleep(0.02)
+
+        Mummyhowl.play()
+        
     def update_current_frames(self, frame_index: int) -> None:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)

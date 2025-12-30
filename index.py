@@ -793,6 +793,17 @@ def lobby(screen, clock):
         pygame.display.flip()
         clock.tick(60)
 
+def create_game_state_image(MummyMazeMap: MummyMazeMapManager, MummyExplorer: MummyMazePlayerManager, MummyZombies: list[MummyMazeZombieManager]):
+    new_screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    MummyMazeMap.draw_map(new_screen)
+    MummyExplorer.update_player(new_screen)
+    if MummyZombies:
+        for zombie in MummyZombies:
+            zombie.update_zombie(new_screen)
+    MummyMazeMap.draw_walls(new_screen)
+        
+    return new_screen
+
 def main_game(current_level = current_level):
     def save():
         # Save game state before exiting
@@ -840,10 +851,11 @@ def main_game(current_level = current_level):
         ScoreTracker.player.hint_penalty = game_data["hint_penalty"]
 
         history_states = game_data["history_states"].copy()
-
+    
+    copied_image_screen = create_game_state_image(MummyMazeMap, MummyExplorer, MummyZombies)
+    MummyExplorer.start_game_effect(screen, copied_image_screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], MummyExplorer.facing_direction)
 
     running = True
-    MummyExplorer.start_game_effect(screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], RIGHT)
     ################### MAIN GAME LOOP ##################
     while running:
         for event in pygame.event.get():
@@ -881,7 +893,6 @@ def main_game(current_level = current_level):
                     elif event.key == pygame.K_RIGHT:
                         MummyExplorer.update_player_status(RIGHT)
 
-
                     ####################### CHECK WIN CONDITION #######################
                     if winning_position and MummyExplorer.get_x() == winning_position[0] and MummyExplorer.get_y() == winning_position[1] and MummyExplorer.facing_direction == goal_direction:
 
@@ -898,9 +909,11 @@ def main_game(current_level = current_level):
                         if not continue_game:
                             running = False
                             continue
-
+                        
                         current_level += 1
                         if current_level < len(maps_collection):
+                            prev_facing = MummyExplorer.facing_direction
+
                             ScoreTracker.player.reset()
                             map_length, stair_position, map_data, player_start, zombie_starts, ScoreTracker.player.max_score = load_level(current_level)
                             winning_position, goal_direction = get_winning_position(stair_position, map_length)
@@ -909,6 +922,12 @@ def main_game(current_level = current_level):
                             MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
                             MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
                             MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts] if zombie_starts else None
+                            history_states = []  # Reset history states for new level
+
+                            MummyExplorer.facing_direction = prev_facing
+                            copied_image_screen = create_game_state_image(MummyMazeMap, MummyExplorer, MummyZombies)
+                            MummyExplorer.start_game_effect(screen, copied_image_screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], MummyExplorer.facing_direction)
+
                         else:
                             print("Congratulations! You have completed all levels!")
                             running = False
@@ -950,7 +969,8 @@ def main_game(current_level = current_level):
                     return "exit" 
 
                 break          
-            
+
+        # Draw   
         screen.blit(pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))  # Clear screen at start of game
     
         MummyMazeMap.draw_map(screen)
@@ -963,7 +983,7 @@ def main_game(current_level = current_level):
         MummyMazeMap.draw_walls(screen)
 
 
-        # Check for win condition
+
 
         pygame.display.flip()
         clock.tick(60)
