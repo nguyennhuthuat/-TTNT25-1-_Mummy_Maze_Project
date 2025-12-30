@@ -855,8 +855,14 @@ def main_game(current_level = current_level):
     copied_image_screen = create_game_state_image(MummyMazeMap, MummyExplorer, MummyZombies)
     MummyExplorer.start_game_effect(screen, copied_image_screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], MummyExplorer.facing_direction)
 
-    running = True
+    # Reset time after effect
+    if game_data["is_playing"]:
+        ScoreTracker.player.start_counting = time.time() - game_data["time_elapsed"]
+    else:
+        ScoreTracker.player.start_counting = time.time()
+
     ################### MAIN GAME LOOP ##################
+    running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
