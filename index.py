@@ -843,11 +843,11 @@ def main_game(current_level = current_level):
 
 
     running = True
+    MummyExplorer.start_game_effect(screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], RIGHT)
     ################### MAIN GAME LOOP ##################
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                print("ccccc")
                 game_data["is_playing"] = True
                 save()
                 return "exit"

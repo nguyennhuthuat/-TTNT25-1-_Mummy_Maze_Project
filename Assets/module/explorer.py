@@ -49,6 +49,90 @@ class MummyMazePlayerManager:
     def get_y(self):
         return self.grid_position[1]
 
+    def start_game_effect(self,screen, goal: list, facing_direction: str = RIGHT) -> None:
+        print("Starting game effect animation...")
+        start_pos = goal.copy()
+
+        grid_dx = 0
+        grid_dy = 0
+        move_distance_x = 0
+        move_distance_y = 0
+
+        end_effect = False
+        # Initialize start position based on facing direction
+        match facing_direction:
+            case 'UP':
+                start_pos[1] = self.length + 3
+                grid_dx = 0 
+                grid_dy = -1
+            case 'DOWN':
+                start_pos[1] = -2
+                grid_dx = 0
+                grid_dy = 1
+            case 'LEFT':
+                start_pos[0] = self.length + 3
+                grid_dx = -1
+                grid_dy = 0
+            case 'RIGHT':
+                start_pos[0] = -2
+                grid_dx = 1
+                grid_dy = 0
+
+        self.grid_position = start_pos
+        self.facing_direction = facing_direction
+        
+        while not end_effect:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+
+            if self.grid_position == goal:
+                end_effect = True
+                return 
+            
+            # Sound effect
+            if self.movement_frame_index == 0:
+                self.expwalk_sound.play()
+
+            # Clear Screen
+            screen.fill((0,0,0))
+
+            # Calculate Step Pixels
+            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+
+            self.update_current_frames(self.movement_frame_index)
+            
+            # Calculate Movement Offsets
+            match facing_direction:
+                case 'UP':
+                    move_distance_y = -step_pixels
+                case 'DOWN':
+
+                    move_distance_y = step_pixels
+                case 'LEFT':
+                    move_distance_x = -step_pixels
+                case 'RIGHT':
+                    move_distance_x = step_pixels
+
+            self.draw_player(screen, move_distance_x, move_distance_y)
+
+            # Update Frame Index
+            self.movement_frame_index += 1
+            
+            # Check if step finished
+            if self.movement_frame_index >= self.total_frames:
+                self.movement_frame_index = 0
+                
+                # Logic: Update grid position only at end of animation
+                self.grid_position[0] += grid_dx
+                self.grid_position[1] += grid_dy
+
+            pygame.display.flip()
+            pygame.time.Clock().tick(60) 
+            time.sleep(0.04)      
+
+
     def update_current_frames(self, frame_index: int) -> None:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
@@ -75,7 +159,6 @@ class MummyMazePlayerManager:
             return pygame.transform.scale(surface, new_size)
         else: 
             return pygame.transform.smoothscale(surface, new_size)
-
 
     def _create_frameset(self, frames_list: List[pygame.Surface]) -> Any:
         """Helper to map a list of frames to UP/RIGHT/DOWN/LEFT logic."""
