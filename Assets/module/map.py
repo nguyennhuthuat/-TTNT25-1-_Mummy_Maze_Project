@@ -182,8 +182,9 @@ class MummyMazeMapManager:
         else:
             print(f"Warning: stair position {self.stair_positions} is invalid. No stair drawn.")
             print("length of map_data:", len(self.map_data[0]))
+    
     def draw_map(self, screen: pygame.Surface) -> None:
-        screen.blit(self.backdrop, ((SCREEN_WIDTH - BACKDROP_WIDTH) // 2, (SCREEN_HEIGHT - BACKDROP_HEIGHT) // 2))
+        screen.blit(self.backdrop, (MARGIN_BACKDROP_X, MARGIN_BACKDROP_Y))
         screen.blit(self.game_floor, (MARGIN_LEFT, MARGIN_TOP))
         self.draw_stair(screen)
 
