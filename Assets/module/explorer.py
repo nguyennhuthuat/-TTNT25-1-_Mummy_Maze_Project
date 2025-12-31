@@ -80,19 +80,19 @@ class MummyMazePlayerManager:
         # Initialize start position based on facing direction
         match facing_direction:
             case 'UP':
-                start_pos[1] = self.length + 2
+                start_pos[1] = min(self.length + 2, start_pos[1] + 2)
                 grid_dx = 0 
                 grid_dy = -1
             case 'DOWN':
-                start_pos[1] = -1
+                start_pos[1] = max(-1, start_pos[1] - 2)
                 grid_dx = 0
                 grid_dy = 1
             case 'LEFT':
-                start_pos[0] = self.length + 2
+                start_pos[0] = min(self.length + 2, start_pos[0] + 2)
                 grid_dx = -1
                 grid_dy = 0
             case 'RIGHT':
-                start_pos[0] = -1
+                start_pos[0] = max(-1, start_pos[0] - 2)
                 grid_dx = 1
                 grid_dy = 0
 
