@@ -224,7 +224,7 @@ maps_collection = [
             ["", "", "", "r", "l", ""],
         ],
         "player_start": [3, 3],
-        "stair_position": (4, 0),
+        "stair_position": (5, 0),
         "zombie_starts": [[2, 5, 0], [6, 4, 1]],
         "scorpion_starts": [],
         "trap": [],

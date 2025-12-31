@@ -52,7 +52,18 @@ def load_level(level_index: int):
 
     level_data = maps_collection[level_index]
     cleaned_map_data = clean_map_data(level_data["map_data"])
-    return (
+    if not level_data.get("level_score"): 
+        print(f"Warning: Level {level_index} has no level_score defined.")
+        return (
+        level_data["map_length"],
+        level_data["stair_position"],
+        cleaned_map_data,
+        level_data["player_start"].copy(),
+        level_data["zombie_starts"].copy(),
+        1000,
+    )
+    else:
+        return (
         level_data["map_length"],
         level_data["stair_position"],
         cleaned_map_data,

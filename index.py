@@ -932,9 +932,10 @@ def create_game_state_image(MummyMazeMap: MummyMazeMapManager, MummyExplorer: Mu
     return new_screen
 
 def main_game(current_level = current_level):
+    print(current_level)
     def save():
         # Save game state before exiting
-        game_data["level"] = current_level
+        game_data["level"] = current_level + 1
         game_data["time_elapsed"] = ScoreTracker.player.current_time_elapsed
         game_data["bonus_score"] = ScoreTracker.player.bonus_score
         game_data["hint_penalty"] = ScoreTracker.player.hint_penalty
@@ -951,6 +952,7 @@ def main_game(current_level = current_level):
             game_data["zombie_directions"] = None
             game_data["history_states"] = []
         save_data(game_data)
+        print(f"current_level saved: {game_data['level']}, prev level: {current_level}")
         
     map_length, stair_position, map_data, player_start, zombie_starts, BaseLevelScore = load_level(current_level)
 
@@ -1032,7 +1034,6 @@ def main_game(current_level = current_level):
                         # Stop counting time, caculate score (base score + bonus score)
                         ScoreTracker.player.end_counting()
                         game_data["is_playing"] = False
-                        game_data["level"] = current_level + 1
                         save()
 
                         continue_game = show_victory_window(
