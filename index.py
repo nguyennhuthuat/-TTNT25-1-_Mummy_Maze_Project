@@ -7,7 +7,7 @@ import pygame
 from Assets.module.map_collection import maps_collection  # Import a collection of maps
 
 from Assets.module.utils import *
-from Assets.module.map import MummyMazeMapManager
+from Assets.module.map import MummyMazeMapManager, SidePanel
 from Assets.module.explorer import MummyMazePlayerManager
 from Assets.module.zombies import MummyMazeZombieManager
 from Assets.module.scorpion import MummyMazeScorpionManager
@@ -16,14 +16,13 @@ from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
 
 
-
 # ---------------------------------------------------------------------------- #
 # ----------------------------Initial Game Setup------------------------------ #
 # ---------------------------------------------------------------------------- #
 
 # Pygame setup
 pygame.init()
-pygame.mixer.init() # Initialize the mixer module for sound 
+pygame.mixer.init()  # Initialize the mixer module for sound
 pygame.font.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Mummy Maze Deluxe - 25TNT1 - Dudes Chase Money")
@@ -32,20 +31,20 @@ clock = pygame.time.Clock()
 
 # Tải font chữ
 try:
-    main_font = pygame.font.SysFont("comic sans ms", 24) 
-    footer_font = pygame.font.SysFont("comic sans ms", 14) 
-    title_font = pygame.font.SysFont("Arial", 25, bold = True)
+    main_font = pygame.font.SysFont("comic sans ms", 24)
+    footer_font = pygame.font.SysFont("comic sans ms", 14)
+    title_font = pygame.font.SysFont("Arial", 25, bold=True)
 except Exception as e:
     main_font = pygame.font.Font(None, 36)
-    footer_font = pygame.font.Font(None, 18) 
+    footer_font = pygame.font.Font(None, 18)
     title_font = pygame.font.Font(None, 52)
 
 # --- TẢI ÂM THANH ---
 try:
     # 1. Nhạc nền (Music) - Thường dùng cho nhạc dài
     pygame.mixer.music.load("./assets/music/game.it")
-    pygame.mixer.music.set_volume(0.5) # Độ lớn từ 0.0 đến 1.0
-    
+    pygame.mixer.music.set_volume(0.5)  # Độ lớn từ 0.0 đến 1.0
+
     # 2. Hiệu ứng âm thanh (Sound) - Thường dùng cho tiếng động ngắn
     click_sound = pygame.mixer.Sound("./assets/sounds/click.wav")
     finish_sound = pygame.mixer.Sound("./assets/sounds/click.wav")
@@ -55,8 +54,8 @@ except Exception as e:
     finish_sound = None
 
 # Tải thanh loading
-LOADING_BAR_X = 280 
-LOADING_BAR_Y = 546 
+LOADING_BAR_X = 280
+LOADING_BAR_Y = 546
 
 # Kích thước mục tiêu
 BAR_TARGET_WIDTH = 630
@@ -65,18 +64,19 @@ BAR_TARGET_HEIGHT = 22
 try:
     # 1. Load ảnh gốc (340x24)
     img_orig = pygame.image.load("./assets/images/titlebar.png").convert_alpha()
-    
+
     # 2. Kéo dài nó ra đúng kích thước khung rỗng (630x22)
-    loading_bar_img = pygame.transform.scale(img_orig, (BAR_TARGET_WIDTH, BAR_TARGET_HEIGHT))
-    
+    loading_bar_img = pygame.transform.scale(
+        img_orig, (BAR_TARGET_WIDTH, BAR_TARGET_HEIGHT)
+    )
+
     # 3. Lưu lại kích thước mới để dùng cho hàm chạy
     loading_bar_w = BAR_TARGET_WIDTH
     loading_bar_h = BAR_TARGET_HEIGHT
-    
+
 except Exception as e:
     loading_bar_img = None
     print(f"Lỗi tải ảnh loading: {e}")
-
 
 
 # Main game setup
@@ -84,59 +84,62 @@ game_data = load_data()
 current_level = game_data["level"]
 
 start_button = Button(
-    0, # X tạm thời là 0
-    center_y + 260, # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
-    100, # Width 
+    0,  # X tạm thời là 0
+    center_y + 260,  # Điều chỉnh số này để nút lên/xuống đúng vị trí bảng đá
+    100,  # Width
     35,  # Height
-    text="", 
+    text="",
     image_path="./assets/images/click_here_to_enter_button.png",
-    hover_image_path="./assets/images/h_click_here_to_enter_button.png"
+    hover_image_path="./assets/images/h_click_here_to_enter_button.png",
 )
 start_button.rect.centerx = SCREEN_WIDTH // 2
 main_menu_buttons = [start_button]
 
 
+# -------------------------------------------------------------------------------#
+# ---------------------------------Main function---------------------------------#
+# -------------------------------------------------------------------------------#
 
-
-#-------------------------------------------------------------------------------#
-#---------------------------------Main function---------------------------------#
-#-------------------------------------------------------------------------------#
 
 def show_lose_window(screen):
 
     # Tải Background chính
     try:
-        bg = pygame.image.load('./assets/images/background_window.png').convert()
+        bg = pygame.image.load("./assets/images/background_window.png").convert()
         bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     except:
         bg = None
 
     try:
-        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+        logo_image = pygame.image.load(
+            "./assets/images/DudesChaseMoneyLogo.png"
+        ).convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
     except:
         print("Can't load logo image")
 
     try:
-        main_font = pygame.font.SysFont("comic sans ms", 24) 
-        footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
+        main_font = pygame.font.SysFont("comic sans ms", 24)
+        footer_font = pygame.font.SysFont(
+            "comic sans ms", 14
+        )  # Thêm dòng này (size 14 thay vì 24)
         title_font = pygame.font.SysFont("comic sans ms", 50)
-        font_btn = pygame.font.SysFont('Arial', 50, bold = 30)
+        font_btn = pygame.font.SysFont("Arial", 50, bold=30)
     except Exception as e:
         main_font = pygame.font.Font(None, 36)
-        footer_font = pygame.font.Font(None, 18) # Font mặc định nhỏ hơn
+        footer_font = pygame.font.Font(None, 18)  # Font mặc định nhỏ hơn
         title_font = pygame.font.Font(None, 52)
 
     # Màu sắc
     COLOR_BG_OVERLAY = (0, 0, 0)
-    TEXT_COLOR       = (40, 20, 10)
+    TEXT_COLOR = (40, 20, 10)
 
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
     # TẢI ẢNH BẢNG (Board)
     try:
-        board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
+        board_img = pygame.image.load("./assets/images/window.png").convert_alpha()
         scale_factor = 1.48
         new_w = int(board_img.get_width() * scale_factor)
         new_h = int(board_img.get_height() * scale_factor)
@@ -144,29 +147,32 @@ def show_lose_window(screen):
         board_rect = board_img.get_rect(center=(center_x, center_y))
     except:
         board_img = None
-        board_rect = pygame.Rect(center_x-250, center_y-150, 500, 300)
+        board_rect = pygame.Rect(center_x - 250, center_y - 150, 500, 300)
 
-    #TẢI TÊN GAME
+    # TẢI TÊN GAME
     scale_size = 1.2
-    logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
-    logo_img = pygame.transform.scale(logo_img, (logo_img.get_width() * scale_size, logo_img.get_height() * scale_size))
+    logo_img = pygame.image.load("./assets/images/menulogo.png").convert_alpha()
+    logo_img = pygame.transform.scale(
+        logo_img,
+        (logo_img.get_width() * scale_size, logo_img.get_height() * scale_size),
+    )
     logo_rect = logo_img.get_rect(center=(center_x, center_y - 250))
 
-    #TẢI DÒNG "GAME OVER"
-    game_over_img = pygame.image.load('./assets/images/game_over.png').convert_alpha()
+    # TẢI DÒNG "GAME OVER"
+    game_over_img = pygame.image.load("./assets/images/game_over.png").convert_alpha()
     game_over_img = pygame.transform.scale(game_over_img, (300, 300))
     game_over_rect = game_over_img.get_rect(center=(center_x - 50, center_y + 120))
 
     # Định vị nút bấm
     btn_w, btn_h = 300, 100
-    gap = 60            
+    gap = 60
 
     rect_try_again = pygame.Rect(0, 0, btn_w, btn_h)
     rect_try_again.center = (center_x - (btn_w // 2 + gap), center_y + 190)
 
     rect_undo_move = pygame.Rect(0, 0, btn_w, btn_h)
     rect_undo_move.center = (center_x - (btn_w // 2 + gap), center_y + 190 + 90)
-    
+
     rect_abandon_hope = pygame.Rect(0, 0, btn_w, btn_h)
     rect_abandon_hope.center = (center_x + (btn_w // 2 + gap), center_y + 190)
 
@@ -175,9 +181,9 @@ def show_lose_window(screen):
 
     # Tạo lớp phủ mờ (Alpha)
     overlay = pygame.Surface((w, h))
-    overlay.set_alpha(150) # Độ mờ (0-255)
+    overlay.set_alpha(150)  # Độ mờ (0-255)
     overlay.fill(COLOR_BG_OVERLAY)
-    
+
     running = True
     user_action = None
 
@@ -190,13 +196,17 @@ def show_lose_window(screen):
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rect_try_again.collidepoint(mouse_pos):
-                    user_action = "let user try again"; running = False
+                    user_action = "let user try again"
+                    running = False
                 elif rect_undo_move.collidepoint(mouse_pos):
-                    user_action = "undo the previous move"; running = False
+                    user_action = "undo the previous move"
+                    running = False
                 elif rect_abandon_hope.collidepoint(mouse_pos):
-                    user_action = "left"; running = False
+                    user_action = "left"
+                    running = False
                 elif rect_save_and_quit.collidepoint(mouse_pos):
-                    user_action = "save the game status"; running = False
+                    user_action = "save the game status"
+                    running = False
 
         # 1. Vẽ ảnh nền Game trước
         if bg:
@@ -213,7 +223,7 @@ def show_lose_window(screen):
             screen.blit(board_img, board_rect)
         else:
             pygame.draw.rect(screen, (210, 180, 140), board_rect)
-        
+
         # Vẽ tên game
         screen.blit(logo_img, logo_rect)
 
@@ -221,23 +231,30 @@ def show_lose_window(screen):
         screen.blit(game_over_img, game_over_rect)
 
         # 3. Vẽ chữ lên các nút
-        for rect, text in [(rect_try_again, "TRY AGAIN"), 
-                           (rect_abandon_hope, "ABANDON HOPE"),
-                           (rect_save_and_quit, "SAVE AND QUIT"),
-                           (rect_undo_move, "UNDO MOVE")]:
+        for rect, text in [
+            (rect_try_again, "TRY AGAIN"),
+            (rect_abandon_hope, "ABANDON HOPE"),
+            (rect_save_and_quit, "SAVE AND QUIT"),
+            (rect_undo_move, "UNDO MOVE"),
+        ]:
             txt_surf = font_btn.render(text, True, TEXT_COLOR)
             txt_rect = txt_surf.get_rect(center=rect.center)
             screen.blit(txt_surf, txt_rect)
-        
-        footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
-        footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
+
+        footer_text_surf = footer_font.render(
+            "Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR
+        )
+        footer_text_rect = footer_text_surf.get_rect(
+            centerx=SCREEN_WIDTH // 2, bottom=SCREEN_HEIGHT
+        )
         screen.blit(footer_text_surf, footer_text_rect)
 
         screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
 
         pygame.display.flip()
-        
+
     return user_action
+
 
 def draw_text_with_outline(
     screen, text, font, color, outline_color, center_pos, outline_width=2
@@ -260,7 +277,16 @@ def draw_text_with_outline(
     text_rect = text_surface.get_rect(center=center_pos)
     screen.blit(text_surface, text_rect)
 
-def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score = 0, bonus_score = 0, total_score=0):
+
+def show_victory_window(
+    screen,
+    clock,
+    current_level,
+    elapsed_time=0,
+    base_score=0,
+    bonus_score=0,
+    total_score=0,
+):
     """
     Hiển thị cửa sổ chiến thắng với background Victorybackground.png.
     Text rõ ràng với viền đen để dễ đọc.
@@ -488,7 +514,6 @@ def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score
                 pygame.quit()
                 sys.exit()
 
-
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
                     waiting = False
@@ -654,6 +679,7 @@ def show_victory_window(screen, clock, current_level, elapsed_time=0, base_score
 
     return result
 
+
 def run_loading_screen():
     # Phát nhạc nền (số -1 có nghĩa là lặp vô tận)
     if pygame.mixer.music.get_busy() == False:
@@ -666,18 +692,18 @@ def run_loading_screen():
     def draw_wave_text(surface, text, font, color, outline_color, start_pos):
         base_x, base_y = start_pos
         current_x = base_x
-        
+
         time_now = pygame.time.get_ticks()
 
         for i, char in enumerate(text):
             # --- TOÁN HỌC CHO HIỆU ỨNG SÓNG ---
             bounce_y = math.sin(time_now * 0.01 + i * 0.5) * 3
-            
+
             # Vị trí của từng chữ cái cụ thể
             char_pos = (current_x, base_y + bounce_y)
 
             # Vẽ viền cho từng chữ cái
-            offsets = [(-2,0), (2,0), (0,-2), (0,2)]
+            offsets = [(-2, 0), (2, 0), (0, -2), (0, 2)]
             for ox, oy in offsets:
                 char_outline = font.render(char, True, outline_color)
                 surface.blit(char_outline, (char_pos[0] + ox, char_pos[1] + oy))
@@ -688,7 +714,7 @@ def run_loading_screen():
 
             # Cập nhật tọa độ X cho chữ cái tiếp theo
             current_x += font.size(char)[0]
-    
+
     # Tải background để vẽ (cho giống menu)
     try:
         bg_img = pygame.image.load("./assets/images/mummymazedeluxetitle.png")
@@ -706,17 +732,21 @@ def run_loading_screen():
         if progress < 100:
             progress += 0.45
         else:
-            if loading: # Chỉ phát 1 lần duy nhất khi vừa đầy
-                if finish_sound: finish_sound.play()
+            if loading:  # Chỉ phát 1 lần duy nhất khi vừa đầy
+                if finish_sound:
+                    finish_sound.play()
             loading = False
 
         # Vẽ Background
         screen.fill(COLOR_BACKGROUND)
-        if bg_img: screen.blit(bg_img, (0, 0))
-        
+        if bg_img:
+            screen.blit(bg_img, (0, 0))
+
         # Vẽ Logo (Nếu muốn)
         try:
-            logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+            logo_image = pygame.image.load(
+                "./assets/images/DudesChaseMoneyLogo.png"
+            ).convert_alpha()
             logo_icon = pygame.transform.scale(logo_image, (130, 130))
             screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
         except:
@@ -726,17 +756,24 @@ def run_loading_screen():
         if loading_bar_img:
             current_w = int(BAR_TARGET_WIDTH * (progress / 100))
             if current_w > 0:
-                screen.blit(loading_bar_img, (LOADING_BAR_X, LOADING_BAR_Y), (0, 0, current_w, BAR_TARGET_HEIGHT))
+                screen.blit(
+                    loading_bar_img,
+                    (LOADING_BAR_X, LOADING_BAR_Y),
+                    (0, 0, current_w, BAR_TARGET_HEIGHT),
+                )
 
         # 2. VẼ CHỮ NHẢY KIỂU SÓNG TRUYỀN
         text_str = f"Loading... {int(progress)}%"
-        
-        start_x = 280 
-        start_y = 546 - 45 # Cách bên trên thanh bar 45 pixel
-        
-        draw_wave_text(screen, text_str, title_font, (255, 255, 255), (0, 0, 0), (start_x, start_y))
+
+        start_x = 280
+        start_y = 546 - 45  # Cách bên trên thanh bar 45 pixel
+
+        draw_wave_text(
+            screen, text_str, title_font, (255, 255, 255), (0, 0, 0), (start_x, start_y)
+        )
 
         pygame.display.flip()
+
 
 def lobby(screen, clock):
     run_loading_screen()
@@ -748,39 +785,49 @@ def lobby(screen, clock):
                 return "exit"
 
             if start_button.is_clicked(event):
-                if click_sound: 
+                if click_sound:
                     click_sound.set_volume(1.0)
-                    click_sound.play() # Phát tiếng click
+                    click_sound.play()  # Phát tiếng click
                 return "main_menu"
 
         for button in main_menu_buttons:
             button.check_hover(mouse_pos)
-        '''+ icon_buttons:'''
+        """+ icon_buttons:"""
 
         screen.fill(COLOR_BACKGROUND)
         try:
-            background_image = pygame.image.load("./assets/images/mummymazedeluxetitle.png")
-            background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+            background_image = pygame.image.load(
+                "./assets/images/mummymazedeluxetitle.png"
+            )
+            background_image = pygame.transform.scale(
+                background_image, (SCREEN_WIDTH, SCREEN_HEIGHT)
+            )
             screen.blit(background_image, (0, 0))
         except:
             pass
 
         try:
-            logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+            logo_image = pygame.image.load(
+                "./assets/images/DudesChaseMoneyLogo.png"
+            ).convert_alpha()
             logo_icon = pygame.transform.scale(logo_image, (130, 130))
             screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
         except:
             pass
 
-        for button in main_menu_buttons: 
-            button.draw(screen) 
-        
+        for button in main_menu_buttons:
+            button.draw(screen)
+
         if loading_bar_img:
             # Vẽ trực tiếp ảnh đã scale vào đúng vị trí X, Y
             screen.blit(loading_bar_img, (LOADING_BAR_X, LOADING_BAR_Y))
 
-        footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, COLOR_TEXT)
-        footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
+        footer_text_surf = footer_font.render(
+            "Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, COLOR_TEXT
+        )
+        footer_text_rect = footer_text_surf.get_rect(
+            centerx=SCREEN_WIDTH // 2, bottom=SCREEN_HEIGHT
+        )
         screen.blit(footer_text_surf, footer_text_rect)
 
         pygame.display.flip()
@@ -789,39 +836,42 @@ def lobby(screen, clock):
 
 def main_menu(screen, clock):
     try:
-        main_font = pygame.font.SysFont("comic sans ms", 24) 
-        footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
+        main_font = pygame.font.SysFont("comic sans ms", 24)
+        footer_font = pygame.font.SysFont(
+            "comic sans ms", 14
+        )  # Thêm dòng này (size 14 thay vì 24)
         title_font = pygame.font.SysFont("comic sans ms", 50)
-        font_btn = pygame.font.SysFont('Arial', 50, bold = 30)
+        font_btn = pygame.font.SysFont("Arial", 50, bold=30)
     except Exception as e:
         main_font = pygame.font.Font(None, 36)
-        footer_font = pygame.font.Font(None, 18) # Font mặc định nhỏ hơn
+        footer_font = pygame.font.Font(None, 18)  # Font mặc định nhỏ hơn
         title_font = pygame.font.Font(None, 52)
 
     # Màu sắc
     COLOR_BG_OVERLAY = (0, 0, 0)
-    TEXT_COLOR       = (40, 20, 10)
+    TEXT_COLOR = (40, 20, 10)
 
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
     # Tải Background chính
     try:
-        bg = pygame.image.load('./assets/images/background_window.png').convert()
+        bg = pygame.image.load("./assets/images/background_window.png").convert()
         bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
     except:
         bg = None
-    
+
     try:
-        logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
+        logo_image = pygame.image.load(
+            "./assets/images/DudesChaseMoneyLogo.png"
+        ).convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
     except:
         print("Can't load logo image")
 
-
     # TẢI ẢNH WINDOW
     try:
-        board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
+        board_img = pygame.image.load("./assets/images/window.png").convert_alpha()
         scale_factor = 1.48
         new_w = int(board_img.get_width() * scale_factor)
         new_h = int(board_img.get_height() * scale_factor)
@@ -831,22 +881,22 @@ def main_menu(screen, clock):
         board_img = None
         board_rect = pygame.Rect(center_x - 250, center_y - 150, 500, 300)
 
-    #TẢI TÊN GAME
+    # TẢI TÊN GAME
     scale_size = 1.2
-    logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
+    logo_img = pygame.image.load("./assets/images/menulogo.png").convert_alpha()
     # logo_img = pygame.transform.smoothscale(logo_img, (int(logo_img.get_width() * scale_size), int(logo_img.get_height() * scale_size)))
     logo_rect = logo_img.get_rect(center=(center_x, center_y - 230))
 
     # Định vị nút bấm
     btn_w, btn_h = 300, 100
-    gap = 60            
+    gap = 60
 
     rect_classic_mode = pygame.Rect(0, 0, btn_w, btn_h)
     rect_classic_mode.center = (center_x - (btn_w // 2 + gap), center_y + 190)
 
     rect_adventure = pygame.Rect(0, 0, btn_w, btn_h)
     rect_adventure.center = (center_x - (btn_w // 2 + gap), center_y + 190 + 90)
-    
+
     rect_tutorials = pygame.Rect(0, 0, btn_w, btn_h)
     rect_tutorials.center = (center_x + (btn_w // 2 + gap), center_y + 190)
 
@@ -855,9 +905,9 @@ def main_menu(screen, clock):
 
     # Tạo lớp phủ mờ (Alpha)
     overlay = pygame.Surface((w, h))
-    overlay.set_alpha(150) # Độ mờ (0-255)
+    overlay.set_alpha(150)  # Độ mờ (0-255)
     overlay.fill(COLOR_BG_OVERLAY)
-    
+
     running = True
     user_action = None
 
@@ -881,7 +931,7 @@ def main_menu(screen, clock):
                 elif rect_quit_game.collidepoint(mouse_pos):
                     running = False
                     return "exit"
-        
+
         # 1. Vẽ ảnh nền Game trước
         if bg:
             screen.blit(bg, (0, 0))
@@ -897,42 +947,58 @@ def main_menu(screen, clock):
             screen.blit(board_img, board_rect)
         else:
             pygame.draw.rect(screen, (210, 180, 140), board_rect)
-        
+
         # Vẽ tên game
         screen.blit(logo_img, logo_rect)
 
         # 3. Vẽ chữ lên các nút
-        for rect, text in [(rect_classic_mode, "CLASSIC MODE"), 
-                           (rect_tutorials, "TUTORIALS"),
-                           (rect_adventure, "ADVENTURE"),
-                           (rect_quit_game, "QUIT GAME")]:
+        for rect, text in [
+            (rect_classic_mode, "CLASSIC MODE"),
+            (rect_tutorials, "TUTORIALS"),
+            (rect_adventure, "ADVENTURE"),
+            (rect_quit_game, "QUIT GAME"),
+        ]:
             txt_surf = font_btn.render(text, True, TEXT_COLOR)
             txt_rect = txt_surf.get_rect(center=rect.center)
             screen.blit(txt_surf, txt_rect)
 
-        footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
-        footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
+        footer_text_surf = footer_font.render(
+            "Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR
+        )
+        footer_text_rect = footer_text_surf.get_rect(
+            centerx=SCREEN_WIDTH // 2, bottom=SCREEN_HEIGHT
+        )
         screen.blit(footer_text_surf, footer_text_rect)
-        
-        screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
 
+        screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
 
         pygame.display.flip()
         clock.tick(60)
 
-def create_game_state_image(MummyMazeMap: MummyMazeMapManager, MummyExplorer: MummyMazePlayerManager, MummyZombies: list[MummyMazeZombieManager]):
+
+def create_game_state_image(
+    MummyMazeMap: MummyMazeMapManager,
+    MummyExplorer: MummyMazePlayerManager,
+    MummyZombies: list[MummyMazeZombieManager],
+    side_panel: SidePanel = None,
+):
     new_screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    # Vẽ side_panel trước để đồng bộ với game
+    if side_panel:
+        side_panel.draw(new_screen)
     MummyMazeMap.draw_map(new_screen)
     MummyExplorer.update_player(new_screen)
     if MummyZombies:
         for zombie in MummyZombies:
             zombie.update_zombie(new_screen)
     MummyMazeMap.draw_walls(new_screen)
-        
+
     return new_screen
 
-def main_game(current_level = current_level):
+
+def main_game(current_level=current_level):
     print(current_level)
+
     def save():
         # Save game state before exiting
         game_data["level"] = current_level + 1
@@ -942,8 +1008,16 @@ def main_game(current_level = current_level):
         if game_data["is_playing"]:
             game_data["explorer_position"] = MummyExplorer.grid_position.copy()
             game_data["explorer_direction"] = MummyExplorer.facing_direction
-            game_data["zombie_positions"] = [zombie.grid_position.copy() for zombie in MummyZombies] if MummyZombies else []
-            game_data["zombie_directions"] = [zombie.facing_direction for zombie in MummyZombies] if MummyZombies else []
+            game_data["zombie_positions"] = (
+                [zombie.grid_position.copy() for zombie in MummyZombies]
+                if MummyZombies
+                else []
+            )
+            game_data["zombie_directions"] = (
+                [zombie.facing_direction for zombie in MummyZombies]
+                if MummyZombies
+                else []
+            )
             game_data["history_states"] = history_states.copy()
         else:
             game_data["explorer_position"] = None
@@ -953,36 +1027,90 @@ def main_game(current_level = current_level):
             game_data["history_states"] = []
         save_data(game_data)
         print(f"current_level saved: {game_data['level']}, prev level: {current_level}")
-        
-    map_length, stair_position, map_data, player_start, zombie_starts, BaseLevelScore = load_level(current_level)
+
+    (
+        map_length,
+        stair_position,
+        map_data,
+        player_start,
+        zombie_starts,
+        BaseLevelScore,
+    ) = load_level(current_level)
 
     winning_position, goal_direction = get_winning_position(stair_position, map_length)
-    
-    current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
 
-    MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
-    MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
-    MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts] if zombie_starts else None
-    ScoreTracker = GlobalPointPackage(BaseLevelScore = BaseLevelScore)
+    current_tile_size = (
+        480 // map_length
+    )  # Dynamically set tile size based on map length
+
+    MummyMazeMap = MummyMazeMapManager(
+        length=map_length,
+        stair_position=stair_position,
+        map_data=map_data,
+        tile_size=current_tile_size,
+    )
+    MummyExplorer = MummyMazePlayerManager(
+        length=map_length,
+        grid_position=player_start,
+        map_data=map_data,
+        tile_size=current_tile_size,
+    )
+    MummyZombies = (
+        [
+            MummyMazeZombieManager(
+                length=map_length,
+                grid_position=pos,
+                map_data=map_data,
+                tile_size=current_tile_size,
+            )
+            for pos in zombie_starts
+        ]
+        if zombie_starts
+        else None
+    )
+    ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore)
     history_states = []  # To store previous game states for undo functionality
+
+    # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
+    side_panel = SidePanel(x=MARGIN_LEFT_OFFSET, y=16)
 
     # If is_playing is True, load previous state
     if game_data["is_playing"]:
         if game_data["explorer_position"] is not None:
             MummyExplorer.grid_position = game_data["explorer_position"].copy()
             MummyExplorer.facing_direction = game_data["explorer_direction"]
-        if MummyZombies and game_data["zombie_positions"] is not None:
-            for idx, zombie in enumerate(MummyZombies):
-                zombie.grid_position = game_data["zombie_positions"][idx].copy()
-                zombie.facing_direction = game_data["zombie_directions"][idx]
-        ScoreTracker.player.start_counting = time.time() - game_data["time_elapsed"]
-        ScoreTracker.player.bonus_score = game_data["bonus_score"]
-        ScoreTracker.player.hint_penalty = game_data["hint_penalty"]
+        if MummyZombies and game_data.get("zombie_positions") is not None:
+            saved_zombie_positions = game_data["zombie_positions"]
+            saved_zombie_directions = game_data.get("zombie_directions", [])
+            if len(saved_zombie_positions) == len(MummyZombies):
+                for idx, zombie in enumerate(MummyZombies):
+                    zombie.grid_position = saved_zombie_positions[idx].copy()
+                    if idx < len(saved_zombie_directions):
+                        zombie.facing_direction = saved_zombie_directions[idx]
+            else:
+                print(f"Warning: Zombie count mismatch. Using default positions.")
+                game_data["is_playing"] = False
+        ScoreTracker.player.start_counting = time.time() - game_data.get(
+            "time_elapsed", 0
+        )
+        ScoreTracker.player.bonus_score = game_data.get("bonus_score", 0)
+        ScoreTracker.player.hint_penalty = game_data.get("hint_penalty", 0)
 
-        history_states = game_data["history_states"].copy()
-    
-    copied_image_screen = create_game_state_image(MummyMazeMap, MummyExplorer, MummyZombies)
-    MummyExplorer.start_game_effect(screen, copied_image_screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], MummyExplorer.facing_direction)
+        history_states = (
+            game_data.get("history_states", []).copy()
+            if game_data.get("history_states")
+            else []
+        )
+
+    copied_image_screen = create_game_state_image(
+        MummyMazeMap, MummyExplorer, MummyZombies, side_panel
+    )
+    MummyExplorer.start_game_effect(
+        screen,
+        copied_image_screen,
+        [MummyExplorer.get_x(), MummyExplorer.get_y()],
+        MummyExplorer.facing_direction,
+    )
 
     # Reset time after effect
     if game_data["is_playing"]:
@@ -998,22 +1126,107 @@ def main_game(current_level = current_level):
                 game_data["is_playing"] = True
                 save()
                 return "exit"
-            if not MummyExplorer.movement_list and (not MummyZombies or all(not zombie.movement_list for zombie in MummyZombies)):  # Only allow player input if zombies are standing
+
+            # Xử lý sự kiện SidePanel
+            panel_clicked = side_panel.handle_event(event)
+            if panel_clicked == "UNDO MOVE":
+                if history_states:
+                    last_state = history_states.pop()
+                    MummyExplorer.grid_position = last_state["explorer_position"].copy()
+                    MummyExplorer.facing_direction = last_state["explorer_direction"]
+                    for idx, zombie in enumerate(MummyZombies or []):
+                        if idx < len(last_state["zombie_positions"]):
+                            zombie.grid_position = last_state["zombie_positions"][
+                                idx
+                            ].copy()
+                            zombie.facing_direction = last_state["zombie_directions"][
+                                idx
+                            ]
+                    ScoreTracker.player.start_counting = (
+                        time.time() - last_state["time_elapsed"]
+                    )
+                    ScoreTracker.player.bonus_score = last_state["bonus_score"]
+                    ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
+                    MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
+            elif panel_clicked == "RESET MAZE":
+                (
+                    map_length,
+                    stair_position,
+                    map_data,
+                    player_start,
+                    zombie_starts,
+                    BaseLevelScore,
+                ) = load_level(current_level)
+                winning_position, goal_direction = get_winning_position(
+                    stair_position, map_length
+                )
+                current_tile_size = 480 // map_length
+                MummyMazeMap = MummyMazeMapManager(
+                    length=map_length,
+                    stair_position=stair_position,
+                    map_data=map_data,
+                    tile_size=current_tile_size,
+                )
+                MummyExplorer = MummyMazePlayerManager(
+                    length=map_length,
+                    grid_position=player_start,
+                    map_data=map_data,
+                    tile_size=current_tile_size,
+                )
+                MummyZombies = (
+                    [
+                        MummyMazeZombieManager(
+                            length=map_length,
+                            grid_position=pos,
+                            map_data=map_data,
+                            tile_size=current_tile_size,
+                        )
+                        for pos in zombie_starts
+                    ]
+                    if zombie_starts
+                    else None
+                )
+                ScoreTracker.player.reset()
+                ScoreTracker.player.start_counting = time.time()
+                history_states = []
+            elif panel_clicked == "OPTIONS":
+                pass  # Thêm hiệu ứng mở bảng options vào
+            elif panel_clicked == "WORLD MAP":
+                pass  # Thêm hiệu ứng mở world map vào
+            elif panel_clicked == "QUIT TO MAIN":
+                game_data["is_playing"] = True
+                save()
+                return "main_menu"
+
+            if not MummyExplorer.movement_list and (
+                not MummyZombies
+                or all(not zombie.movement_list for zombie in MummyZombies)
+            ):  # Only allow player input if zombies are standing
 
                 if event.type == pygame.KEYDOWN:
 
                     # Save current state before making a move
-                    history_states.append({
-                        "explorer_position": MummyExplorer.grid_position.copy(),
-                        "explorer_direction": MummyExplorer.facing_direction,
-                        "zombie_positions": [zombie.grid_position.copy() for zombie in MummyZombies] if MummyZombies else [],
-                        "zombie_directions": [zombie.facing_direction for zombie in MummyZombies] if MummyZombies else [],
-                        # scorpion pos, facing direction if any,
-                        "time_elapsed": ScoreTracker.player.current_time_elapsed,
-                        "bonus_score": ScoreTracker.player.bonus_score,
-                        "hint_penalty": ScoreTracker.player.hint_penalty,
-                        "is_opening_gate": MummyMazeMap.is_opening_gate
-                    })
+                    history_states.append(
+                        {
+                            "explorer_position": MummyExplorer.grid_position.copy(),
+                            "explorer_direction": MummyExplorer.facing_direction,
+                            "zombie_positions": (
+                                [zombie.grid_position.copy() for zombie in MummyZombies]
+                                if MummyZombies
+                                else []
+                            ),
+                            "zombie_directions": (
+                                [zombie.facing_direction for zombie in MummyZombies]
+                                if MummyZombies
+                                else []
+                            ),
+                            # scorpion pos, facing direction if any,
+                            "time_elapsed": ScoreTracker.player.current_time_elapsed,
+                            "bonus_score": ScoreTracker.player.bonus_score,
+                            "hint_penalty": ScoreTracker.player.hint_penalty,
+                            "is_opening_gate": MummyMazeMap.is_opening_gate,
+                        }
+                    )
 
                     # Handle player movement
                     if event.key == pygame.K_UP:
@@ -1029,7 +1242,12 @@ def main_game(current_level = current_level):
                         MummyExplorer.update_player_status(RIGHT)
 
                     ####################### CHECK WIN CONDITION #######################
-                    if winning_position and MummyExplorer.get_x() == winning_position[0] and MummyExplorer.get_y() == winning_position[1] and MummyExplorer.facing_direction == goal_direction:
+                    if (
+                        winning_position
+                        and MummyExplorer.get_x() == winning_position[0]
+                        and MummyExplorer.get_y() == winning_position[1]
+                        and MummyExplorer.facing_direction == goal_direction
+                    ):
 
                         # Stop counting time, caculate score (base score + bonus score)
                         ScoreTracker.player.end_counting()
@@ -1037,65 +1255,126 @@ def main_game(current_level = current_level):
                         save()
 
                         continue_game = show_victory_window(
-                            screen, clock, current_level + 1, elapsed_time=ScoreTracker.player.elapsed_time, base_score=ScoreTracker.player.base_score, bonus_score=ScoreTracker.player.bonus_score, total_score=ScoreTracker.player.total_score
+                            screen,
+                            clock,
+                            current_level + 1,
+                            elapsed_time=ScoreTracker.player.elapsed_time,
+                            base_score=ScoreTracker.player.base_score,
+                            bonus_score=ScoreTracker.player.bonus_score,
+                            total_score=ScoreTracker.player.total_score,
                         )
 
                         if not continue_game:
                             running = False
                             continue
-                        
+
                         current_level += 1
                         if current_level < len(maps_collection):
                             prev_facing = MummyExplorer.facing_direction
 
                             ScoreTracker.player.reset()
-                            map_length, stair_position, map_data, player_start, zombie_starts, ScoreTracker.player.max_score = load_level(current_level)
-                            winning_position, goal_direction = get_winning_position(stair_position, map_length)
+                            (
+                                map_length,
+                                stair_position,
+                                map_data,
+                                player_start,
+                                zombie_starts,
+                                ScoreTracker.player.max_score,
+                            ) = load_level(current_level)
+                            winning_position, goal_direction = get_winning_position(
+                                stair_position, map_length
+                            )
 
-                            current_tile_size = 480 // map_length  # Dynamically set tile size based on map length
-                            MummyMazeMap = MummyMazeMapManager(length = map_length, stair_position = stair_position, map_data = map_data, tile_size = current_tile_size)
-                            MummyExplorer = MummyMazePlayerManager(length = map_length, grid_position = player_start, map_data = map_data, tile_size=current_tile_size)
-                            MummyZombies = [MummyMazeZombieManager(length = map_length, grid_position = pos, map_data = map_data, tile_size=current_tile_size) for pos in zombie_starts] if zombie_starts else None
+                            current_tile_size = (
+                                480 // map_length
+                            )  # Dynamically set tile size based on map length
+                            MummyMazeMap = MummyMazeMapManager(
+                                length=map_length,
+                                stair_position=stair_position,
+                                map_data=map_data,
+                                tile_size=current_tile_size,
+                            )
+                            MummyExplorer = MummyMazePlayerManager(
+                                length=map_length,
+                                grid_position=player_start,
+                                map_data=map_data,
+                                tile_size=current_tile_size,
+                            )
+                            MummyZombies = (
+                                [
+                                    MummyMazeZombieManager(
+                                        length=map_length,
+                                        grid_position=pos,
+                                        map_data=map_data,
+                                        tile_size=current_tile_size,
+                                    )
+                                    for pos in zombie_starts
+                                ]
+                                if zombie_starts
+                                else None
+                            )
                             history_states = []  # Reset history states for new level
 
                             MummyExplorer.facing_direction = prev_facing
-                            copied_image_screen = create_game_state_image(MummyMazeMap, MummyExplorer, MummyZombies)
-                            MummyExplorer.start_game_effect(screen, copied_image_screen, [MummyExplorer.get_x(), MummyExplorer.get_y()], MummyExplorer.facing_direction)
+                            copied_image_screen = create_game_state_image(
+                                MummyMazeMap, MummyExplorer, MummyZombies
+                            )
+                            MummyExplorer.start_game_effect(
+                                screen,
+                                copied_image_screen,
+                                [MummyExplorer.get_x(), MummyExplorer.get_y()],
+                                MummyExplorer.facing_direction,
+                            )
 
                             # Reset time after effect
                             if game_data["is_playing"]:
-                                ScoreTracker.player.start_counting = time.time() - game_data["time_elapsed"]
+                                ScoreTracker.player.start_counting = (
+                                    time.time() - game_data["time_elapsed"]
+                                )
                             else:
                                 ScoreTracker.player.start_counting = time.time()
                         else:
                             print("Congratulations! You have completed all levels!")
                             running = False
 
-        ####################### CHECK LOSE CONDITION ####################### 
+        ####################### CHECK LOSE CONDITION #######################
         for zombie in MummyZombies or []:
-            if  MummyExplorer and MummyExplorer.get_x() == zombie.get_x() and MummyExplorer.get_y() == zombie.get_y():
+            if (
+                MummyExplorer
+                and MummyExplorer.get_x() == zombie.get_x()
+                and MummyExplorer.get_y() == zombie.get_y()
+            ):
                 # Player has been caught by a zombie
                 print("You have been caught by a mummy! Game Over.")
 
                 game_data["is_playing"] = False
                 save()
 
-                user_choice = show_lose_window(screen)  
-            
-                if user_choice == "let user try again":
-                    
+                user_choice = show_lose_window(screen)
 
-                    return "main_menu" 
+                if user_choice == "let user try again":
+
+                    return "main_menu"
                 elif user_choice == "undo the previous move":
                     # Placeholder for undo move function
                     if history_states:
                         last_state = history_states.pop()
-                        MummyExplorer.grid_position = last_state["explorer_position"].copy()
-                        MummyExplorer.facing_direction = last_state["explorer_direction"]
+                        MummyExplorer.grid_position = last_state[
+                            "explorer_position"
+                        ].copy()
+                        MummyExplorer.facing_direction = last_state[
+                            "explorer_direction"
+                        ]
                         for idx, zombie in enumerate(MummyZombies or []):
-                            zombie.grid_position = last_state["zombie_positions"][idx].copy()
-                            zombie.facing_direction = last_state["zombie_directions"][idx]
-                        ScoreTracker.player.start_counting = time.time() - last_state["time_elapsed"]
+                            zombie.grid_position = last_state["zombie_positions"][
+                                idx
+                            ].copy()
+                            zombie.facing_direction = last_state["zombie_directions"][
+                                idx
+                            ]
+                        ScoreTracker.player.start_counting = (
+                            time.time() - last_state["time_elapsed"]
+                        )
                         ScoreTracker.player.bonus_score = last_state["bonus_score"]
                         ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
                         MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
@@ -1105,13 +1384,19 @@ def main_game(current_level = current_level):
                     return "lobby"
                 elif user_choice == "save the game status":
                     # Placeholder for save game function
-                    return "exit" 
+                    return "exit"
 
-                break          
+                break
 
-        # Draw   
-        screen.blit(pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))  # Clear screen at start of game
-    
+        # Draw
+        screen.blit(
+            pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0)
+        )  # Clear screen at start of game
+
+        # Vẽ SidePanel (khung bên trái) - vẽ trước cùng với backdrop
+        side_panel.update()
+        side_panel.draw(screen)
+
         MummyMazeMap.draw_map(screen)
         player_turn_completed = MummyExplorer.update_player(screen)
 
@@ -1121,9 +1406,6 @@ def main_game(current_level = current_level):
             zombie.update_zombie(screen)
         MummyMazeMap.draw_walls(screen)
 
-
-
-
         pygame.display.flip()
         clock.tick(120)
         time.sleep(0.04)
@@ -1131,19 +1413,17 @@ def main_game(current_level = current_level):
     pygame.quit()
 
 
-
-def main(action = "main_game"):
-
-    '''
-    ACTION FLOW: 
-    lobby --> main_menu --> (enter classic mode --> main_game --> lobby) 
+def main(action="main_game"):
+    """
+    ACTION FLOW:
+    lobby --> main_menu --> (enter classic mode --> main_game --> lobby)
                                  |--> (open tutorials --> lobby)
                                  |--> (open adventure --> lobby)
                                  |--> (quit game --> exit)
-    
-    ACTION LIST: 
+
+    ACTION LIST:
     lobby, main_menu, main_game, tutorials, adventure, exit
-    '''
+    """
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -1156,7 +1436,7 @@ def main(action = "main_game"):
             action = main_menu(screen, clock)
 
         elif action == "main_game":
-            action = main_game() 
+            action = main_game()
 
         elif action == "tutorials":
             # Placeholder for tutorials function
@@ -1167,7 +1447,7 @@ def main(action = "main_game"):
             action = "lobby"
 
         elif action == "exit":
-            
+
             pygame.quit()
             sys.exit()
 
