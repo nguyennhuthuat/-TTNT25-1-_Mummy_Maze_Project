@@ -996,7 +996,7 @@ def create_game_state_image(
     return new_screen
 
 
-def main_game(current_level=current_level):
+def main_game(current_level=0):
     print(current_level)
 
     def save():
@@ -1120,7 +1120,10 @@ def main_game(current_level=current_level):
 
     ################### MAIN GAME LOOP ##################
     running = True
+    player_moved = False   # To track if player made a move this turn
     while running:
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_data["is_playing"] = True
@@ -1203,6 +1206,7 @@ def main_game(current_level=current_level):
                 or all(not zombie.movement_list for zombie in MummyZombies)
             ):  # Only allow player input if zombies are standing
 
+                player_moved = True  # Player is about to make a move
                 if event.type == pygame.KEYDOWN:
 
                     # Save current state before making a move
@@ -1398,13 +1402,30 @@ def main_game(current_level=current_level):
         side_panel.draw(screen)
 
         MummyMazeMap.draw_map(screen)
+        MummyMazeMap.draw_trap(screen) # Draw traps if any
+        if MummyMazeMap.is_kg_exists() and MummyMazeMap.gate_key.is_opening_gate():
+            MummyMazeMap.draw_gate_key(screen)
+
         player_turn_completed = MummyExplorer.update_player(screen)
 
         for zombie in MummyZombies or []:
             if player_turn_completed:
                 zombie.zombie_movement(MummyExplorer.grid_position)
             zombie.update_zombie(screen)
+
         MummyMazeMap.draw_walls(screen)
+        # if MummyMazeMap.is_kg_exists() and not MummyMazeMap.gate_key.is_opening_gate():
+        #     MummyMazeMap.draw_gate_key(screen)
+        MummyMazeMap.draw_gate_key(screen)
+        if player_turn_completed:
+             #--------------------- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ---------------------#
+            if MummyMazeMap.is_kg_exists():
+                print("Key exists")
+                if MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0] and MummyExplorer.get_y() ==  MummyMazeMap.gate_key.get_key_pos()[1]:
+                    if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
+                        MummyMazeMap.gate_key.change_gate_status()
+                        print("Gate key has been changed status!")
+                        player_moved = False
 
         pygame.display.flip()
         clock.tick(120)

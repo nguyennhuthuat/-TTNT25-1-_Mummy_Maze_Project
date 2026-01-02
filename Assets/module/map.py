@@ -2,8 +2,255 @@ import os
 from typing import List, Tuple
 import pygame
 
-from .settings import *
+from typing import Any
 
+from .settings import *
+from .utils import *
+
+
+class GateKeyManager:
+    def __init__(self,length: int = 6, tile_size: int = TILE_SIZE, key_pos: Tuple = (), gate_pos: Tuple = ()) -> None:
+        self.length = length
+        self.TILE_SIZE = tile_size
+
+        # Sound 
+        self.gate_sound = pygame.mixer.Sound(os.path.join("assets", "sounds", "gate.wav"))
+
+        self.__key_pos = key_pos
+        self.gate_pos = gate_pos
+
+        self.__current_key_frame_index = 0
+        self.__current_gate_frame_index = 0
+
+        self.__is_opening_gate = False
+        self.__is_changing_gate_status = False
+
+        self.__key_frames, self.__shadow_key_frames = self.get_key_frames()
+        self.__gate_frames = self.get_gate_frames()
+
+    def get_key_pos(self) -> Tuple[int, int]: #
+        """Get the key position in (row, col) format."""
+        return self.__key_pos
+    
+    def get_gate_pos(self) -> Tuple[int, int]: #
+        """Get the gate position in (row, col) format."""
+        return self.gate_pos
+    
+    def is_opening_gate(self) -> bool: #
+        """Check if the gate is currently opening."""
+        return self.__is_opening_gate
+    
+    def change_gate_status(self): #
+        """Trigger gate opening/closing animation."""
+        self.__is_opening_gate = not self.__is_opening_gate
+        self.__is_changing_gate_status = True
+        
+        # Sound effect
+        self.gate_sound.play()
+
+
+    def is_finished_changeing_gate_status(self) -> bool:
+        """Check if gate has finished opening/closing animation."""
+        return not self.__is_changing_gate_status
+
+    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
+        """Convert an original shadow surface to a black silhouette."""
+        image = frame.copy()
+        image.set_colorkey((0, 0, 0))
+        mask = pygame.mask.from_surface(image)
+        # setcolor=(0, 0, 0) -> Absolute black
+        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
+
+    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False, use_colorkey: bool = False) -> pygame.Surface:
+        """Helper just for loading and scaling, NOT applying shadow logic."""
+        scale_factor = self.TILE_SIZE / 60
+
+        path = os.path.join("assets", "images", filename)
+        surface = pygame.image.load(path).convert_alpha()
+        
+        new_size = (int(surface.get_width() * scale_factor), 
+                    int(surface.get_height() * scale_factor))
+        
+        if is_shadow:
+            return pygame.transform.scale(surface, new_size)
+        else: 
+            if use_colorkey:
+                surface.set_colorkey((0, 0, 0))
+
+            return pygame.transform.smoothscale(surface, new_size)
+
+    def get_key_frames(self) -> Tuple[Any, Any]:
+        """Load key sprite sheet and split into directional frames."""
+        
+        # 1. Load NORMAL sprite
+        key_surface = self._load_and_scale_image("key.png", is_shadow=False).convert_alpha()
+
+        # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
+        shadow_surface = self._load_and_scale_image("_key.gif", is_shadow=True)
+        shadow_surface = self.get_black_shadow_surface(shadow_surface)
+
+        # 3. Extract Frames
+        w_frame = key_surface.get_height()
+        h_frame = key_surface.get_height()
+        
+        key_frames_list = extract_sprite_frames(key_surface, w_frame, h_frame)
+        shadow_frames_list = extract_sprite_frames(shadow_surface, w_frame, h_frame)
+
+        return (key_frames_list, shadow_frames_list)
+
+    def get_gate_frames(self) -> List[Any]:
+        """Load gate sprite sheet and split into directional frames."""
+        
+        # 1. Load NORMAL sprite
+        gate_surface = self._load_and_scale_image("gate.gif", is_shadow=False).convert_alpha()
+
+        # 2. Extract Frames
+        w_frame = gate_surface.get_width() // 8
+        h_frame = gate_surface.get_height()
+        
+        gate_frames_list = double_list(extract_sprite_frames(gate_surface, w_frame, h_frame))
+
+        return gate_frames_list
+        
+    def draw(self, screen: pygame.Surface) -> None:
+        """Draw the key at its position."""
+        if not self.__key_pos:
+            return
+        # Calculate pixel position
+        row, col = self.__key_pos[0], self.__key_pos[1]
+        x = MARGIN_LEFT + self.TILE_SIZE * (row - 1) + (self.TILE_SIZE - self.__key_frames[0].get_width()) // 2
+        y = MARGIN_TOP + self.TILE_SIZE * (col - 1) + (self.TILE_SIZE - self.__key_frames[0].get_height()) // 2
+
+        # Draw shadow first
+        shadow_frame = self.__shadow_key_frames[self.__current_key_frame_index]
+        screen.blit(shadow_frame, (x, y))
+
+        # Draw actual key
+        key_frame = self.__key_frames[self.__current_key_frame_index]
+        screen.blit(key_frame, (x, y))
+
+        # Update frame index for animation
+        self.__current_key_frame_index = (self.__current_key_frame_index + 1) % len(self.__key_frames)
+
+
+        """Draw the gate at its position."""
+        if not self.gate_pos:
+            return
+        
+        # Calculate pixel position
+        row, col = self.gate_pos[0], self.gate_pos[1]
+        x = MARGIN_LEFT + self.TILE_SIZE * (row - 1) + (self.TILE_SIZE - self.__gate_frames[0].get_width()) // 2
+        y = MARGIN_TOP + self.TILE_SIZE * (col - 1) + self.TILE_SIZE - self.__gate_frames[0].get_height() // 2 - 10
+
+        gate_frame = self.__gate_frames[self.__current_gate_frame_index]
+        screen.blit(gate_frame, (x, y))
+
+        # Update frame index for animation
+        if self.__is_changing_gate_status:    # If gate is in the process of opening/closing
+            print("Animating gate...")
+            if self.__is_opening_gate:
+                self.__current_gate_frame_index += 1
+                if self.__current_gate_frame_index >= len(self.__gate_frames):
+                    self.__current_gate_frame_index = len(self.__gate_frames) - 1
+                    self.__is_changing_gate_status = False
+            else: 
+                self.__current_gate_frame_index -= 1
+                if self.__current_gate_frame_index < 0:
+                    self.__current_gate_frame_index = 0
+                    self.__is_changing_gate_status = False
+        
+        else:                                  # If gate is static (fully open or fully closed)
+            if self.__is_opening_gate:
+                self.__current_gate_frame_index = len(self.__gate_frames) - 1
+            else:
+                self.__current_gate_frame_index = 0
+    
+class TrapManager: 
+    def __init__(self, length: int = 6, tile_size: int = TILE_SIZE, trap_positions: List[Tuple] = []) -> None:
+        """
+        Initialize the TrapManager. 
+        
+        Args:
+            length: The grid length (default: 6)
+            tile_size: Size of each tile in pixels
+            trap_positions: List of trap positions in (row, col) format
+        """
+        self.length = length
+        self.TILE_SIZE = tile_size
+        
+        # Use list copy to avoid mutable default argument issue
+        self.__trap_pos = trap_positions.copy() if trap_positions else []
+
+        self.__trap_image = self.load_trap_image()
+
+    def get_pos(self) -> List[Tuple[int, int]]:
+        """
+        Get all trap positions. 
+        
+        Returns:
+            List of trap positions in (row, col) format
+        """
+        return self.__trap_pos
+
+    def load_trap_image(self) -> pygame.Surface:
+        """
+        Load and scale the trap image according to tile size.
+        
+        Returns:
+            Scaled trap surface
+            
+        Raises:
+            FileNotFoundError: If trap image file does not exist
+        """
+        scale_factor = self.TILE_SIZE / 60
+
+        path = os.path. join("assets", "images", "trap.png")
+        
+        # Check if file exists before loading
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Trap image not found: {path}")
+        
+        surface = pygame. image.load(path).convert_alpha()
+        
+        new_size = (int(surface.get_width() * scale_factor), 
+                    int(surface. get_height() * scale_factor))
+        
+        surface.set_colorkey((0, 0, 0))
+        return pygame.transform.smoothscale(surface, new_size)
+
+    def draw(self, screen: pygame. Surface) -> None:
+        """
+        Draw all traps at their positions.
+        
+        Args:
+            screen:  Pygame surface to draw on
+        """
+        for pos in self.__trap_pos:
+            # Validate position tuple
+            if not pos or len(pos) < 2:
+                continue
+            
+            row, col = pos
+            x = MARGIN_LEFT + self.TILE_SIZE * (row - 1) + (self.TILE_SIZE - self.__trap_image.get_width()) // 2
+            y = MARGIN_TOP + self.TILE_SIZE * (col - 1) + (self.TILE_SIZE - self.__trap_image. get_height()) // 2
+            
+            screen.blit(self.__trap_image, (x, y))
+    
+    def check_collision(self, player_pos: List[int]) -> bool:
+        """
+        Check if player collides with any trap.
+        
+        Args:
+            player_pos: Player position in (row, col) format
+            
+        Returns:
+            True if player position matches any trap position, False otherwise
+        """
+        player_pos = tuple(player_pos)
+        if not player_pos or len(player_pos) < 2:
+            return False
+        
+        return player_pos in self.__trap_pos
 
 class MummyMazeMapManager:
     """Handles tile/stair drawing and tile graphics loading."""
@@ -15,6 +262,7 @@ class MummyMazeMapManager:
         map_data: List[List[str]] = None,
         tile_size: int = TILE_SIZE,
     ) -> None:
+        
         self.length = length  # size of square map (length x length)
         # Map from tile id to a bound drawing method (set up using bound methods)
         # Will be populated after methods are available (we can set here using bound methods)
@@ -27,6 +275,23 @@ class MummyMazeMapManager:
         # padding to center walls/stairs based on map size
         self.padding_left = SCREEN_WIDTH // (10 * self.length) // 4
         self.padding_top = SCREEN_HEIGHT // (10 * self.length) * 2 + 1
+
+        # Add traps if any
+        trap_pos = self.get_trap_pos()
+        if trap_pos != []:
+            self.__is_trap_exists = True
+            self.trap = TrapManager(self.length, self.TILE_SIZE, trap_pos)
+        else:
+            self.__is_trap_exists = False
+
+        # Add gate and key if any
+        key_pos = self.get_key_pos()
+        gate_pos = self.get_gate_pos()
+        if key_pos != () and gate_pos != ():
+            self.__is_kg_exists = True
+            self.gate_key = GateKeyManager(self.length, self.TILE_SIZE, key_pos, gate_pos)
+        else:
+            self.__is_kg_exists = False
 
         # Load background and floor images (pygame must be initialized before calling)
         self.backdrop = pygame.image.load(
@@ -60,6 +325,42 @@ class MummyMazeMapManager:
             "t*": self.draw_top_t_wall_tile,
             "b*": self.draw_bottom_t_wall_tile,
         }
+
+    def is_kg_exists(self) -> bool:
+        """Check if gate and key exist in the map."""
+        return self.__is_kg_exists
+
+    def is_trap_exists(self) -> bool:
+        """Check if traps exist in the map."""
+        return self.__is_trap_exists
+
+    def get_trap_pos(self):
+        """Get all trap positions in (row, col) format."""
+        trap_positions = []
+        for col_index, col in enumerate(self.map_data):
+            for row_index, tile_id in enumerate(col):
+                tid = (tile_id or "").strip()
+                if "T" in tid:
+                    trap_positions.append((row_index + 1, col_index + 1))
+        return trap_positions
+    
+    def get_key_pos(self):
+        """Get the key position in (row, col) format."""
+        for col_index, col in enumerate(self.map_data):
+            for row_index, tile_id in enumerate(col):
+                tid = (tile_id or "").strip()
+                if "K" in tid:
+                    return (row_index + 1, col_index + 1)
+        return ()
+    
+    def get_gate_pos(self):
+        """Get the gate position in (row, col) format."""
+        for col_index, col in enumerate(self.map_data):
+            for row_index, tile_id in enumerate(col):
+                tid = (tile_id or "").strip()
+                if "G" in tid:
+                    return (row_index + 1, col_index + 1)
+        return ()
 
     def load_tiles(self) -> None:
         """Cut and scale wall/stair images from spritesheets according to map size."""
@@ -398,12 +699,21 @@ class MummyMazeMapManager:
                 if tid and (tid in self.database):
                     # Call the bound drawing function
                     self.database[tid](screen, row_index + 1, col_index + 1)
-                elif tid:
+                elif tid and tid not in "TKG":  # T: Trap, K: Key, G: Gate
                     # If tile id is unknown, warn and skip
                     print(
                         f"Warning: tile_id '{tid}' at ({col_index}, {row_index}) not found in database. Skipping drawing."
                     )
 
+    def draw_gate_key(self, screen: pygame.Surface) -> None:
+        """Draw gate and key if they exist."""
+        if self.__is_kg_exists:
+            self.gate_key.draw(screen)
+
+    def draw_trap(self, screen: pygame.Surface) -> None:
+        """Draw traps if they exist."""
+        if self.__is_trap_exists:
+            self.trap.draw(screen)
 
 class SidePanel:
     """

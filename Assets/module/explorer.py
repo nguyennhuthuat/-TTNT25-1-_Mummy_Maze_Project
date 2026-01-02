@@ -206,6 +206,7 @@ class MummyMazePlayerManager:
         if is_shadow:
             return pygame.transform.scale(surface, new_size)
         else: 
+            surface.set_colorkey((0, 0, 0))
             return pygame.transform.smoothscale(surface, new_size)
 
     def _create_frameset(self, frames_list: List[pygame.Surface]) -> Any:
@@ -251,7 +252,7 @@ class MummyMazePlayerManager:
 
         # 1. Load NORMAL finding
         finding_surface = self._load_and_scale_image("explorer_finding.gif", is_shadow=False)
-        finding_surface.set_colorkey((0, 0, 0))
+        # finding_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW finding
         shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif", is_shadow=True)

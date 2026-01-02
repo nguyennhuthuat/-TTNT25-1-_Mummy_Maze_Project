@@ -76,6 +76,7 @@ class MummyMazeZombieManager:
         if is_shadow:
             return pygame.transform.scale(surface, new_size)
         else: 
+            surface.set_colorkey((0, 0, 0))
             return pygame.transform.smoothscale(surface, new_size)
         
     def load_zombie_frames(self) -> Tuple[Any, Any]:
@@ -84,7 +85,7 @@ class MummyMazeZombieManager:
         _path = "whitemummy.gif" if self.zombie_type in [0,1] else "redmummy.gif"
         # Load Resources
         zombie_surface = self._load_and_scale_image(_path, is_shadow=False)
-        zombie_surface.set_colorkey((0, 0, 0))
+        # zombie_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
         shadow_surface = self._load_and_scale_image("_" + _path, is_shadow=True)

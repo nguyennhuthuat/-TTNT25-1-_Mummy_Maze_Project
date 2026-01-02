@@ -75,6 +75,7 @@ class MummyMazeScorpionManager:
         if is_shadow:
             return pygame.transform.scale(surface, new_size)
         else: 
+            surface.set_colorkey((0, 0, 0))
             return pygame.transform.smoothscale(surface, new_size)
         
     def load_scorpion_frames(self) -> Tuple[Any, Any]:
@@ -83,7 +84,7 @@ class MummyMazeScorpionManager:
         _path = "scorpion.gif"
         # Load Resources
         scorpion_surface = self._load_and_scale_image(_path, is_shadow=False)
-        scorpion_surface.set_colorkey((0, 0, 0))
+        # scorpion_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
         shadow_surface = self._load_and_scale_image("_" + _path, is_shadow=True)
