@@ -61,6 +61,10 @@ def generate_graph(map_data: list) -> dict: #Generate graph from map data to use
     for col_index, col in enumerate(map_data):
         for row_index, value in enumerate(col):  #row_index is x, col_index is y
             position = (row_index + 1, col_index + 1)
+            # Pass if position is trap
+            if is_trap(map_data, position):
+                continue
+
             graph[position] = []
             if is_linked(map_data, position, UP) and not is_trap(map_data, (position[0], position[1]-1)):
                 graph[position].append((row_index + 1, col_index ))  # Up
@@ -382,7 +386,7 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
             # Update position for next iteration
             zombie_pos = new_pos
 
-        if move_list == []:#if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        if move_list == [] and move_dir is not None:#if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
             move_list.append(move_dir)
 
         if show_list == False:
@@ -740,7 +744,7 @@ def Shortest_Path(map_data: list, start: tuple, goal: tuple, zombie_positions: l
         return []
     
     if start == goal:
-        if not is_lose(zombie_positions, scorpion_positions, start):
+        if not is_lose(map_data, start, zombie_positions, scorpion_positions):
             return [[start], zombie_positions, scorpion_positions]
         else:
             return []
@@ -754,7 +758,7 @@ def Shortest_Path(map_data: list, start: tuple, goal: tuple, zombie_positions: l
     #----- BFS TO FIND SHORTEST PATH -----#
     #-------------------------------------#
     while path: 
-        current_path = path. popleft()
+        current_path = path.popleft()
         player_path = current_path[0]      # [ (x1,y1), (x2,y2), ... ]
         zombie_list = current_path[1]      # [(x,y,k),...]
         scorpion_list = current_path[2]    # [(x,y,intelligence_level),...]
