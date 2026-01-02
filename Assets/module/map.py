@@ -349,16 +349,10 @@ class MummyMazeMapManager:
             screen_inner: pygame.Surface, row_i: int, col_i: int
         ) -> None:
             x = (
-                MARGIN_LEFT
-                + self.TILE_SIZE * (row_i - 1)
-                - self.top_stair.get_width()
-                - 3
+                MARGIN_LEFT + self.TILE_SIZE * (row_i - 1)
             )
             y = (
-                MARGIN_TOP
-                + self.TILE_SIZE * (col_i - 1)
-                - self.top_stair.get_height()
-                + self.TILE_SIZE
+                MARGIN_TOP + self.TILE_SIZE * (col_i - 1) - self.top_stair.get_height() + self.TILE_SIZE
             )
             screen_inner.blit(self.top_stair, (x, y))
 
