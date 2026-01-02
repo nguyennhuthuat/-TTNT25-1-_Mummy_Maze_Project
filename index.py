@@ -81,7 +81,7 @@ except Exception as e:
 
 # Main game setup
 game_data = load_data()
-current_level = game_data["level"]
+current_level = 27
 
 start_button = Button(
     0,  # X tạm thời là 0
