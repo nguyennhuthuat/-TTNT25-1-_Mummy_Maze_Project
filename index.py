@@ -981,11 +981,12 @@ def create_game_state_image(
     MummyExplorer: MummyMazePlayerManager,
     MummyZombies: list[MummyMazeZombieManager],
     side_panel: SidePanel = None,
+    score: int = 0,
 ):
     new_screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     # Vẽ side_panel trước để đồng bộ với game
     if side_panel:
-        side_panel.draw(new_screen)
+        side_panel.draw(new_screen, score)
     MummyMazeMap.draw_map(new_screen)
     MummyExplorer.update_player(new_screen)
     if MummyZombies:
@@ -1005,6 +1006,7 @@ def main_game(current_level=current_level):
         game_data["time_elapsed"] = ScoreTracker.player.current_time_elapsed
         game_data["bonus_score"] = ScoreTracker.player.bonus_score
         game_data["hint_penalty"] = ScoreTracker.player.hint_penalty
+        game_data["total_score"] = ScoreTracker.player.total_score
         if game_data["is_playing"]:
             game_data["explorer_position"] = MummyExplorer.grid_position.copy()
             game_data["explorer_direction"] = MummyExplorer.facing_direction
@@ -1069,6 +1071,7 @@ def main_game(current_level=current_level):
         else None
     )
     ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore)
+    ScoreTracker.player.total_score = game_data.get("total_score", 0)
     history_states = []  # To store previous game states for undo functionality
 
     # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
@@ -1102,8 +1105,20 @@ def main_game(current_level=current_level):
             else []
         )
 
+    # Calculate initial score
+    current_level_score = max(
+        ScoreTracker.player.max_score // 2,
+        round(
+            ScoreTracker.player.max_score
+            - 5 * ScoreTracker.player.current_time_elapsed
+            - ScoreTracker.player.hint_penalty * 0.01 * ScoreTracker.player.max_score
+            + ScoreTracker.player.bonus_score
+        ),
+    )
+    display_score = ScoreTracker.player.total_score + current_level_score
+
     copied_image_screen = create_game_state_image(
-        MummyMazeMap, MummyExplorer, MummyZombies, side_panel
+        MummyMazeMap, MummyExplorer, MummyZombies, side_panel, display_score
     )
     MummyExplorer.start_game_effect(
         screen,
@@ -1261,7 +1276,9 @@ def main_game(current_level=current_level):
                             elapsed_time=ScoreTracker.player.elapsed_time,
                             base_score=ScoreTracker.player.base_score,
                             bonus_score=ScoreTracker.player.bonus_score,
-                            total_score=ScoreTracker.player.total_score,
+                            total_score=ScoreTracker.player.total_score
+                            - ScoreTracker.player.base_score
+                            - ScoreTracker.player.bonus_score,
                         )
 
                         if not continue_game:
@@ -1393,9 +1410,23 @@ def main_game(current_level=current_level):
             pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0)
         )  # Clear screen at start of game
 
+        # Calculate total_score
+        current_level_score = max(
+            ScoreTracker.player.max_score // 2,
+            round(
+                ScoreTracker.player.max_score
+                - 5 * ScoreTracker.player.current_time_elapsed
+                - ScoreTracker.player.hint_penalty
+                * 0.01
+                * ScoreTracker.player.max_score
+                + ScoreTracker.player.bonus_score
+            ),
+        )
+        display_score = ScoreTracker.player.total_score + current_level_score
+
         # Vẽ SidePanel (khung bên trái) - vẽ trước cùng với backdrop
         side_panel.update()
-        side_panel.draw(screen)
+        side_panel.draw(screen, display_score)
 
         MummyMazeMap.draw_map(screen)
         player_turn_completed = MummyExplorer.update_player(screen)
