@@ -769,6 +769,8 @@ class SidePanel:
         # Font cho text trên button - sử dụng VT323 từ Assets/Fonts
         font_path = os.path.join("assets", "Fonts", "VT323-Regular.ttf")
         self.font = pygame.font.Font(font_path, 30)
+        self.score_font = pygame.font.Font(font_path, 55)
+        self.score_label_font = pygame.font.Font(font_path, 40)
 
         # Trạng thái các button
         self.button_states = {label: "normal" for label in self.BUTTON_LABELS}
@@ -859,13 +861,30 @@ class SidePanel:
                 else:
                     self.button_states[label] = "normal"
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, score: int = 0) -> None:
         """
         Vẽ panel lên màn hình.
         :param screen: Surface pygame để vẽ
+        :param score: Điểm số hiện tại
         """
         # Vẽ ảnh khung nền
         screen.blit(self.panel_img, (self.x, self.y))
+
+        # Vẽ Score - hiển thị ngay trên button QUIT TO MAIN
+        quit_rect = self.button_rects.get("QUIT TO MAIN")
+        if quit_rect:
+            center_x = self.x + self.PANEL_WIDTH // 2
+
+            # Draw Score Number (Màu vàng cam)
+            score_text = str(score)
+            score_surface = self.score_font.render(score_text, True, (255, 200, 0))
+            score_rect = score_surface.get_rect(center=(center_x, quit_rect.top - 65))
+            screen.blit(score_surface, score_rect)
+
+            # Draw "SCORE" label (Màu nâu tối)
+            label_surface = self.score_label_font.render("SCORE", True, (60, 20, 20))
+            label_rect = label_surface.get_rect(center=(center_x, quit_rect.top - 25))
+            screen.blit(label_surface, label_rect)
 
         # Vẽ các button
         for label, rect in self.button_rects.items():

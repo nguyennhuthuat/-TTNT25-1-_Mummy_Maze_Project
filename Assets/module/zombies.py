@@ -82,7 +82,7 @@ class MummyMazeZombieManager:
     def load_zombie_frames(self) -> Tuple[Any, Any]:
         """Load zombie sprite sheet and split into directional frames."""
 
-        _path = "whitemummy.gif" if self.zombie_type in [0,1] else "redmummy.gif"
+        _path = "whitemummy.gif" if self.zombie_type in [0,2] else "redmummy.gif"
         # Load Resources
         zombie_surface = self._load_and_scale_image(_path, is_shadow=False)
         # zombie_surface.set_colorkey((0, 0, 0))
@@ -121,7 +121,7 @@ class MummyMazeZombieManager:
 
         # Load Resources
 
-        image_path = "whitelisten.gif" if self.zombie_type in [0,1] else "reddance.gif"
+        image_path = "whitelisten.gif" if self.zombie_type in [0,2] else "reddance.gif"
         effect_surface = self._load_and_scale_image(image_path, is_shadow=False)
         effect_surface.set_colorkey((0, 0, 0))
         
