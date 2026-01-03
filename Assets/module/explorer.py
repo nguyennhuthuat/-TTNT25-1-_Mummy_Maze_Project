@@ -12,12 +12,14 @@ class MummyMazePlayerManager:
     Player handling: loading frames, movement, and rendering.
     """
 
-    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
+    def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
         self.TILE_SIZE = tile_size
         # Fix: Mutable default argument
         self.grid_position = grid_position if grid_position is not None else [1, 2]
-        self.map_data = map_data
+        
+        self.map_data = data["map_data"] if data and "map_data" in data else []
+        self.__superdata = data
 
         # 1. Load Resources
         # Giữ nguyên logic load riêng biệt để đảm bảo shadow không bị lỗi
@@ -180,7 +182,18 @@ class MummyMazePlayerManager:
             time.sleep(0.02)
 
         Mummyhowl.play()
-        
+
+    @property
+    def is_in_trap(self) -> bool:
+        """Check if player is currently on a trap tile."""
+        x, y = self.grid_position
+        if self.__superdata and self.__superdata["trap_pos"] != []:
+            for tx, ty in self.__superdata["trap_pos"]:
+                if (x - 1, y - 1) == (tx - 1, ty - 1):
+                    return True
+                
+        return False
+
     def update_current_frames(self, frame_index: int) -> None:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
@@ -260,7 +273,7 @@ class MummyMazePlayerManager:
 
         return extract_strip_frames(finding_surface), extract_strip_frames(shadow_finding_surface)
 
-    def player_can_move(self, position: List[int], facing_direction: str) -> bool:
+    def player_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
         """Check if player can move in facing_direction considering wall tiles."""
         x, y = position
         map_w = len(self.map_data[0])
@@ -268,11 +281,29 @@ class MummyMazePlayerManager:
         try:
             if facing_direction == UP:
                 if y - 1 <= 0: return False
+
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 2) == (gx - 1, gy - 1):
+                        return False
+                
+                # If gate not in the way or opened, check walls
                 return (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
                        (self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
             
             if facing_direction == DOWN:
                 if y + 1 > map_w: return False
+
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 1) == (gx - 1, gy - 1):
+                        return False
+                    else:
+                        print(f"curent player pos: {(x-1, y-1)}, gate pos: {(gx, gy)}")
+
+                # If gate not in the way or opened, check walls    
                 return (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
                        (self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
             
@@ -308,7 +339,7 @@ class MummyMazePlayerManager:
         screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
-    def update_player(self, screen: pygame.Surface) -> bool:
+    def update_player(self, screen: pygame.Surface, gate_opened: bool = False) -> bool:
         """
         Update player animation and position.
         Returns True when a movement step completes (for turn-based logic).
@@ -327,7 +358,7 @@ class MummyMazePlayerManager:
             self.update_current_frames(self.movement_frame_index)
 
             # Calculate Movement Offsets
-            if self.player_can_move(self.grid_position, self.facing_direction):
+            if self.player_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened):
                 step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
                 
                 if self.facing_direction == UP:

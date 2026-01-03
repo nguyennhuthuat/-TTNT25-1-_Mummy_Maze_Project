@@ -13,7 +13,7 @@ class MummyMazeScorpionManager:
     Scorpion handling: loading frames, chasing movement, and idle 'effect' animation.
     """
 
-    def __init__(self, length: int = 6, grid_position: List[int] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
+    def __init__(self, length: int = 6, grid_position: List[int] = None, data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
         self.TILE_SIZE = tile_size
 
@@ -21,7 +21,9 @@ class MummyMazeScorpionManager:
         # Fix: Mutable default argument anti-pattern
         self.grid_position = [grid_position[0], grid_position[1]] if grid_position is not None else [1, 2]
         self.scorpion_type = grid_position[2] if grid_position is not None and len(grid_position) > 2 else 0 # Default type 0
-        self.map_data = map_data
+        
+        self.map_data = data["map_data"] if data and "map_data" in data else []
+        self.__superdata = data
 
         # 1. Load Resources
         self.scorpion_frames, self.shadow_scorpion_frames = self.load_scorpion_frames()
@@ -109,19 +111,35 @@ class MummyMazeScorpionManager:
         return create_frameset(s_frames_list), create_frameset(shadow_frames_list)
 
    
-    def scorpion_can_move(self, position: List[int], facing_direction: str) -> bool:
+    def scorpion_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
         """Check if scorpion can move in facing_direction considering wall tiles."""
         x, y = position
         map_w = len(self.map_data[0])
         
         try:
             if facing_direction == UP:
-                if y - 1 <= 0: return False
+                if y - 1 <= 0: return 
+                
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 2) == (gx - 1, gy - 1):
+                        return False
+                    
+                # if gate not in the way or opened, check walls    
                 return (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
                        (self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
             
             if facing_direction == DOWN:
                 if y + 1 > map_w: return False
+
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 1) == (gx - 1, gy - 1):
+                        return False
+                    
+                # If gate not in the way or opened, check walls
                 return (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
                        (self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
             
@@ -158,7 +176,7 @@ class MummyMazeScorpionManager:
         screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
-    def update_scorpion(self, screen: pygame.Surface) -> None:
+    def update_scorpion(self, screen: pygame.Surface, gate_opened: bool = False) -> None:
         """Render and animate the scorpion (Moving or Idle/Effect)."""
         move_distance_x = 0
         move_distance_y = 0
@@ -177,7 +195,7 @@ class MummyMazeScorpionManager:
 
             # Calculate offsets
             step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
-            can_move = self.scorpion_can_move(self.grid_position, self.facing_direction)
+            can_move = self.scorpion_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened)
 
             if can_move:
                 if self.facing_direction == UP:

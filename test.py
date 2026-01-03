@@ -1,6 +1,3 @@
-class a:
-    def __init__(self):
-        __private_var = 100
-
-b = a()
-print(b.private_var)
+a = [1,2]
+x,y = a
+print(x,y)

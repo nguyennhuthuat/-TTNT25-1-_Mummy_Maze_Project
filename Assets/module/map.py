@@ -259,14 +259,16 @@ class MummyMazeMapManager:
         self,
         length: int = 6,
         stair_position: Tuple[int, int] = (1, 7),
-        map_data: List[List[str]] = None,
+        data: dict = None,
         tile_size: int = TILE_SIZE,
     ) -> None:
         
+        self.__superdata = data
         self.length = length  # size of square map (length x length)
         # Map from tile id to a bound drawing method (set up using bound methods)
         # Will be populated after methods are available (we can set here using bound methods)
-        self.map_data = map_data
+        print(data)
+        self.map_data = data["map_data"] if data else [["" for _ in range(length)] for _ in range(length)]
         self.stair_positions = stair_position
         self.is_opening_gate = False
 
@@ -337,30 +339,26 @@ class MummyMazeMapManager:
     def get_trap_pos(self):
         """Get all trap positions in (row, col) format."""
         trap_positions = []
-        for col_index, col in enumerate(self.map_data):
-            for row_index, tile_id in enumerate(col):
-                tid = (tile_id or "").strip()
-                if "T" in tid:
-                    trap_positions.append((row_index + 1, col_index + 1))
-        return trap_positions
+        if self.__superdata and "trap_pos" in self.__superdata and self.__superdata["trap_pos"] != []:
+            trap_positions = self.__superdata["trap_pos"]
+
+        return [tuple(trap_positions[i]) for i in range(len(trap_positions))]
     
     def get_key_pos(self):
         """Get the key position in (row, col) format."""
-        for col_index, col in enumerate(self.map_data):
-            for row_index, tile_id in enumerate(col):
-                tid = (tile_id or "").strip()
-                if "K" in tid:
-                    return (row_index + 1, col_index + 1)
-        return ()
+        if self.__superdata and "key_pos" in self.__superdata and self.__superdata["key_pos"] != []:
+            key_position = self.__superdata["key_pos"]
+            return (key_position[0], key_position[1]) # Convert to tuple
+        else:
+            return ()
     
     def get_gate_pos(self):
         """Get the gate position in (row, col) format."""
-        for col_index, col in enumerate(self.map_data):
-            for row_index, tile_id in enumerate(col):
-                tid = (tile_id or "").strip()
-                if "G" in tid:
-                    return (row_index + 1, col_index + 1)
-        return ()
+        if self.__superdata and "gate_pos" in self.__superdata and self.__superdata["gate_pos"] != []:
+            gate_position = self.__superdata["gate_pos"]
+            return (gate_position[0], gate_position[1]) # Convert to tuple
+        else:
+            return ()
 
     def load_tiles(self) -> None:
         """Cut and scale wall/stair images from spritesheets according to map size."""

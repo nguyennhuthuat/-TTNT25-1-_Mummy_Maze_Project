@@ -13,15 +13,16 @@ class MummyMazeZombieManager:
     Zombie handling: loading frames, chasing movement, and idle 'effect' animation.
     """
 
-    def __init__(self, length: int = 6, grid_position: List[int] = None, map_data: Any = None, tile_size: int = TILE_SIZE) -> None:
+    def __init__(self, length: int = 6, grid_position: List[int] = None, data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
         self.TILE_SIZE = tile_size
 
+        self.__superdata = data
         
         # Fix: Mutable default argument anti-pattern
         self.grid_position = [grid_position[0], grid_position[1]] if grid_position is not None else [1, 2]
         self.zombie_type = grid_position[2] if grid_position is not None and len(grid_position) > 2 else 0 # Default type 0
-        self.map_data = map_data
+        self.map_data = data["map_data"] if data and "map_data" in data else []
 
         # 1. Load Resources
         self.zombie_frames, self.shadow_zombie_frames = self.load_zombie_frames()
@@ -133,7 +134,7 @@ class MummyMazeZombieManager:
         shadow_effect_frames = extract_effect_frames(shadow_effect_surface, frame_h)
         return effect_frames, shadow_effect_frames
 
-    def zombie_can_move(self, position: List[int], facing_direction: str) -> bool:
+    def zombie_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
         """Check if zombie can move in facing_direction considering wall tiles."""
         x, y = position
         map_w = len(self.map_data[0])
@@ -141,11 +142,27 @@ class MummyMazeZombieManager:
         try:
             if facing_direction == UP:
                 if y - 1 <= 0: return False
+
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 2) == (gx - 1, gy - 1):
+                        return False
+                
+                # If gate not in the way or opened, check walls
                 return (self.map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
                        (self.map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
             
             if facing_direction == DOWN:
                 if y + 1 > map_w: return False
+
+                # Check if gate is in the way
+                if self.__superdata["gate_pos"] != [] and not gate_opened:
+                    gx, gy = self.__superdata["gate_pos"]
+                    if (x - 1, y - 1) == (gx - 1, gy - 1):
+                        return False
+                    
+                # If gate not in the way or opened, check walls
                 return (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
                        (self.map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
             
@@ -172,27 +189,6 @@ class MummyMazeZombieManager:
         move_list = generate_next_zombie_positions(self.map_data, [list(self.grid_position) + [self.zombie_type]], player_position, show_list=True)
         self.movement_list += move_list
         print(self.movement_list)
-        # for _ in range(2):
-        #     if next_pos == player_position:
-        #         break
-            
-        #     diff_x = player_position[0] - next_pos[0]
-        #     diff_y = player_position[1] - next_pos[1]
-
-        #     # --- 1. Horizontal Priority ---
-        #     if diff_x != 0:
-        #         direction = RIGHT if diff_x > 0 else LEFT
-        #         self.movement_list.append(direction)
-        #         if self.zombie_can_move(next_pos, direction):
-        #             next_pos[0] += (1 if diff_x > 0 else -1)
-            
-        #     # --- 2. Vertical (Only if aligned horizontally) ---
-        #     elif diff_y != 0:
-        #         direction = DOWN if diff_y > 0 else UP
-        #         self.movement_list.append(direction)
-        #         if self.zombie_can_move(next_pos, direction):
-        #             next_pos[1] += (1 if diff_y > 0 else -1)
-
         return len(self.movement_list) > 0
 
     def draw_zombie(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
@@ -203,7 +199,7 @@ class MummyMazeZombieManager:
         screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
-    def update_zombie(self, screen: pygame.Surface) -> None:
+    def update_zombie(self, screen: pygame.Surface, gate_opened: bool = False) -> None:
         """Render and animate the zombie (Moving or Idle/Effect)."""
         move_distance_x = 0
         move_distance_y = 0
@@ -222,7 +218,7 @@ class MummyMazeZombieManager:
 
             # Calculate offsets
             step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
-            can_move = self.zombie_can_move(self.grid_position, self.facing_direction)
+            can_move = self.zombie_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened)
 
             if can_move:
                 if self.facing_direction == UP:
