@@ -14,6 +14,7 @@ from Assets.module.scorpion import MummyMazeScorpionManager
 from Assets.module.settings import *
 from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
+from Assets.module.game_algorithms import Shortest_Path
 
 
 # ---------------------------------------------------------------------------- #
@@ -1047,11 +1048,12 @@ def create_game_state_image(
     return new_screen
 
 
-def main_game(current_level= 0):
+def main_game(current_level= current_level):
     print(current_level)
 
-    def save():
+    def save(is_playing = False):
         # Save game state before exiting
+        game_data["is_playing"] = is_playing
         game_data["level"] = current_level + 1
         game_data["time_elapsed"] = ScoreTracker.player.current_time_elapsed
         game_data["bonus_score"] = ScoreTracker.player.bonus_score
@@ -1242,7 +1244,7 @@ def main_game(current_level= 0):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_data["is_playing"] = True
-                save()
+                save(is_playing= True)
                 return "exit"
 
             # Xử lý sự kiện SidePanel
@@ -1267,6 +1269,10 @@ def main_game(current_level= 0):
                     ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
                     MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
             elif panel_clicked == "RESET MAZE":
+                
+                # Reset side panel buttons first
+                side_panel.reset_button_states()
+
                 (
                     map_length,
                     stair_position,
@@ -1336,13 +1342,26 @@ def main_game(current_level= 0):
                 ScoreTracker.player.reset()
                 ScoreTracker.player.start_counting = time.time()
                 history_states = []
+
             elif panel_clicked == "OPTIONS":
                 pass  # Thêm hiệu ứng mở bảng options vào
+            
             elif panel_clicked == "HINT":
+                path = Shortest_Path(
+                    map_data, 
+                    tuple(MummyExplorer.grid_position), 
+                    tuple(winning_position), 
+                    zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
+                    scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []
+                    ) 
+                if path == []:
+                    print("Can't find the way to win. You lose!")
+                else:
+                    print("Suggested next move:", path[1]) # path[0] is current position
                 pass  # Thêm hiệu ứng mở world map vào
             elif panel_clicked == "QUIT TO MAIN":
                 game_data["is_playing"] = True
-                save()
+                save(is_playing= True)
                 return "main_menu"
 
             if not MummyExplorer.movement_list and (
@@ -1404,7 +1423,7 @@ def main_game(current_level= 0):
                         # Stop counting time, caculate score (base score + bonus score)
                         ScoreTracker.player.end_counting()
                         game_data["is_playing"] = False
-                        save()
+                        save(is_playing= False)
 
                         continue_game = show_victory_window(
                             screen,
@@ -1532,7 +1551,7 @@ def main_game(current_level= 0):
         if reason is not None:
             MummyExplorer.start_lose_effect(screen, reason=reason)
             game_data["is_playing"] = False
-            save()
+            save(is_playing = False)
 
             user_choice = show_lose_window(screen)
 

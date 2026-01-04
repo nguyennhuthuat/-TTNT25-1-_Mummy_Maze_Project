@@ -18,26 +18,25 @@ def is_linked(map_data: list, direction: list, facing_direction: str) -> bool: #
         return (x+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
     return True
 
-def is_trap(map_data: list, position: tuple) -> bool:
+def is_trap(superdata: list, position: tuple) -> bool:
     """
     Check if a position contains a trap. 
     """
     x, y = position[0], position[1]
-    
+    map_data = superdata["map_data"]
     # Check boundaries
     if x < 1 or y < 1 or y > len(map_data) or x > len(map_data[0]):
         return False
     
     # Check if cell is a trap (adjust 'X' based on your map notation)
-    cell_value = map_data[y - 1][x - 1]
-    return cell_value == 'T'  # or 'T', 'trap', etc.
+    return [x,y] in superdata["trap_pos"]
 
-def is_lose(map_data: list, player_position: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> bool:
+def is_lose(superdata: list, player_position: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> bool:
     """
     Check if player is caught by zombie or scorpion. 
     """
     # Check traps
-    if is_trap(map_data, player_position):
+    if is_trap(superdata, player_position):
         return True
     
     # Check zombies
@@ -54,27 +53,30 @@ def is_lose(map_data: list, player_position: tuple, zombie_positions: list = [],
     
     return False
 
-def generate_graph(map_data: list) -> dict: #Generate graph from map data to use in pathfinding algorithms
+def generate_graph(superdata: list) -> dict: #Generate graph from map data to use in pathfinding algorithms
 
     graph = {}
+
+    map_data = superdata["map_data"]
 
     for col_index, col in enumerate(map_data):
         for row_index, value in enumerate(col):  #row_index is x, col_index is y
             position = (row_index + 1, col_index + 1)
             # Pass if position is trap
-            if is_trap(map_data, position):
+            if is_trap(superdata, position):
+                graph[position] = []
                 continue
 
             graph[position] = []
-            if is_linked(map_data, position, UP) and not is_trap(map_data, (position[0], position[1]-1)):
+            if is_linked(map_data, position, UP) and not is_trap(superdata, (position[0], position[1]-1)):
                 graph[position].append((row_index + 1, col_index ))  # Up
-            if is_linked(map_data, position, DOWN) and not is_trap(map_data, (position[0], position[1]+1)):
+            if is_linked(map_data, position, DOWN) and not is_trap(superdata, (position[0], position[1]+1)):
                 graph[position].append((row_index + 1, col_index + 2))  # Down
-            if is_linked(map_data, position, LEFT) and not is_trap(map_data, (position[0]-1, position[1])):
+            if is_linked(map_data, position, LEFT) and not is_trap(superdata, (position[0]-1, position[1])):
                 graph[position].append((row_index , col_index + 1))  # Left
-            if is_linked(map_data, position, RIGHT) and not is_trap(map_data, (position[0]+1, position[1])):
+            if is_linked(map_data, position, RIGHT) and not is_trap(superdata, (position[0]+1, position[1])):
                 graph[position].append((row_index + 2, col_index + 1))  # Right
-    
+    print(graph)
     return graph
 
 def BFS(graph: dict, start: tuple) -> set:
@@ -415,7 +417,6 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
     move_list = [] #use for only one zombie
 
     for zombie_info in current_zombie_positions:
-        print("Current Zombie Info:", zombie_info)
         current_zombie_position = (zombie_info[0], zombie_info[1])
         zombie_type = zombie_info[2]
 
@@ -439,8 +440,6 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
             next_zombie_pos.append(generate_type_3(map_data, current_zombie_position, current_player_position) + (zombie_type,))
             if show_list:
                 move_list += generate_type_3(map_data, current_zombie_position, current_player_position, show_list=show_list)
-                print(generate_type_3(map_data, current_zombie_position, current_player_position, show_list=show_list))
-        else: print(zombie_type)
     if show_list == False:   
         return next_zombie_pos
     else:
@@ -701,7 +700,6 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
     move_list = []
 
     for scorpion_info in current_scorpion_positions:
-        print("Current Scorpion Info:", scorpion_info)
         current_scorpion_position = (scorpion_info[0], scorpion_info[1])
         intelligence_level = scorpion_info[2]
 
@@ -721,26 +719,30 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
             next_scorpion_pos.append(generate_type_3(map_data, current_scorpion_position, current_player_position) + (intelligence_level,))
             if show_list:
                 move_list += generate_type_3(map_data, current_scorpion_position, current_player_position, show_list=show_list)
-                print(generate_type_3(map_data, current_scorpion_position, current_player_position, show_list=show_list))
-        else: 
-            print(intelligence_level)
+
             
     if show_list == False:    
         return next_scorpion_pos
     else: 
         return move_list
 
-def Shortest_Path(map_data: list, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list: 
+def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list: 
 
     """
     Finds shortest path avoiding zombies (2 steps), scorpions (1 step), and traps.
     """
     
     #----- STEP 1: INITIALIZE GRAPH AND VARIABLES  -----#
-    graph = generate_graph(map_data)
+    map_data = superdata["map_data"]
+    graph = generate_graph(superdata)
+    visited = set() #((exp_pos, zombie_positions, scorpion_positions), ...)
+
+    # Limit steps to avoid infinite loops
+    count_steps = 0
+    threshold_steps = 1000000
     
     # Check if start or goal is on trap
-    if is_trap(map_data, start) or is_trap(map_data, goal):
+    if is_trap(superdata, start) or is_trap(superdata, goal):
         return []
     
     if start == goal:
@@ -754,10 +756,13 @@ def Shortest_Path(map_data: list, start: tuple, goal: tuple, zombie_positions: l
     path = deque([[[start], zombie_positions, scorpion_positions]]) 
     ## [[ [path], [zombie positions], [scorpion positions] ], ...]
 
-    #-------------------------------------#
-    #----- BFS TO FIND SHORTEST PATH -----#
-    #-------------------------------------#
-    while path: 
+    #---------------------------------------------------------------------------------------#
+    #------------------------------ BFS TO FIND SHORTEST PATH ------------------------------#
+    #---------------------------------------------------------------------------------------#
+    while path and count_steps < threshold_steps: 
+
+        count_steps += 1
+
         current_path = path.popleft()
         player_path = current_path[0]      # [ (x1,y1), (x2,y2), ... ]
         zombie_list = current_path[1]      # [(x,y,k),...]
@@ -769,39 +774,46 @@ def Shortest_Path(map_data: list, start: tuple, goal: tuple, zombie_positions: l
         current_position = player_path[-1]
         
         # Check if stepped on trap
-        if is_trap(map_data, current_position):
+        if is_trap(superdata, current_position):
             continue
         
         # Check if caught by zombie or scorpion
-        player_died = is_lose(map_data, current_position,zombie_list, scorpion_list)
+        player_died = is_lose(superdata, current_position,zombie_list, scorpion_list)
         
         #----- Step 2.1: if player is not caught by any enemy -----#
         if not player_died:  
 
             #-----------------------------------------------------------------------------------#
-            #----- STEP 3: GENERATE NEXT POSSIBLE POSITIONS FOR ZOMBIES, SCORPIONS, PLAYER -----#
+            #----- STEP 3: GENERATE NEXT POSSIBLE POSITIONS FOR PLAYER, ZOMBIES, SCORPIONS -----#
             #-----------------------------------------------------------------------------------#
 
             #----- Step 3.1: Generate next possible positions for player -----#
             for neighbor in graph[current_position]:
-                
                 # Skip if neighbor is a trap
-                if is_trap(map_data, neighbor):
+                if is_trap(superdata, neighbor):
                     continue
                 
+                cur_path = player_path.copy()
+                cur_path.append(neighbor)
+
                 # Generate next positions for enemies
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
-
-                if neighbor == goal:
+                
+                print(f"Step {count_steps}: Player's path:{ cur_path}, zombies: {new_zombie_positions}, scorpions: {new_scorpion_positions}")
+                if neighbor == goal and not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
                     #----- STEP 4: RETURN PATH IF GOAL IS REACHED -----#
-                    return [player_path + [neighbor], new_zombie_positions, new_scorpion_positions]
+                    return cur_path
                 
                 else:
-                    #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
-                    path.append([player_path + [neighbor], new_zombie_positions, new_scorpion_positions])
+                    temp = (neighbor, tuple(new_zombie_positions), tuple(new_scorpion_positions))
+                    if temp not in visited:
+                        #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
+                        path.append([cur_path, new_zombie_positions, new_scorpion_positions])
+                        visited.add(temp)
 
         else: 
+            print(f"Status: Player caught at position {current_position} in step {count_steps}, zombies: {zombie_list}, scorpions: {scorpion_list}")
             None # Do nothing if player is caught by enemy in this case
 
     return [] # No path found

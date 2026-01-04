@@ -780,6 +780,11 @@ class SidePanel:
 
         self._calculate_button_positions()
 
+    def reset_button_states(self) -> None:
+        """Reset tất cả button về trạng thái normal."""
+        for label in self.button_states. keys():
+            self.button_states[label] = "normal"
+
     def _calculate_button_positions(self) -> None:
         """Tính toán vị trí các button - căn giữa đối xứng trong khung."""
         # Căn giữa button theo chiều ngang của panel - dịch sang phải 5px để căn đối xứng
