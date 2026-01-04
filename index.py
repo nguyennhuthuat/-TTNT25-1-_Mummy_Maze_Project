@@ -16,7 +16,6 @@ from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
 from Assets.module.game_algorithms import Shortest_Path
 
-
 # ---------------------------------------------------------------------------- #
 # ----------------------------Initial Game Setup------------------------------ #
 # ---------------------------------------------------------------------------- #
@@ -82,7 +81,7 @@ except Exception as e:
 
 # Main game setup
 game_data = load_data()
-current_level = game_data.get("current_level", 0)
+current_level = 0
 
 start_button = Button(
     0,  # X tạm thời là 0
