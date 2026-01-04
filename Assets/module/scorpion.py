@@ -10,7 +10,7 @@ from .game_algorithms import generate_next_scorpion_positions
 
 class MummyMazeScorpionManager:
     """
-    Scorpion handling: loading frames, chasing movement, and idle 'effect' animation.
+    Scorpion handling: loading frames, chasing movement.
     """
 
     def __init__(self, length: int = 6, grid_position: List[int] = None, data: Any = None, tile_size: int = TILE_SIZE) -> None:
@@ -27,7 +27,7 @@ class MummyMazeScorpionManager:
 
         # 1. Load Resources
         self.scorpion_frames, self.shadow_scorpion_frames = self.load_scorpion_frames()
-        self.scorwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "scorwalk60b.wav"))
+        self.scorwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "scorpwalk1.wav"))
 
         # 2. Movement State
         self.movement_list: List[str] = []
@@ -38,11 +38,7 @@ class MummyMazeScorpionManager:
         # 3. Animation State
         self.total_frames = 10
         self.movement_frame_index = 0
-        
-        # Idle/Effect State
-        self.effect_frame_index = 0
-        self.idle_time_threshold = random.randint(3, 8)
-        self.start_standing = time.time()
+    
 
         # 4. Set initial frames (Idle at start)
         self.update_current_frames(frame_index=self.total_frames - 1)
@@ -177,7 +173,7 @@ class MummyMazeScorpionManager:
         screen.blit(self.current_frame, (base_x, base_y))
 
     def update_scorpion(self, screen: pygame.Surface, gate_opened: bool = False) -> None:
-        """Render and animate the scorpion (Moving or Idle/Effect)."""
+        """Render and animate the scorpion (Moving or Idle)."""
         move_distance_x = 0
         move_distance_y = 0
         grid_dx = 0
@@ -232,23 +228,7 @@ class MummyMazeScorpionManager:
         else:
             # Default idle frame (standing still)
             self.update_current_frames(self.total_frames - 1)
-
-            # Check logic for Effect Animation (Special Idle)
-            # Conditions: Standing + Facing DOWN + Time elapsed > Threshold
-            is_idle_timeout = (time.time() - self.start_standing >= self.idle_time_threshold)
-            
-            if self.is_standing and self.facing_direction == DOWN and is_idle_timeout:
-                
-                # Override with effect frames
-                self.current_frame = self.effect_frames[self.effect_frame_index]
-                self.current_shadow_frame = self.shadow_effect_frames[self.effect_frame_index]
-                
-                self.effect_frame_index += 1
-
-                # If effect animation finishes loop
-                if self.effect_frame_index >= len(self.effect_frames):
-                    self.effect_frame_index = 0
-                    self.start_standing = time.time() # Reset timer
-                    self.idle_time_threshold = random.randint(8, 16) # New random threshold
+   
+          
 
             self.draw_scorpion(screen, 0, 0)

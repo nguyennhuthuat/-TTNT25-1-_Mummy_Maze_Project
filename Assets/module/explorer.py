@@ -15,6 +15,7 @@ class MummyMazePlayerManager:
     def __init__(self, length: int = 6, grid_position: Optional[List[int]] = None, data: Any = None, tile_size: int = TILE_SIZE) -> None:
         self.length = length
         self.TILE_SIZE = tile_size
+
         # Fix: Mutable default argument
         self.grid_position = grid_position if grid_position is not None else [1, 2]
         
@@ -22,12 +23,11 @@ class MummyMazePlayerManager:
         self.__superdata = data
 
         # 1. Load Resources
+
         # Giữ nguyên logic load riêng biệt để đảm bảo shadow không bị lỗi
         self.player_frames, self.shadow_player_frames = self.load_player_frames()
         self.finding_frames, self.shadow_finding_frames = self.load_player_finding_frames()
         
-        self.expwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "expwalk60b.wav"))
-
         # 2. Movement State
         self.movement_list: List[str] = []
         self.is_standing: bool = True
@@ -45,6 +45,15 @@ class MummyMazePlayerManager:
 
         # 4. Set initial frames
         self.update_current_frames(frame_index=self.total_frames - 1)
+
+        # 5. Sound Effects
+        self.expwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "expwalk60b.wav"))
+        self.lose_sound = {
+            "Zombie": pygame.mixer.Sound(os.path.join("Assets", "sounds", "block.wav")),
+            "Scorpion": pygame.mixer.Sound(os.path.join("Assets", "sounds", "block.wav")),
+            "Trapped": pygame.mixer.Sound(os.path.join("Assets", "sounds", "pit.wav")),
+        }
+
 
     def get_x(self):
         return self.grid_position[0]
@@ -182,7 +191,26 @@ class MummyMazePlayerManager:
             time.sleep(0.02)
 
         Mummyhowl.play()
+    
+    def start_lose_effect(self, screen: pygame.Surface, reason: str = "Zombie") -> None:
+        """Play lose effect based on reason: 'Zombie', 'Scorpion', or 'Trapped'."""
+        # Play corresponding sound
+        if reason in self.lose_sound:
+            self.lose_sound[reason].play()
 
+        # Simple flash effect
+        flash_surface = pygame.Surface(screen.get_size())
+        flash_surface.fill((255, 0, 0))  # Red flash for lose effect
+
+        for alpha in range(0, 255, 15):
+            flash_surface.set_alpha(alpha)
+            screen.blit(flash_surface, (0, 0))
+            pygame.display.flip()
+            pygame.time.Clock().tick(60)
+            time.sleep(0.02)
+
+        time.sleep(0.5)  # Pause before ending effect
+        
     @property
     def is_in_trap(self) -> bool:
         """Check if player is currently on a trap tile."""

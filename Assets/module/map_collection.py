@@ -41,7 +41,7 @@ maps_collection = [
         "player_start": [1, 1],
         "stair_position": (4, 7),
         "zombie_starts": [[6, 5, 2]],
-        "scorpion_starts": [],
+        "scorpion_starts": [[1, 6, 0]],
         "trap_pos": [[2,1]],
         "key_pos": [2,2],
         "gate_pos": [6,4],

@@ -90,7 +90,7 @@ class PersonalPointPackage:
 
         # Calculate total score
         self._base_score = max(self._max_score//2, round(self._max_score - 5 * self._elapsed_time - self._hint_penalty * 0.01 * self._max_score + self._bonus_score))
-        self._total_score += self._base_score + self._bonus_score
+        self._total_score += self._base_score
 
         return None
     

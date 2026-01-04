@@ -52,26 +52,17 @@ def load_level(level_index: int):
 
     level_data = maps_collection[level_index]
     cleaned_map_data = clean_map_data(level_data["map_data"])
-    if not level_data.get("level_score"): 
-        print(f"Warning: Level {level_index} has no level_score defined.")
-        return (
-        level_data["map_length"],
-        level_data["stair_position"],
-        level_data,
-        level_data["player_start"].copy(),
-        level_data["zombie_starts"].copy(),
-        1000,
-    )
-    else:
-        return (
-        level_data["map_length"],
-        level_data["stair_position"],
-        level_data,
-        level_data["player_start"].copy(),
-        level_data["zombie_starts"].copy(),
-        level_data["level_score"],
-    )
+    level_data["map_data"] = cleaned_map_data
 
+    return (
+        level_data.get("map_length", 6),
+        level_data.get("stair_position", (0, 1)),
+        level_data,
+        level_data.get("player_start", (1, 1)).copy(),
+        level_data.get("zombie_starts", []).copy(),
+        level_data.get("scorpion_starts", []).copy(),
+        level_data.get("level_score", 1000),
+    )
 
 # -------------------------------------------------------- #
 # --------------------- CLASS HELPER --------------------- #

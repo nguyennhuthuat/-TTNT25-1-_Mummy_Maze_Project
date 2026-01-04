@@ -47,8 +47,7 @@ def load_data(filename = "savegame.sav"):
     # Kiểm tra file có tồn tại không
     if not os.path.exists(filename):
         print("Không tìm thấy file save.")
-        return None
-
+        return {}
     try:
         # 1. Đọc file mã hóa (chế độ rb - read binary)
         with open(filename, 'rb') as f:
@@ -66,7 +65,7 @@ def load_data(filename = "savegame.sav"):
     except Exception as e:
         # Trường hợp này xảy ra nếu file bị ai đó sửa bậy hoặc sai Key
         print(f"File save bị lỗi hoặc bị can thiệp: {e}")
-        return None
+        return {}
 
 
 if __name__ == "__main__":
