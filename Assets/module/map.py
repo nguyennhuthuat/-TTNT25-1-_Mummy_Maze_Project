@@ -729,7 +729,7 @@ class SidePanel:
     BUTTON_GAP = 6  # Không có khoảng cách giữa 4 button đầu
 
     # Tên các button theo thứ tự
-    BUTTON_LABELS = ["UNDO MOVE", "RESET MAZE", "OPTIONS", "WORLD MAP", "QUIT TO MAIN"]
+    BUTTON_LABELS = ["UNDO MOVE", "RESET MAZE", "HINT", "OPTIONS", "QUIT TO MAIN"]
 
     def __init__(self, x: int = 5, y: int = 16) -> None:
         """

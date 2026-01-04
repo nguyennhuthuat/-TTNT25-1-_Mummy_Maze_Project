@@ -1273,11 +1273,14 @@ def main_game(current_level= 0):
                     map_data,
                     player_start,
                     zombie_starts,
+                    scorpion_starts,
                     BaseLevelScore,
                 ) = load_level(current_level)
+
                 winning_position, goal_direction = get_winning_position(
                     stair_position, map_length
                 )
+
                 current_tile_size = 480 // map_length
                 MummyMazeMap = MummyMazeMapManager(
                     length=map_length,
@@ -1304,12 +1307,38 @@ def main_game(current_level= 0):
                     if zombie_starts
                     else None
                 )
+
+                MummyScorpions = (
+                    [
+                        MummyMazeScorpionManager(
+                            length=map_length,
+                            grid_position=pos,
+                            data=map_data,
+                            tile_size=current_tile_size,
+                        )
+                        for pos in scorpion_starts
+                    ]
+                    if scorpion_starts
+                    else None
+                )
+
+                # Start game effect
+                copied_image_screen = create_game_state_image(
+                    MummyMazeMap, MummyExplorer, MummyZombies, MummyScorpions, side_panel=side_panel, ScoreTracker=ScoreTracker
+                )
+                MummyExplorer.start_game_effect(
+                    screen,
+                    copied_image_screen,
+                    [MummyExplorer.get_x(), MummyExplorer.get_y()],
+                    MummyExplorer.facing_direction,
+                )
+
                 ScoreTracker.player.reset()
                 ScoreTracker.player.start_counting = time.time()
                 history_states = []
             elif panel_clicked == "OPTIONS":
                 pass  # Thêm hiệu ứng mở bảng options vào
-            elif panel_clicked == "WORLD MAP":
+            elif panel_clicked == "HINT":
                 pass  # Thêm hiệu ứng mở world map vào
             elif panel_clicked == "QUIT TO MAIN":
                 game_data["is_playing"] = True
