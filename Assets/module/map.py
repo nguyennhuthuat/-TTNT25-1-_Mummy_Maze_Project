@@ -8,6 +8,7 @@ from .settings import *
 from .utils import *
 
 
+
 class GateKeyManager:
     def __init__(self,length: int = 6, tile_size: int = TILE_SIZE, key_pos: Tuple = (), gate_pos: Tuple = ()) -> None:
         self.length = length
@@ -53,41 +54,15 @@ class GateKeyManager:
         """Check if gate has finished opening/closing animation."""
         return not self.__is_changing_gate_status
 
-    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
-        """Convert an original shadow surface to a black silhouette."""
-        image = frame.copy()
-        image.set_colorkey((0, 0, 0))
-        mask = pygame.mask.from_surface(image)
-        # setcolor=(0, 0, 0) -> Absolute black
-        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-
-    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False, use_colorkey: bool = False) -> pygame.Surface:
-        """Helper just for loading and scaling, NOT applying shadow logic."""
-        scale_factor = self.TILE_SIZE / 60
-
-        path = os.path.join("assets", "images", filename)
-        surface = pygame.image.load(path).convert_alpha()
-        
-        new_size = (int(surface.get_width() * scale_factor), 
-                    int(surface.get_height() * scale_factor))
-        
-        if is_shadow:
-            return pygame.transform.scale(surface, new_size)
-        else: 
-            if use_colorkey:
-                surface.set_colorkey((0, 0, 0))
-
-            return pygame.transform.smoothscale(surface, new_size)
-
     def get_key_frames(self) -> Tuple[Any, Any]:
         """Load key sprite sheet and split into directional frames."""
         
         # 1. Load NORMAL sprite
-        key_surface = self._load_and_scale_image("key.png", is_shadow=False).convert_alpha()
+        key_surface = load_and_scale_image(self.TILE_SIZE, "key.png", is_shadow=False)
 
         # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
-        shadow_surface = self._load_and_scale_image("_key.gif", is_shadow=True)
-        shadow_surface = self.get_black_shadow_surface(shadow_surface)
+        shadow_surface = load_and_scale_image(self.TILE_SIZE, "_key.gif", is_shadow=True)
+        shadow_surface = get_black_shadow_surface(shadow_surface)
 
         # 3. Extract Frames
         w_frame = key_surface.get_height()
@@ -102,7 +77,7 @@ class GateKeyManager:
         """Load gate sprite sheet and split into directional frames."""
         
         # 1. Load NORMAL sprite
-        gate_surface = self._load_and_scale_image("gate.gif", is_shadow=False).convert_alpha()
+        gate_surface = load_and_scale_image(self.TILE_SIZE, "gate.gif", is_shadow=False)
 
         # 2. Extract Frames
         w_frame = gate_surface.get_width() // 8
@@ -929,5 +904,65 @@ class SidePanel:
             text_rect = text_surface.get_rect(center=rect.center)
             screen.blit(text_surface, text_rect)
 
+class HintPackage:
+    def __init__(self, tile_size: int = TILE_SIZE) -> None:
+        self.TILE_SIZE= tile_size
+        self.facing_direction = DOWN
+        self.show_hint = False
+
+        self.__hint_frame, self.__shadow_hint_frame = self.load_hint_image()
+    
+    def load_hint_image(self) -> Tuple[FrameSet, FrameSet]:
+        """
+        Load and scale the hint image according to tile size.
+        
+        Returns:
+            Scaled hint surface"""
+        hint_surface = load_and_scale_image(self.TILE_SIZE, "arrows.gif", use_colorkey=True)
+
+        hint_shadow = load_and_scale_image(self.TILE_SIZE, "_arrows.gif", is_shadow=True)
+        hint_shadow = get_black_shadow_surface(hint_shadow)
+
+        w_frame = hint_surface.get_width() 
+        h_frame = hint_surface.get_height() // 4
+
+        hint_frames_list = extract_sprite_frames(hint_surface, w_frame, h_frame)
+        shadow_frames_list = extract_sprite_frames(hint_shadow, w_frame, h_frame)
+
+        #up, down, left, right
+
+        res_hint_frames = FrameSet(hint_frames_list[3], hint_frames_list[0], hint_frames_list[2], hint_frames_list[1])
+        res_shadow_frames = FrameSet(shadow_frames_list[3], shadow_frames_list[0], shadow_frames_list[2], shadow_frames_list[1])
+        return (res_hint_frames, res_shadow_frames)
+
+    def draw(self, screen: pygame.Surface, player_pos: List[int], facing_direction: str = None) -> None:
+        if self.facing_direction == "WIN":
+            return
+        
+        if facing_direction is None:
+            facing_direction = self.facing_direction
+        else:
+            self.facing_direction = facing_direction
+
+        # Calculate position to draw hint
+        x, y = player_pos
+        match facing_direction:
+            case "UP":
+                x, y = x, y - 1
+            case "DOWN":
+                x, y = x, y + 1
+            case "LEFT":
+                x, y = x - 1, y
+            case "RIGHT":
+                x, y = x + 1, y
+        print(facing_direction)
+        current_image = getattr(self.__hint_frame, facing_direction)
+        current_shadow = getattr(self.__shadow_hint_frame, facing_direction)
+
+        hint_x = MARGIN_LEFT + self.TILE_SIZE * (x - 1) + (self.TILE_SIZE - current_image.get_width()) // 2
+        hint_y = MARGIN_TOP + self.TILE_SIZE * (y - 1) + (self.TILE_SIZE - current_image.get_height()) // 2
+
+        screen.blit(current_shadow, (hint_x, hint_y))
+        screen.blit(current_image, (hint_x, hint_y))
 
 pygame.quit()

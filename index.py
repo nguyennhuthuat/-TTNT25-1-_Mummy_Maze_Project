@@ -7,7 +7,7 @@ import pygame
 from Assets.module.map_collection import maps_collection  # Import a collection of maps
 
 from Assets.module.utils import *
-from Assets.module.map import MummyMazeMapManager, SidePanel
+from Assets.module.map import MummyMazeMapManager, SidePanel, HintPackage
 from Assets.module.explorer import MummyMazePlayerManager
 from Assets.module.zombies import MummyMazeZombieManager
 from Assets.module.scorpion import MummyMazeScorpionManager
@@ -1048,7 +1048,7 @@ def create_game_state_image(
     return new_screen
 
 
-def main_game(current_level= current_level):
+def main_game(current_level= 36):
     print(current_level)
 
     def save(is_playing = False):
@@ -1059,6 +1059,7 @@ def main_game(current_level= current_level):
         game_data["bonus_score"] = ScoreTracker.player.bonus_score
         game_data["hint_penalty"] = ScoreTracker.player.hint_penalty
         game_data["total_score"] = ScoreTracker.player.total_score
+
         if game_data["is_playing"]:
             game_data["explorer_position"] = MummyExplorer.grid_position.copy()
             game_data["explorer_direction"] = MummyExplorer.facing_direction
@@ -1089,9 +1090,12 @@ def main_game(current_level= current_level):
             game_data["explorer_direction"] = None
             game_data["zombie_positions"] = None
             game_data["zombie_directions"] = None
+            game_data["scorpion_positions"] = None
+            game_data["scorpion_directions"] = None
             game_data["history_states"] = []
             game_data["bonus_score"] = 0
             game_data["hint_penalty"] = 0
+            game_data["time_elapsed"] = 0
         save_data(game_data)
         print(f"current_level saved: {game_data['level']}, prev level: {current_level}")
 
@@ -1115,6 +1119,9 @@ def main_game(current_level= current_level):
 #--------------------------------------------------------#
 #------------INITIALIZE GAME OBJECTS HERE----------------#
 #--------------------------------------------------------#
+    # flag to track if player has completed their turn
+    player_turn_completed = False
+
     MummyMazeMap = MummyMazeMapManager(
         length=map_length,
         stair_position=stair_position,
@@ -1160,6 +1167,9 @@ def main_game(current_level= current_level):
 
     # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
     side_panel = SidePanel(x=MARGIN_LEFT_OFFSET, y=16)
+
+    # Initialize hint package
+    hint = HintPackage(current_tile_size)
 
     #----------------------------------------------------------------------#
     #-----------------------HANDLE LOADED GAME STATE-----------------------#
@@ -1251,9 +1261,12 @@ def main_game(current_level= current_level):
             panel_clicked = side_panel.handle_event(event)
             if panel_clicked == "UNDO MOVE":
                 if history_states:
+
                     last_state = history_states.pop()
+
                     MummyExplorer.grid_position = last_state["explorer_position"].copy()
                     MummyExplorer.facing_direction = last_state["explorer_direction"]
+
                     for idx, zombie in enumerate(MummyZombies or []):
                         if idx < len(last_state["zombie_positions"]):
                             zombie.grid_position = last_state["zombie_positions"][
@@ -1262,12 +1275,25 @@ def main_game(current_level= current_level):
                             zombie.facing_direction = last_state["zombie_directions"][
                                 idx
                             ]
+
+                    for idx, scorpion in enumerate(MummyScorpions or []):
+                        if idx < len(last_state["scorpion_positions"]):
+                            scorpion.grid_position = last_state["scorpion_positions"][
+                                idx
+                            ].copy()
+                            scorpion.facing_direction = last_state["scorpion_directions"][
+                                idx
+                            ]
                     ScoreTracker.player.start_counting = (
                         time.time() - last_state["time_elapsed"]
                     )
                     ScoreTracker.player.bonus_score = last_state["bonus_score"]
                     ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
                     MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
+
+                    # 
+                    ScoreTracker.player.hint_penalty += 1
+            
             elif panel_clicked == "RESET MAZE":
                 
                 # Reset side panel buttons first
@@ -1354,11 +1380,16 @@ def main_game(current_level= current_level):
                     zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
                     scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []
                     ) 
+                
                 if path == []:
                     print("Can't find the way to win. You lose!")
                 else:
-                    print("Suggested next move:", path[1]) # path[0] is current position
-                pass  # Thêm hiệu ứng mở world map vào
+                    face_direction = get_face_direction(path[0], path[1], MummyMazeMap.map_data) if len(path) >=2 else "WIN"
+                    hint.show_hint = True
+                    hint.facing_direction = face_direction
+
+                    ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
+            
             elif panel_clicked == "QUIT TO MAIN":
                 game_data["is_playing"] = True
                 save(is_playing= True)
@@ -1371,6 +1402,9 @@ def main_game(current_level= current_level):
 
                 player_moved = True  # Player is about to make a move
                 if event.type == pygame.KEYDOWN:
+
+                    # change show_hint to False when player makes a move
+                    hint.show_hint = False
 
                     # Save current state before making a move
                     history_states.append(
@@ -1385,6 +1419,11 @@ def main_game(current_level= current_level):
                             "zombie_directions": (
                                 [zombie.facing_direction for zombie in MummyZombies]
                                 if MummyZombies
+                                else []
+                            ),
+                            "scorpion_positions": (
+                                [scorpion.grid_position.copy() for scorpion in MummyScorpions]
+                                if MummyScorpions
                                 else []
                             ),
                             "scorpion_directions": (
@@ -1524,8 +1563,13 @@ def main_game(current_level= current_level):
                         else:
                             print("Congratulations! You have completed all levels!")
                             running = False
+                            return "main_menu"
 
-        ####################### CHECK LOSE CONDITION #######################
+
+        
+        #------------------------------------------------------------------------------------#
+        #------------------------------- CHECK LOSE CONDITION -------------------------------#
+        #------------------------------------------------------------------------------------#
         reason = None
         if MummyExplorer.is_in_trap:
             reason = "Trapped"
@@ -1656,10 +1700,16 @@ def main_game(current_level= current_level):
         # 7. DRAW KEY & GATE IF ANY
         MummyMazeMap.draw_gate_key(screen)
 
-        # 8. DRAW WALLS OVER EVERYTHING
+        # 8. DRAW HINT IF ANY
+        if hint.show_hint:
+            hint.draw(screen, (MummyExplorer.get_x(), MummyExplorer.get_y()))
+
+        # 9. DRAW WALLS OVER EVERYTHING
         MummyMazeMap.draw_walls(screen)
         # if MummyMazeMap.is_kg_exists() and not MummyMazeMap.gate_key.is_opening_gate():
         #     MummyMazeMap.draw_gate_key(screen)
+
+        
 
         #---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
         if player_turn_completed:

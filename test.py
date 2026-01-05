@@ -40,3 +40,9 @@ b = 2
 c = 3
 d =tuple((a,b,c))
 print(d)
+
+from Assets.module.utils import FrameSet
+
+frame_set = FrameSet(4, 3, 2,1)
+facint_direction = 'UP'
+print(frame_set.get_frame(facint_direction))

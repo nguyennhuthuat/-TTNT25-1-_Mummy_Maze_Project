@@ -1,22 +1,10 @@
 from collections import deque
+from .utils import is_linked
 UP = 'UP'
 DOWN = 'DOWN'
 LEFT = 'LEFT'
 RIGHT = 'RIGHT'
 
-def is_linked(map_data: list, direction: list, facing_direction: str) -> bool: #check if have walls on the way
-        
-    x = direction[0]
-    y = direction[1]
-    if facing_direction == UP: #up
-        return (y-1 > 0) and (map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
-    if facing_direction == DOWN: #down
-        return (y+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
-    if facing_direction == LEFT: #left
-        return (x-1 > 0) and (map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
-    if facing_direction == RIGHT: #right
-        return (x+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
-    return True
 
 def is_trap(superdata: list, position: tuple) -> bool:
     """
@@ -76,7 +64,7 @@ def generate_graph(superdata: list) -> dict: #Generate graph from map data to us
                 graph[position].append((row_index , col_index + 1))  # Left
             if is_linked(map_data, position, RIGHT) and not is_trap(superdata, (position[0]+1, position[1])):
                 graph[position].append((row_index + 2, col_index + 1))  # Right
-    print(graph)
+
     return graph
 
 def BFS(graph: dict, start: tuple) -> set:
@@ -746,8 +734,8 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
         return []
     
     if start == goal:
-        if not is_lose(map_data, start, zombie_positions, scorpion_positions):
-            return [[start], zombie_positions, scorpion_positions]
+        if not is_lose(superdata, start, zombie_positions, scorpion_positions):
+            return [start] 
         else:
             return []
     
@@ -788,6 +776,23 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
             #-----------------------------------------------------------------------------------#
 
             #----- Step 3.1: Generate next possible positions for player -----#
+            if len(graph[current_position]) < 4:  # If can stay in this position (not 4-way connected)
+                # Get idle_position (stay in place)
+                neighbor = current_position
+
+                cur_path = player_path.copy()
+                cur_path.append(neighbor)
+
+                # Generate next positions for enemies
+                new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
+                new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
+
+                temp = (neighbor, tuple(new_zombie_positions), tuple(new_scorpion_positions))
+                if temp not in visited:
+                    #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
+                    path.append([cur_path, new_zombie_positions, new_scorpion_positions])
+                    visited.add(temp)
+
             for neighbor in graph[current_position]:
                 # Skip if neighbor is a trap
                 if is_trap(superdata, neighbor):
@@ -800,7 +805,6 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
                 
-                print(f"Step {count_steps}: Player's path:{ cur_path}, zombies: {new_zombie_positions}, scorpions: {new_scorpion_positions}")
                 if neighbor == goal and not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
                     #----- STEP 4: RETURN PATH IF GOAL IS REACHED -----#
                     return cur_path
@@ -813,7 +817,6 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
                         visited.add(temp)
 
         else: 
-            print(f"Status: Player caught at position {current_position} in step {count_steps}, zombies: {zombie_list}, scorpions: {scorpion_list}")
             None # Do nothing if player is caught by enemy in this case
 
     return [] # No path found

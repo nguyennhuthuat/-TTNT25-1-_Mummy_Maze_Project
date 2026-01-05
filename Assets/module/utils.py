@@ -1,4 +1,5 @@
 
+import os
 from typing import List, Tuple, Optional
 from .map_collection import maps_collection
 from .settings import *
@@ -26,6 +27,68 @@ def extract_sprite_frames(sheet: pygame.Surface, frame_width: int, frame_height:
 def double_list(input_list: List[pygame.Surface]) -> List[pygame.Surface]:
     """Duplicate each element in the list (used to expand animation frames)."""
     return [item for item in input_list for _ in range(2)]
+
+def get_black_shadow_surface(frame: pygame.Surface) -> pygame.Surface:
+    """Convert an original shadow surface to a black silhouette."""
+    image = frame.copy()
+    image.set_colorkey((0, 0, 0))
+    mask = pygame.mask.from_surface(image)
+    # setcolor=(0, 0, 0) -> Absolute black
+    return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
+
+def load_and_scale_image(TILE_SIZE, filename: str = "", is_shadow: bool = False, use_colorkey: bool = False) -> pygame.Surface:
+    """Helper just for loading and scaling, NOT applying shadow logic."""
+    scale_factor = TILE_SIZE / 60
+
+    path = os.path.join("assets", "images", filename)
+    surface = pygame.image.load(path).convert_alpha()
+        
+    new_size = (int(surface.get_width() * scale_factor), 
+                int(surface.get_height() * scale_factor))
+        
+    if is_shadow:
+        return pygame.transform.scale(surface, new_size)
+    else: 
+        if use_colorkey:
+            surface.set_colorkey((0, 0, 0))
+
+        return pygame.transform.smoothscale(surface, new_size)
+
+
+def is_linked(map_data: list, direction: list, facing_direction: str) -> bool: #check if have walls on the way
+        
+    x = direction[0]
+    y = direction[1]
+    if facing_direction == UP: #up
+        return (y-1 > 0) and (map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
+    if facing_direction == DOWN: #down
+        return (y+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
+    if facing_direction == LEFT: #left
+        return (x-1 > 0) and (map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
+    if facing_direction == RIGHT: #right
+        return (x+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
+    return True
+
+
+def get_face_direction(from_pos:tuple, to_pos:tuple, map_data: None = []) -> str:
+    """Determine the facing direction from one position to another."""
+    from_x, from_y = from_pos
+    to_x, to_y = to_pos
+    if to_x < from_x:
+        return LEFT
+    elif from_x < to_x:
+        return RIGHT
+    elif to_y < from_y:
+        return UP
+    elif to_y > from_y:
+        return DOWN
+    
+    # if positions are the same, default the wall side
+    possible_directions = [UP, DOWN, LEFT, RIGHT]
+    for direction in possible_directions:
+        if not is_linked(map_data, from_pos, direction):
+            print("Default direction:", direction)
+            return direction
 
 
 # ------------------------------------------------------- #
@@ -75,9 +138,6 @@ class FrameSet:
     LEFT: List[pygame.Surface]
     RIGHT: List[pygame.Surface]
 
-# -------------------------------------------------------- #
-# --------------------- CLASS HELPER --------------------- #
-# -------------------------------------------------------- #
 class Button:
     
     def __init__(self, x, y, width, height, text='', image_path=None, hover_image_path=None, color=COLOR_BUTTON, hover_color=COLOR_BUTTON_HOVER):
