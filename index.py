@@ -986,21 +986,7 @@ def create_game_state_image(
     ScoreTracker: GlobalPointPackage = None,
 ):
     # Calculate current level score
-    if ScoreTracker is None:
-        current_level_score = 0
-    else:
-        current_level_score = max(
-            ScoreTracker.player.max_score // 2,
-            round(
-                ScoreTracker.player.max_score
-                - 5 * ScoreTracker.player.current_time_elapsed
-                - ScoreTracker.player.hint_penalty
-                * 0.01
-                * ScoreTracker.player.max_score
-                + ScoreTracker.player.bonus_score
-            ),
-        )
-    score = ScoreTracker.player.total_score + current_level_score
+    score = ScoreTracker.player.total_score 
 
     new_screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -1048,8 +1034,7 @@ def create_game_state_image(
     return new_screen
 
 
-def main_game(current_level= 36):
-    print(current_level)
+def main_game(current_level= 1):
 
     def save(is_playing = False):
         # Save game state before exiting
@@ -1097,7 +1082,6 @@ def main_game(current_level= 36):
             game_data["hint_penalty"] = 0
             game_data["time_elapsed"] = 0
         save_data(game_data)
-        print(f"current_level saved: {game_data['level']}, prev level: {current_level}")
 
     (
         map_length,
@@ -1109,7 +1093,6 @@ def main_game(current_level= 36):
         BaseLevelScore,
     ) = load_level(current_level)
 
-    print("index:Map_data", map_data)
     winning_position, goal_direction = get_winning_position(stair_position, map_length)
 
     current_tile_size = (
@@ -1260,8 +1243,7 @@ def main_game(current_level= 36):
             # Xử lý sự kiện SidePanel
             panel_clicked = side_panel.handle_event(event)
             if panel_clicked == "UNDO MOVE":
-                if history_states:
-
+                if history_states != []:
                     last_state = history_states.pop()
 
                     MummyExplorer.grid_position = last_state["explorer_position"].copy()
@@ -1284,6 +1266,7 @@ def main_game(current_level= 36):
                             scorpion.facing_direction = last_state["scorpion_directions"][
                                 idx
                             ]
+                    
                     ScoreTracker.player.start_counting = (
                         time.time() - last_state["time_elapsed"]
                     )
@@ -1402,7 +1385,6 @@ def main_game(current_level= 36):
 
                 player_moved = True  # Player is about to make a move
                 if event.type == pygame.KEYDOWN:
-
                     # change show_hint to False when player makes a move
                     hint.show_hint = False
 
@@ -1604,7 +1586,7 @@ def main_game(current_level= 36):
                 return "main_menu"
             elif user_choice == "undo the previous move":
                 # Placeholder for undo move function
-                if history_states:
+                if history_states != []:
                     last_state = history_states.pop()
                     MummyExplorer.grid_position = last_state[
                         "explorer_position"
@@ -1635,18 +1617,7 @@ def main_game(current_level= 36):
 
 
         # Calculate total_score
-        current_level_score = max(
-            ScoreTracker.player.max_score // 2,
-            round(
-                ScoreTracker.player.max_score
-                - 5 * ScoreTracker.player.current_time_elapsed
-                - ScoreTracker.player.hint_penalty
-                * 0.01
-                * ScoreTracker.player.max_score
-                + ScoreTracker.player.bonus_score
-            ),
-        )
-        display_score = ScoreTracker.player.total_score + current_level_score
+        display_score = ScoreTracker.player.total_score
         
         # -------------------------------------------------------- #
         # ------------------- RENDERING/DRAW---------------------- #
@@ -1714,11 +1685,9 @@ def main_game(current_level= 36):
         #---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
         if player_turn_completed:
             if MummyMazeMap.is_kg_exists():
-                print("Key exists")
                 if MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0] and MummyExplorer.get_y() ==  MummyMazeMap.gate_key.get_key_pos()[1]:
                     if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
                         MummyMazeMap.gate_key.change_gate_status()
-                        print("Gate key has been changed status!")
                         player_moved = False
 
         pygame.display.flip()
