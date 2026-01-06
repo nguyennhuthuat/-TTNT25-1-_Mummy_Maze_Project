@@ -116,9 +116,9 @@ except Exception as e:
     victory_bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     victory_bg.fill((30, 25, 20))
 
-# ------------------------------------------------------------- #
-# -----------------------MAIN GAME SETUP----------------------- #
-# ------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+# -------------------------------MAIN GAME SETUP------------------------------- #
+# ----------------------------------------------------------------------------- #
 game_data = load_data()
 current_level = game_data.get("current_level", 0)
 
@@ -273,10 +273,7 @@ def show_lose_window(screen):
 def draw_text_with_outline(
     screen, text, font, color, outline_color, center_pos, outline_width=2
 ):
-    """
-    Vẽ text với viền đen để dễ đọc hơn.
-    """
-    # Vẽ outline (viền đen)
+    """Draw text with outline for better readability."""
     for dx in range(-outline_width, outline_width + 1):
         for dy in range(-outline_width, outline_width + 1):
             if dx != 0 or dy != 0:
@@ -286,12 +283,158 @@ def draw_text_with_outline(
                 )
                 screen.blit(outline_surface, outline_rect)
 
-    # Vẽ text chính
-    text_surface = font.render(text, True, color)
+    text_surface = font. render(text, True, color)
     text_rect = text_surface.get_rect(center=center_pos)
     screen.blit(text_surface, text_rect)
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+def create_victory_common_surface():
+    """
+    Pre-render all static victory screen elements at game start.
+    This includes title, explorer sprite, and button states.
+    
+    Returns:
+        dict: Contains 'base', 'button_normal', 'button_hover', 'button_rect', 'button_y'
+    """
+    try: 
+        title_font = MetricFont("biggestfont", 50)
+        info_font = MetricFont("headerfont", 30)
+        rank_font = MetricFont("headerfont", 28)
+        button_font = MetricFont("headerfont", 30)
+    except: 
+        title_font = pygame. font.Font(None, 55)
+        info_font = pygame.font.Font(None, 32)
+        rank_font = pygame.font.Font(None, 36)
+        button_font = pygame.font.Font(None, 32)
+
+    YELLOW = (255, 230, 0)
+    BLACK = (0, 0, 0)
+    DARK_BROWN = (40, 30, 20)
+    HOVER_COLOR = (255, 255, 180)
+
+    center_x = SCREEN_WIDTH // 2
+    
+    # Base surface with background, title, and explorer
+    common_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    common_surface.blit(victory_bg, (0, 0))
+
+    # Title with shadow
+    title_text = "YOU HAVE ESCAPED THE MAZE!"
+    shadow_surface = title_font.render(title_text, True, DARK_BROWN)
+    shadow_rect = shadow_surface.get_rect(center=(center_x + 3, 48))
+    common_surface.blit(shadow_surface, shadow_rect)
+    draw_text_with_outline(
+        common_surface, title_text, title_font, YELLOW, BLACK, (center_x, 45), outline_width=4
+    )
+
+    # Explorer sprite
+    explorer_y = 160
+    try:
+        explorer_img = pygame.image.load("Assets/images/explorerlookingmap.png")
+        explorer_img = pygame.transform. scale(explorer_img, (90, 90))
+        explorer_rect = explorer_img.get_rect(center=(center_x, explorer_y))
+        common_surface.blit(explorer_img, explorer_rect)
+    except:
+        pygame.draw.circle(common_surface, (200, 180, 140), (center_x, explorer_y), 35)
+
+    # Pre-render "Your current rank:" label
+    info_start_y = 260
+    line_spacing = 50
+    rank_y = info_start_y + line_spacing * 3 + 20
+    
+    draw_text_with_outline(
+        common_surface,
+        "Your current rank:",
+        info_font,
+        YELLOW,
+        BLACK,
+        (center_x, rank_y),
+        outline_width=2,
+    )
+
+    # Pre-render button states
+    button_y = SCREEN_HEIGHT - 55
+    button_text = "ENTER THE NEXT CHAMBER"
+    
+    button_surface_temp = button_font.render(button_text, True, YELLOW)
+    button_width = button_surface_temp.get_width()
+    button_rect = pygame.Rect(
+        center_x - button_width // 2 - 20, button_y - 20, button_width + 40, 60
+    )
+    
+    # Normal button state
+    button_normal_surface = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
+    shadow_btn = button_font.render(button_text, True, DARK_BROWN)
+    shadow_btn_rect = shadow_btn. get_rect(center=(center_x + 2, 52))
+    button_normal_surface. blit(shadow_btn, shadow_btn_rect)
+    
+    draw_text_with_outline(
+        button_normal_surface,
+        button_text,
+        button_font,
+        YELLOW,
+        BLACK,
+        (center_x, 50),
+        outline_width=3,
+    )
+    
+    pygame.draw.line(
+        button_normal_surface,
+        DARK_BROWN,
+        (center_x - button_width // 2 + 2, 74),
+        (center_x + button_width // 2 + 2, 74),
+        4,
+    )
+    pygame.draw.line(
+        button_normal_surface,
+        YELLOW,
+        (center_x - button_width // 2, 72),
+        (center_x + button_width // 2, 72),
+        4,
+    )
+    
+    # Hover button state
+    button_hover_surface = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
+    button_hover_surface. blit(shadow_btn, shadow_btn_rect)
+    
+    draw_text_with_outline(
+        button_hover_surface,
+        button_text,
+        button_font,
+        HOVER_COLOR,
+        BLACK,
+        (center_x, 50),
+        outline_width=4,
+    )
+    
+    pygame.draw.line(
+        button_hover_surface,
+        DARK_BROWN,
+        (center_x - button_width // 2 + 2, 74),
+        (center_x + button_width // 2 + 2, 74),
+        5,
+    )
+    pygame.draw.line(
+        button_hover_surface,
+        HOVER_COLOR,
+        (center_x - button_width // 2, 72),
+        (center_x + button_width // 2, 72),
+        5,
+    )
+
+    return {
+        'base': common_surface,
+        'button_normal': button_normal_surface,
+        'button_hover': button_hover_surface,
+        'button_rect': button_rect,
+        'button_y': button_y,
+        'fonts': {
+            'info':  info_font,
+            'rank': rank_font,
+        }
+    }
+
+
 def show_victory_window(
     screen,
     clock,
@@ -300,92 +443,85 @@ def show_victory_window(
     base_score=0,
     bonus_score=0,
     total_score=0,
+    common_surface=None,
 ):
     """
-    Hiển thị cửa sổ chiến thắng với background Victorybackground.png.
-    Text rõ ràng với viền đen để dễ đọc.
-
+    Display victory window using pre-rendered surfaces.
+    Only renders dynamic data (scores, time, rank).
+    
     Args:
-        screen: Pygame screen surface
+        screen:  Pygame screen surface
         clock: Pygame clock object
-        current_level: Số thứ tự màn chơi vừa hoàn thành
-        elapsed_time: Thời gian hoàn thành màn (giây)
-        total_score: Tổng điểm tích lũy từ tất cả các màn
-
+        current_level: Current level number
+        elapsed_time: Time taken to complete level (seconds)
+        base_score:  Base points earned
+        bonus_score: Bonus points earned
+        total_score: Total accumulated score
+        common_surface: Dict with pre-rendered surfaces (optional)
+    
     Returns:
-        tuple: (continue_game: bool, new_total_score: int)
+        tuple: (continue_game:  bool, new_total_score:  int)
     """
     
-
-    screen.blit(victory_bg, (0, 0))
-
-    # Load fonts - sử dụng VT323 font từ Assets/Fonts
-    try:
-        # title_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 60)
-        # info_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 38)
-        # rank_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 44)
-        # button_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 36)
-
-        title_font = MetricFont("biggestfont", 50)
-        info_font = MetricFont("headerfont", 30)
-        rank_font = MetricFont("headerfont", 28)
-        button_font = MetricFont("headerfont", 30)
-    except:
-        title_font = pygame.font.Font(None, 55)
-        info_font = pygame.font.Font(None, 32)
-        rank_font = pygame.font.Font(None, 36)
-        button_font = pygame.font.Font(None, 32)
-
-    # Màu sắc - màu sáng hơn để nổi bật
-    YELLOW = (255, 230, 0)
     ORANGE = (255, 160, 50)
     RED = (255, 80, 80)
+    YELLOW = (255, 230, 0)
     BLACK = (0, 0, 0)
-    DARK_BROWN = (40, 30, 20)
 
     center_x = SCREEN_WIDTH // 2
 
-    # === TITLE: "YOU HAVE ESCAPED THE MAZE!" ===
-    # Vẽ shadow trước
-    title_text = "YOU HAVE ESCAPED THE MAZE!"
-    shadow_surface = title_font.render(title_text, True, DARK_BROWN)
-    shadow_rect = shadow_surface.get_rect(center=(center_x + 3, 48))
-    screen.blit(shadow_surface, shadow_rect)
-    # Vẽ text chính với viền dày
-    draw_text_with_outline(
-        screen, title_text, title_font, YELLOW, BLACK, (center_x, 45), outline_width=4
-    )
+    # Use pre-rendered surfaces if available
+    if common_surface is not None:
+        base_surface_template = common_surface['base']
+        button_normal_surface = common_surface['button_normal']
+        button_hover_surface = common_surface['button_hover']
+        button_rect = common_surface['button_rect']
+        button_y = common_surface['button_y']
+        info_font = common_surface['fonts']['info']
+        rank_font = common_surface['fonts']['rank']
+    else:
+        # Fallback:  slower path if common_surface not provided
+        try:
+            info_font = MetricFont("headerfont", 30)
+            rank_font = MetricFont("headerfont", 28)
+            button_font = MetricFont("headerfont", 30)
+        except:
+            info_font = pygame.font.Font(None, 32)
+            rank_font = pygame.font.Font(None, 36)
+            button_font = pygame.font.Font(None, 32)
+        
+        base_surface_template = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        base_surface_template.blit(victory_bg, (0, 0))
+        
+        # Create button surfaces (fallback)
+        button_y = SCREEN_HEIGHT - 55
+        button_text = "ENTER THE NEXT CHAMBER"
+        button_surface_temp = button_font.render(button_text, True, YELLOW)
+        button_width = button_surface_temp. get_width()
+        button_rect = pygame.Rect(
+            center_x - button_width // 2 - 20, button_y - 20, button_width + 40, 60
+        )
+        button_normal_surface = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
+        button_hover_surface = pygame.Surface((SCREEN_WIDTH, 100), pygame.SRCALPHA)
 
-    # === Explorer sprite ===
-    explorer_y = 160
-    try:
-        explorer_img = pygame.image.load("Assets/images/explorerlookingmap.png")
-        explorer_img = pygame.transform.scale(explorer_img, (90, 90))
-        explorer_rect = explorer_img.get_rect(center=(center_x, explorer_y))
-        screen.blit(explorer_img, explorer_rect)
-    except:
-        pygame.draw.circle(screen, (200, 180, 140), (center_x, explorer_y), 35)
+    # Create working base surface from template
+    base_surface = base_surface_template.copy()
 
-    # === Thông tin thời gian và điểm ===
+    # Calculate values
+    minutes = int(elapsed_time // 60)
+    seconds = int(elapsed_time % 60)
+    base_points = base_score
+    bonus_points = bonus_score
+    new_total_score = total_score + base_points + bonus_points
+    total_points = new_total_score
+
+    # Render dynamic data (time, scores, rank)
     info_start_y = 260
     line_spacing = 50
 
-    # Tính thời gian
-    minutes = int(elapsed_time // 60)
-    seconds = int(elapsed_time % 60)
     time_str = f"Time: {minutes} minutes and {seconds} seconds"
-
-    # Tính điểm màn này
-    base_points = base_score
-    bonus_points = bonus_score
-    level_points = base_points + bonus_points
-
-    # Cộng vào tổng điểm
-    new_total_score = total_score + level_points
-
-    # Vẽ các dòng thông tin với viền
     draw_text_with_outline(
-        screen,
+        base_surface,
         time_str,
         info_font,
         ORANGE,
@@ -395,8 +531,8 @@ def show_victory_window(
     )
 
     draw_text_with_outline(
-        screen,
-        f"Base Points: +{base_points}",
+        base_surface,
+        f"Base Points: {base_points}",
         info_font,
         ORANGE,
         BLACK,
@@ -405,8 +541,8 @@ def show_victory_window(
     )
 
     draw_text_with_outline(
-        screen,
-        f"Bonus Points: +{bonus_points}",
+        base_surface,
+        f"Bonus Points: {bonus_points}",
         info_font,
         ORANGE,
         BLACK,
@@ -414,14 +550,10 @@ def show_victory_window(
         outline_width=2,
     )
 
-    # === Rank info ===
-    total_points = new_total_score
-
-    # Định nghĩa ngưỡng rank
+    # Calculate and display rank
     rank_thresholds = [0, 150, 250, 1000]
     rank_names = ["Cursed!", "Novice", "Explorer", "Legend!"]
 
-    # Tìm rank hiện tại
     current_rank_index = 0
     for i in range(len(rank_thresholds) - 1, -1, -1):
         if total_points >= rank_thresholds[i]:
@@ -429,268 +561,74 @@ def show_victory_window(
             break
 
     rank = rank_names[current_rank_index]
-
     rank_y = info_start_y + line_spacing * 3 + 20
+    
     draw_text_with_outline(
-        screen,
-        "Your current rank:",
+        base_surface, rank, rank_font, YELLOW, BLACK, (center_x, rank_y + 40), outline_width=2
+    )
+
+    # Next rank info
+    if current_rank_index < len(rank_names) - 1:
+        next_threshold = rank_thresholds[current_rank_index + 1]
+        next_rank_text = f"Next rank at {next_threshold} points"
+    else:
+        next_rank_text = "Max rank achieved!"
+    
+    draw_text_with_outline(
+        base_surface,
+        next_rank_text,
         info_font,
-        YELLOW,
+        RED,
         BLACK,
-        (center_x, rank_y),
+        (center_x, rank_y + 95),
         outline_width=2,
     )
 
-    draw_text_with_outline(
-        screen, rank, rank_font, YELLOW, BLACK, (center_x, rank_y + 40), outline_width=2
-    )
-
-    # === Next rank info ===
-    if current_rank_index < len(rank_names) - 1:
-        next_threshold = rank_thresholds[current_rank_index + 1]
-        draw_text_with_outline(
-            screen,
-            f"Next rank at {next_threshold} points",
-            info_font,
-            RED,
-            BLACK,
-            (center_x, rank_y + 95),
-            outline_width=2,
-        )
-    else:
-        draw_text_with_outline(
-            screen,
-            "Max rank achieved!",
-            info_font,
-            RED,
-            BLACK,
-            (center_x, rank_y + 95),
-            outline_width=2,
-        )
-
-    # === Button "ENTER THE NEXT CHAMBER" ===
-    button_y = SCREEN_HEIGHT - 55
-    button_text = "ENTER THE NEXT CHAMBER"
-
-    # Vẽ shadow cho button
-    shadow_btn = button_font.render(button_text, True, DARK_BROWN)
-    shadow_btn_rect = shadow_btn.get_rect(center=(center_x + 2, button_y + 2))
-    screen.blit(shadow_btn, shadow_btn_rect)
-
-    # Vẽ button với viền dày
-    draw_text_with_outline(
-        screen,
-        button_text,
-        button_font,
-        YELLOW,
-        BLACK,
-        (center_x, button_y),
-        outline_width=3,
-    )
-
-    # Vẽ underline đậm hơn
-    button_surface = button_font.render(button_text, True, YELLOW)
-    button_width = button_surface.get_width()
-    underline_y = button_y + 22
-    # Shadow underline
-    pygame.draw.line(
-        screen,
-        DARK_BROWN,
-        (center_x - button_width // 2 + 2, underline_y + 2),
-        (center_x + button_width // 2 + 2, underline_y + 2),
-        4,
-    )
-    # Main underline
-    pygame.draw.line(
-        screen,
-        YELLOW,
-        (center_x - button_width // 2, underline_y),
-        (center_x + button_width // 2, underline_y),
-        4,
-    )
-
-    # Tạo clickable rect cho button
-    button_rect = pygame.Rect(
-        center_x - button_width // 2 - 20, button_y - 20, button_width + 40, 60
-    )
-
-    pygame.display.flip()
-
-    # === Chờ người chơi tương tác ===
+    # Event loop - only blit pre-rendered surfaces
     waiting = True
     result = True
+    is_hovering = False
+    needs_redraw = True
 
     while waiting:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame. QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame. MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
                     waiting = False
 
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame. KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     waiting = False
                 elif event.key == pygame.K_ESCAPE:
                     result = False
                     waiting = False
 
-            # Hover effect
-            if event.type == pygame.MOUSEMOTION:
-                screen.blit(victory_bg, (0, 0))
+            if event.type == pygame. MOUSEMOTION:
+                was_hovering = is_hovering
+                is_hovering = button_rect.collidepoint(event.pos)
+                
+                if was_hovering != is_hovering:
+                    needs_redraw = True
 
-                # Vẽ lại title với shadow
-                shadow_surface = title_font.render(title_text, True, DARK_BROWN)
-                shadow_rect = shadow_surface.get_rect(center=(center_x + 3, 48))
-                screen.blit(shadow_surface, shadow_rect)
-                draw_text_with_outline(
-                    screen,
-                    title_text,
-                    title_font,
-                    YELLOW,
-                    BLACK,
-                    (center_x, 45),
-                    outline_width=4,
-                )
-
-                try:
-                    screen.blit(explorer_img, explorer_rect)
-                except:
-                    pygame.draw.circle(
-                        screen, (200, 180, 140), (center_x, explorer_y), 35
-                    )
-
-                draw_text_with_outline(
-                    screen,
-                    time_str,
-                    info_font,
-                    ORANGE,
-                    BLACK,
-                    (center_x, info_start_y),
-                    outline_width=2,
-                )
-                draw_text_with_outline(
-                    screen,
-                    f"Base Points: +{base_points}",
-                    info_font,
-                    ORANGE,
-                    BLACK,
-                    (center_x, info_start_y + line_spacing),
-                    outline_width=2,
-                )
-                draw_text_with_outline(
-                    screen,
-                    f"Bonus Points: +{bonus_points}",
-                    info_font,
-                    ORANGE,
-                    BLACK,
-                    (center_x, info_start_y + line_spacing * 2),
-                    outline_width=2,
-                )
-                draw_text_with_outline(
-                    screen,
-                    "Your current rank:",
-                    info_font,
-                    YELLOW,
-                    BLACK,
-                    (center_x, rank_y),
-                    outline_width=2,
-                )
-                draw_text_with_outline(
-                    screen,
-                    rank,
-                    rank_font,
-                    YELLOW,
-                    BLACK,
-                    (center_x, rank_y + 40),
-                    outline_width=2,
-                )
-
-                # Next rank info động
-                if current_rank_index < len(rank_names) - 1:
-                    next_threshold = rank_thresholds[current_rank_index + 1]
-                    draw_text_with_outline(
-                        screen,
-                        f"Next rank at {next_threshold} points",
-                        info_font,
-                        RED,
-                        BLACK,
-                        (center_x, rank_y + 95),
-                        outline_width=2,
-                    )
-                else:
-                    draw_text_with_outline(
-                        screen,
-                        "Max rank achieved!",
-                        info_font,
-                        RED,
-                        BLACK,
-                        (center_x, rank_y + 95),
-                        outline_width=2,
-                    )
-
-                # Button với hover - shadow và underline
-                # Shadow button
-                screen.blit(shadow_btn, shadow_btn_rect)
-
-                if button_rect.collidepoint(event.pos):
-                    hover_color = (255, 255, 180)  # Sáng hơn khi hover
-                    draw_text_with_outline(
-                        screen,
-                        button_text,
-                        button_font,
-                        hover_color,
-                        BLACK,
-                        (center_x, button_y),
-                        outline_width=4,
-                    )
-                    pygame.draw.line(
-                        screen,
-                        DARK_BROWN,
-                        (center_x - button_width // 2 + 2, underline_y + 2),
-                        (center_x + button_width // 2 + 2, underline_y + 2),
-                        5,
-                    )
-                    pygame.draw.line(
-                        screen,
-                        hover_color,
-                        (center_x - button_width // 2, underline_y),
-                        (center_x + button_width // 2, underline_y),
-                        5,
-                    )
-                else:
-                    draw_text_with_outline(
-                        screen,
-                        button_text,
-                        button_font,
-                        YELLOW,
-                        BLACK,
-                        (center_x, button_y),
-                        outline_width=3,
-                    )
-                    pygame.draw.line(
-                        screen,
-                        DARK_BROWN,
-                        (center_x - button_width // 2 + 2, underline_y + 2),
-                        (center_x + button_width // 2 + 2, underline_y + 2),
-                        4,
-                    )
-                    pygame.draw.line(
-                        screen,
-                        YELLOW,
-                        (center_x - button_width // 2, underline_y),
-                        (center_x + button_width // 2, underline_y),
-                        4,
-                    )
-
-                pygame.display.flip()
+        if needs_redraw:
+            screen.blit(base_surface, (0, 0))
+            
+            button_surface_y = button_y - 50
+            if is_hovering: 
+                screen.blit(button_hover_surface, (0, button_surface_y))
+            else:
+                screen.blit(button_normal_surface, (0, button_surface_y))
+            
+            pygame.display.flip()
+            needs_redraw = False
 
         clock.tick(60)
 
-    return result
-
+    return result, new_total_score
 
 def run_loading_screen():
     # Phát nhạc nền (số -1 có nghĩa là lặp vô tận)
@@ -844,7 +782,6 @@ def lobby(screen, clock):
 
         pygame.display.flip()
         clock.tick(60)
-
 
 def main_menu(screen, clock):
     try:
@@ -1045,8 +982,10 @@ def create_game_state_image(
 
     return new_screen
 
+# Pre-create common victory surface to optimize performance
+victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 1):
+def main_game(current_level= 2, victory_common_surface = victory_common_surface):
 
     def save(is_playing = False):
         # Save game state before exiting
@@ -1468,6 +1407,7 @@ def main_game(current_level= 1):
                             total_score=ScoreTracker.player.total_score
                             - ScoreTracker.player.base_score
                             - ScoreTracker.player.bonus_score,
+                            common_surface=victory_common_surface,
                         )
 
                         if not continue_game:
@@ -1720,6 +1660,7 @@ def main(action="main_menu"):
     ACTION LIST:
     lobby, main_menu, main_game, tutorials, adventure, exit
     """
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
