@@ -6,6 +6,7 @@ from typing import Any
 
 from .settings import *
 from .utils import *
+from .fonts import MetricFont
 
 
 
@@ -739,11 +740,15 @@ class SidePanel:
         self.button_pressed_img = self.button_img.copy()
         self.button_pressed_img.fill((40, 40, 40), special_flags=pygame.BLEND_RGB_SUB)
 
-        # Font cho text trên button - sử dụng VT323 từ Assets/Fonts
+        # Font cho text trên button 
         font_path = os.path.join("assets", "Fonts", "VT323-Regular.ttf")
-        self.font = pygame.font.Font(font_path, 30)
-        self.score_font = pygame.font.Font(font_path, 55)
-        self.score_label_font = pygame.font.Font(font_path, 40)
+        # self.font = pygame.font.Font(font_path, 30)
+        # self.score_font = pygame.font.Font(font_path, 55)
+        # self.score_label_font = pygame.font.Font(font_path, 40)
+
+        self.font = MetricFont("headerfont")
+        self.score_font = MetricFont("headerfont", 40)
+        self.score_label_font = MetricFont("headerfont")
 
         # Trạng thái các button
         self.button_states = {label: "normal" for label in self.BUTTON_LABELS}

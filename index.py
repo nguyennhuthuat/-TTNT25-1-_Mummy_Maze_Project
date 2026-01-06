@@ -15,6 +15,7 @@ from Assets.module.settings import *
 from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
 from Assets.module.game_algorithms import Shortest_Path
+from Assets.module.fonts import MetricFont
 
 
 # ---------------------------------------------------------------------------- #
@@ -29,18 +30,26 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE
 pygame.display.set_caption("Mummy Maze Deluxe - 25TNT1 - Dudes Chase Money")
 clock = pygame.time.Clock()
 
-
-# Tải font chữ
+# ---------------------------------------------------------------------------- #
+# ------------------------------FONT SETTING---------------------------------- #
+# ---------------------------------------------------------------------------- #
 try:
-    main_font = pygame.font.SysFont("comic sans ms", 24)
+    # main_font = pygame.font.SysFont("comic sans ms", 24)
+    main_font = MetricFont("headerfont", 24)
     footer_font = pygame.font.SysFont("comic sans ms", 14)
-    title_font = pygame.font.SysFont("Arial", 25, bold=True)
+    # title_font = pygame.font.SysFont("Arial", 25, bold=True)
+    title_font = MetricFont("font1", 25)
+    font_btn = MetricFont("biggestfont", 40)
 except Exception as e:
     main_font = pygame.font.Font(None, 36)
+    # main_font = MetricFont("headerfont", 24)
     footer_font = pygame.font.Font(None, 18)
     title_font = pygame.font.Font(None, 52)
 
-# --- TẢI ÂM THANH ---
+
+# ----------------------------------------------------------------------------- #
+# ------------------------------INITIALIZE SOUNDS------------------------------ #
+# ----------------------------------------------------------------------------- #
 try:
     # 1. Nhạc nền (Music) - Thường dùng cho nhạc dài
     pygame.mixer.music.load("./assets/music/game.it")
@@ -62,6 +71,9 @@ LOADING_BAR_Y = 546
 BAR_TARGET_WIDTH = 630
 BAR_TARGET_HEIGHT = 22
 
+# ----------------------------------------------------------------------------- #
+# --------------------------------IMAGE LOADING-------------------------------- #
+# ----------------------------------------------------------------------------- #
 try:
     # 1. Load ảnh gốc (340x24)
     img_orig = pygame.image.load("./assets/images/titlebar.png").convert_alpha()
@@ -79,8 +91,34 @@ except Exception as e:
     loading_bar_img = None
     print(f"Lỗi tải ảnh loading: {e}")
 
+# lOSE WINDOW BACKGROUND
+try:
+    bg = pygame.image.load("./assets/images/background_window.png").convert()
+    bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+except:
+    bg = None
 
-# Main game setup
+# LOGO 
+try:
+    logo_image = pygame.image.load(
+        "./assets/images/DudesChaseMoneyLogo.png"
+    ).convert_alpha()
+    logo_icon = pygame.transform.scale(logo_image, (130, 130))
+except:
+    print("Can't load logo image")
+
+# VICTORY BACKGROUND
+try:
+    victory_bg = pygame.image.load("Assets/images/Victorybackground.png")
+    victory_bg = pygame.transform.scale(victory_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+except Exception as e:
+    print(f"Cannot load Victorybackground.png: {e}")
+    victory_bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    victory_bg.fill((30, 25, 20))
+
+# ------------------------------------------------------------- #
+# -----------------------MAIN GAME SETUP----------------------- #
+# ------------------------------------------------------------- #
 game_data = load_data()
 current_level = game_data.get("current_level", 0)
 
@@ -104,32 +142,7 @@ main_menu_buttons = [start_button]
 
 def show_lose_window(screen):
 
-    # Tải Background chính
-    try:
-        bg = pygame.image.load("./assets/images/background_window.png").convert()
-        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    except:
-        bg = None
-
-    try:
-        logo_image = pygame.image.load(
-            "./assets/images/DudesChaseMoneyLogo.png"
-        ).convert_alpha()
-        logo_icon = pygame.transform.scale(logo_image, (130, 130))
-    except:
-        print("Can't load logo image")
-
-    try:
-        main_font = pygame.font.SysFont("comic sans ms", 24)
-        footer_font = pygame.font.SysFont(
-            "comic sans ms", 14
-        )  # Thêm dòng này (size 14 thay vì 24)
-        title_font = pygame.font.SysFont("comic sans ms", 50)
-        font_btn = pygame.font.SysFont("Arial", 50, bold=30)
-    except Exception as e:
-        main_font = pygame.font.Font(None, 36)
-        footer_font = pygame.font.Font(None, 18)  # Font mặc định nhỏ hơn
-        title_font = pygame.font.Font(None, 52)
+    
 
     # Màu sắc
     COLOR_BG_OVERLAY = (0, 0, 0)
@@ -278,7 +291,7 @@ def draw_text_with_outline(
     text_rect = text_surface.get_rect(center=center_pos)
     screen.blit(text_surface, text_rect)
 
-
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def show_victory_window(
     screen,
     clock,
@@ -302,23 +315,21 @@ def show_victory_window(
     Returns:
         tuple: (continue_game: bool, new_total_score: int)
     """
-    # Load background image
-    try:
-        victory_bg = pygame.image.load("Assets/images/Victorybackground.png")
-        victory_bg = pygame.transform.scale(victory_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    except Exception as e:
-        print(f"Cannot load Victorybackground.png: {e}")
-        victory_bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        victory_bg.fill((30, 25, 20))
+    
 
     screen.blit(victory_bg, (0, 0))
 
     # Load fonts - sử dụng VT323 font từ Assets/Fonts
     try:
-        title_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 60)
-        info_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 38)
-        rank_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 44)
-        button_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 36)
+        # title_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 60)
+        # info_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 38)
+        # rank_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 44)
+        # button_font = pygame.font.Font("Assets/Fonts/VT323-Regular.ttf", 36)
+
+        title_font = MetricFont("biggestfont", 50)
+        info_font = MetricFont("headerfont", 30)
+        rank_font = MetricFont("headerfont", 28)
+        button_font = MetricFont("headerfont", 30)
     except:
         title_font = pygame.font.Font(None, 55)
         info_font = pygame.font.Font(None, 32)
@@ -842,7 +853,8 @@ def main_menu(screen, clock):
             "comic sans ms", 14
         )  # Thêm dòng này (size 14 thay vì 24)
         title_font = pygame.font.SysFont("comic sans ms", 50)
-        font_btn = pygame.font.SysFont("Arial", 50, bold=30)
+        # font_btn = pygame.font.SysFont("Arial", 50, bold=30)
+        font_btn = MetricFont("biggestfont", 40)
     except Exception as e:
         main_font = pygame.font.Font(None, 36)
         footer_font = pygame.font.Font(None, 18)  # Font mặc định nhỏ hơn
@@ -1205,7 +1217,7 @@ def main_game(current_level= 1):
         )
         ScoreTracker.player.bonus_score = game_data.get("bonus_score", 0)
         ScoreTracker.player.hint_penalty = game_data.get("hint_penalty", 0)
-
+        ScoreTracker.player.total_score = game_data.get("total_score", 0)
         # History States
         history_states = (
             game_data.get("history_states", []).copy()
@@ -1697,7 +1709,7 @@ def main_game(current_level= 1):
     pygame.quit()
 
 
-def main(action="main_game"):
+def main(action="main_menu"):
     """
     ACTION FLOW:
     lobby --> main_menu --> (enter classic mode --> main_game --> lobby)
