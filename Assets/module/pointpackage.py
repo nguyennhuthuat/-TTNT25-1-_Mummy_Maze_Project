@@ -1,7 +1,7 @@
 import time
 
 class PersonalPointPackage:
-    def __init__(self, max_score: int = 0, hint_penalty: int = 0, bonus_score: int = 0):
+    def __init__(self, max_score: int = 0, total_score: int = 0, hint_penalty: int = 0, bonus_score: int = 0):
         self._max_score = max_score
         self._hint_penalty = hint_penalty
         self._bonus_score = bonus_score
@@ -9,7 +9,7 @@ class PersonalPointPackage:
         self._elapsed_time = 0
         self._start_counting = time.time()
         
-        self._total_score = 0
+        self._total_score = total_score
         self._base_score = 0
 
     @property 
@@ -104,6 +104,6 @@ class PersonalPointPackage:
     
 
 class GlobalPointPackage:
-    def __init__(self,BaseLevelScore: int = 0,hint_penalty: int = 0, bonus_score: int = 0, c: classmethod = PersonalPointPackage):
-        self.player = c(BaseLevelScore, hint_penalty, bonus_score)
+    def __init__(self,BaseLevelScore: int = 0, total_score: int = 0, hint_penalty: int = 0, bonus_score: int = 0, c: classmethod = PersonalPointPackage):
+        self.player = c(BaseLevelScore, total_score, hint_penalty, bonus_score)
 

@@ -985,7 +985,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 30, victory_common_surface = victory_common_surface):
+def main_game(current_level= 2, victory_common_surface = victory_common_surface, game_data = game_data):
 
     def save(is_playing = False):
         # Save game state before exiting
@@ -1094,10 +1094,11 @@ def main_game(current_level= 30, victory_common_surface = victory_common_surface
         if scorpion_starts
         else None
     )
-    ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore)
+    print(f"Check game data: {game_data}")
+    ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore, total_score = game_data.get("total_score", 0))
 
     # To store previous game states for undo functionality
-    history_states = []  
+    history_states = []   
 
     # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
     side_panel = SidePanel(x=MARGIN_LEFT_OFFSET, y=16)
@@ -1325,7 +1326,6 @@ def main_game(current_level= 30, victory_common_surface = victory_common_surface
                     ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
             
             elif panel_clicked == "QUIT TO MAIN":
-                game_data["is_playing"] = True
                 save(is_playing= True)
                 return "main_menu"
 
@@ -1392,9 +1392,8 @@ def main_game(current_level= 30, victory_common_surface = victory_common_surface
                         and MummyExplorer.facing_direction == goal_direction
                     ):
 
-                        # Stop counting time, caculate score (base score + bonus score)
+                        # Stop counting time, caculate score (total score = base score + bonus score)
                         ScoreTracker.player.end_counting()
-                        game_data["is_playing"] = False
                         save(is_playing= False)
 
                         continue_game = show_victory_window(

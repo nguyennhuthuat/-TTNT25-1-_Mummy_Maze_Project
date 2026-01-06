@@ -19,7 +19,6 @@ class MetricFont:
         try:
             self.sheet = pygame.image.load(image_path).convert_alpha()
             self.sheet.set_colorkey((0, 0, 0))
-            print(f"Kích thước ảnh font '{font_name}': {self.sheet.get_size()}")
         except FileNotFoundError:
             print(f"Lỗi: Không tìm thấy file ảnh '{image_path}'")
             return
@@ -77,7 +76,6 @@ class MetricFont:
             
             current_x += char_width
 
-        print(f"MetricFont:  Đã load {len(self.chars)} ký tự.")
 
     def render(self, text, antialias, color, background=None):
         """
