@@ -1,4 +1,6 @@
 from collections import deque
+
+from click import Tuple
 from .utils import is_linked
 UP = 'UP'
 DOWN = 'DOWN'
@@ -714,6 +716,63 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
     else: 
         return move_list
 
+def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, superdata = None) -> Tuple:
+    # Check if two zombie in a same position
+    zombie_i = 0
+    while zombie_i < len(next_zombie_positions):
+        zombie_j = zombie_i + 1
+        while zombie_j < len(next_zombie_positions):
+            if (next_zombie_positions[zombie_i][0], next_zombie_positions[zombie_i][1]) == (next_zombie_positions[zombie_j][0], next_zombie_positions[zombie_j][1]):
+                # If two zombies in same position, keep the one with higher type value
+                if next_zombie_positions[zombie_i][2] >= next_zombie_positions[zombie_j][2]:
+                    next_zombie_positions.pop(zombie_j)
+                else:
+                    next_zombie_positions.pop(zombie_i)
+                    zombie_i -= 1
+                    break
+            else:
+                zombie_j += 1
+        zombie_i += 1
+
+    # Check if two scorpions in a same position
+    scorpion_i = 0
+    while scorpion_i < len(next_scorpion_positions):
+        scorpion_j = scorpion_i + 1
+        while scorpion_j < len(next_scorpion_positions):
+            if (next_scorpion_positions[scorpion_i][0], next_scorpion_positions[scorpion_i][1]) == (next_scorpion_positions[scorpion_j][0], next_scorpion_positions[scorpion_j][1]):
+                # If two scorpions in same position, keep the one with higher intelligence level
+                if next_scorpion_positions[scorpion_i][2] >= next_scorpion_positions[scorpion_j][2]:
+                    next_scorpion_positions.pop(scorpion_j)
+                else:
+                    next_scorpion_positions.pop(scorpion_i)
+                    scorpion_i -= 1
+                    break
+            else:
+                scorpion_j += 1
+        scorpion_i += 1
+    
+    # check if any zombie is in trap, if yes remove it
+    next_zombie_positions = [zombie for zombie in next_zombie_positions if not is_trap(superdata, (zombie[0], zombie[1]))]
+
+    # check if any scorpion is in trap, if yes remove it
+    next_scorpion_positions = [scorpion for scorpion in next_scorpion_positions if not is_trap(superdata, (scorpion[0], scorpion[1]))]
+
+    # Check if any zombie and scorpion in same position, if yes remove both
+    zombie_i = 0
+    while zombie_i < len(next_zombie_positions):
+        scorpion_i = 0
+        while scorpion_i < len(next_scorpion_positions):
+            if (next_zombie_positions[zombie_i][0], next_zombie_positions[zombie_i][1]) == (next_scorpion_positions[scorpion_i][0], next_scorpion_positions[scorpion_i][1]):
+                next_zombie_positions.pop(zombie_i)
+                next_scorpion_positions.pop(scorpion_i)
+                zombie_i -= 1
+                break
+            else:
+                scorpion_i += 1
+        zombie_i += 1
+    
+    return next_zombie_positions, next_scorpion_positions
+
 def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list: 
 
     """
@@ -786,7 +845,8 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
                 # Generate next positions for enemies
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
-
+                new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
+                
                 temp = (neighbor, tuple(new_zombie_positions), tuple(new_scorpion_positions))
                 if temp not in visited:
                     #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
@@ -804,7 +864,8 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
                 # Generate next positions for enemies
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
-                
+                new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
+
                 if neighbor == goal and not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
                     #----- STEP 4: RETURN PATH IF GOAL IS REACHED -----#
                     return cur_path

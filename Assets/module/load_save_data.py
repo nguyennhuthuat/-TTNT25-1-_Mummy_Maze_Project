@@ -31,7 +31,6 @@ def save_data(data_dict, filename = "savegame.sav"):
         with open(filename, 'wb') as f:
             f.write(encrypted_data)
             
-        print(f"Đã lưu game vào {filename} thành công!")
         
     except Exception as e:
         print(f"Lỗi khi lưu game: {e}")

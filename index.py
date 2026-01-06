@@ -985,7 +985,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 2, victory_common_surface = victory_common_surface, game_data = game_data):
+def main_game(current_level= 0, victory_common_surface = victory_common_surface, game_data = game_data):
 
     def save(is_playing = False):
         # Save game state before exiting
@@ -1111,7 +1111,6 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
 
     # If is_playing is True, load previous state
     if game_data.get("is_playing", False):
-
         # Explorer
         if game_data.get("explorer_position", None) is not None and game_data.get("explorer_direction", None) is not None:
             MummyExplorer.grid_position = game_data["explorer_position"].copy()
@@ -1121,17 +1120,21 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
         if MummyZombies and game_data.get("zombie_positions", None) is not None and \
             game_data.get("zombie_directions", None) is not None:
             saved_zombie_positions = game_data["zombie_positions"]
-            saved_zombie_directions = game_data.get("zombie_directions", []) # facing directions
-            
+            saved_zombie_directions = game_data.get("zombie_directions", []) # facing directions            
             # if counts match, restore positions and directions
             if len(saved_zombie_positions) == len(MummyZombies):
                 for idx, zombie in enumerate(MummyZombies):
                     zombie.grid_position = saved_zombie_positions[idx].copy()
                     if idx < len(saved_zombie_directions):
                         zombie.facing_direction = saved_zombie_directions[idx]
-            else:
-                print(f"Warning: Zombie count mismatch. Using default positions.")
-                game_data["is_playing"] = False
+            elif len(saved_zombie_positions) < len(MummyZombies):
+                for idx in range(len(saved_zombie_positions)):
+                    MummyZombies[idx].grid_position = saved_zombie_positions[idx].copy()
+                    MummyZombies[idx].facing_direction = saved_zombie_directions[idx]
+                
+                MummyZombies = MummyZombies[0:len(saved_zombie_positions)]
+
+
         
         # Scorpions
         if MummyScorpions and game_data.get("scorpion_positions", None) is not None and \
@@ -1145,9 +1148,13 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                     scorpion.grid_position = saved_scorpion_positions[idx].copy()
                     if idx < len(saved_scorpion_directions):
                         scorpion.facing_direction = saved_scorpion_directions[idx]
-            else:
-                print(f"Warning: Scorpion count mismatch. Using default positions.")
-                game_data["is_playing"] = False
+            elif len(saved_scorpion_positions) < len(MummyScorpions):
+                for idx in range(len(saved_scorpion_positions)):
+                    MummyScorpions[idx].grid_position = saved_scorpion_positions[idx].copy()
+                    MummyScorpions[idx].facing_direction = saved_scorpion_directions[idx]
+                
+                MummyScorpions = MummyScorpions[0:len(saved_scorpion_positions)]
+                
 
 
         # ScoreTracker
@@ -1179,12 +1186,113 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
     else:
         ScoreTracker.player.start_counting = time.time()
 
-    #--------------------------------------------------------#
-    #----------------------MAIN GAME-------------------------#
-    #--------------------------------------------------------#
+    #----------------------------------------------------------------------------------#
+    #-----------------------------------MAIN GAME--------------------------------------#
+    #----------------------------------------------------------------------------------#
     running = True
     player_moved = False   # To track if player made a move this turn
     while running:
+
+        # Handle events
+        if MummyExplorer.movement_list == []:
+            # Check if player steps on a trap
+            if MummyMazeMap.is_kg_exists():
+                if MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0] and MummyExplorer.get_y() ==  MummyMazeMap.gate_key.get_key_pos()[1]:
+                    if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
+                        MummyMazeMap.gate_key.change_gate_status()
+                        player_moved = False
+
+            # Check if two zombies in a same position (if any)
+            if MummyZombies:
+                zombie_i = 0
+                while zombie_i < len(MummyZombies):
+                    zombie_j = zombie_i + 1
+                    while zombie_j < len(MummyZombies):
+                        if (
+                            MummyZombies[zombie_i].get_x()
+                            == MummyZombies[zombie_j].get_x()
+                            and MummyZombies[zombie_i].get_y()
+                            == MummyZombies[zombie_j].get_y()
+                        ):
+                            # Insert sound
+
+                            # Reset the position of the latter zombie
+                            MummyZombies.pop(zombie_j)
+                        else:
+                            zombie_j += 1
+                    zombie_i += 1
+
+            # Check if zombie in trap (if any)
+            if MummyZombies and MummyMazeMap.is_trap_exists():
+                zombie_i = 0
+                while zombie_i < len(MummyZombies):
+                    if MummyMazeMap.is_position_in_trap(
+                        MummyZombies[zombie_i].grid_position
+                    ):
+                        # Insert sound
+
+                        # Reset the position of the zombie
+                        MummyZombies.pop(zombie_i)
+                    else:
+                        zombie_i += 1
+
+            # Check if two scorpions in a same position (if any)
+            if MummyScorpions:
+                scorpion_i = 0
+                while scorpion_i < len(MummyScorpions):
+                    scorpion_j = scorpion_i + 1
+                    while scorpion_j < len(MummyScorpions):
+                        if (
+                            MummyScorpions[scorpion_i].get_x()
+                            == MummyScorpions[scorpion_j].get_x()
+                            and MummyScorpions[scorpion_i].get_y()
+                            == MummyScorpions[scorpion_j].get_y()
+                        ):
+                            # Insert sound
+
+                            # Reset the position of the latter zombie
+                            MummyScorpions.pop(scorpion_j)
+                        else:
+                            scorpion_j += 1
+                    scorpion_i += 1
+            
+            # Check if scorpion in trap (if any)
+            if MummyScorpions and MummyMazeMap.is_trap_exists():
+                scorpion_i = 0
+                while scorpion_i < len(MummyScorpions):
+                    if MummyMazeMap.is_position_in_trap(
+                        MummyScorpions[scorpion_i].grid_position
+                    ):
+                        # Insert sound
+
+                        # Reset the position of the scorpion
+                        MummyScorpions.pop(scorpion_i)
+                    else:
+                        scorpion_i += 1
+                        
+            # Check if zombie and scorpion in a same position (if any) -> delete both
+            if MummyZombies and MummyScorpions:
+                zombie_i = 0
+                while zombie_i < len(MummyZombies):
+                    scorpion_j = 0
+                    while scorpion_j < len(MummyScorpions):
+                        if (
+                            MummyZombies[zombie_i].get_x()
+                            == MummyScorpions[scorpion_j].get_x()
+                            and MummyZombies[zombie_i].get_y()
+                            == MummyScorpions[scorpion_j].get_y()
+                        ):
+                            # Insert sound
+
+                            # Reset the position of both
+                            MummyZombies.pop(zombie_i)
+                            MummyScorpions.pop(scorpion_j)
+                            zombie_i -= 1
+                            break  # Exit inner loop to avoid index issues
+                        else:
+                            scorpion_j += 1
+                    zombie_i += 1
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_data["is_playing"] = True
@@ -1225,7 +1333,7 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                     ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
                     MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
 
-                    # 
+                    # update hint penalty
                     ScoreTracker.player.hint_penalty += 1
             
             elif panel_clicked == "RESET MAZE":
@@ -1565,13 +1673,14 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                 # Placeholder for save game function
                 return "exit"
 
-
+         #---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
+        
         # Calculate total_score
         display_score = ScoreTracker.player.total_score
         
-        # -------------------------------------------------------- #
-        # ------------------- RENDERING/DRAW---------------------- #
-        # -------------------------------------------------------- #
+        # ---------------------------------------------------------------------------------- #
+        # -------------------------------- RENDERING/DRAW----------------------------------- #
+        # ---------------------------------------------------------------------------------- #
         
         # 1. CLEAR SCREEN
         screen.blit(
@@ -1630,16 +1739,6 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
         # if MummyMazeMap.is_kg_exists() and not MummyMazeMap.gate_key.is_opening_gate():
         #     MummyMazeMap.draw_gate_key(screen)
 
-        
-
-        #---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
-        if player_turn_completed:
-            if MummyMazeMap.is_kg_exists():
-                if MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0] and MummyExplorer.get_y() ==  MummyMazeMap.gate_key.get_key_pos()[1]:
-                    if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
-                        MummyMazeMap.gate_key.change_gate_status()
-                        player_moved = False
-
         pygame.display.flip()
         clock.tick(120)
         time.sleep(0.04)
@@ -1647,7 +1746,7 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
     pygame.quit()
 
 
-def main(action="main_menu"):
+def main(action="main_game"):
     """
     ACTION FLOW:
     lobby --> main_menu --> (enter classic mode --> main_game --> lobby)
