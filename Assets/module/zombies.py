@@ -47,6 +47,9 @@ class MummyMazeZombieManager:
         # 4. Set initial frames (Idle at start)
         self.update_current_frames(frame_index=self.total_frames - 1)
 
+        # 10x10 map movement speed 
+        self.move10 = {0: 0, 1: 4, 2: 8, 3: 13, 4: 18, 5: 23, 6: 28, 7: 33, 8: 38, 9: 43, 10: 48, 11: 0,}
+
     def get_x(self):
         return self.grid_position[0]
     
@@ -217,7 +220,7 @@ class MummyMazeZombieManager:
             self.update_current_frames(self.movement_frame_index)
 
             # Calculate offsets
-            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames) if self.length != 10 else self.move10[self.movement_frame_index + 1]
             can_move = self.zombie_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened)
 
             if can_move:

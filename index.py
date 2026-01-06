@@ -985,7 +985,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 2, victory_common_surface = victory_common_surface):
+def main_game(current_level= 30, victory_common_surface = victory_common_surface):
 
     def save(is_playing = False):
         # Save game state before exiting

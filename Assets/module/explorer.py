@@ -54,6 +54,8 @@ class MummyMazePlayerManager:
             "Trapped": pygame.mixer.Sound(os.path.join("Assets", "sounds", "pit.wav")),
         }
 
+        # 10x10 map movement speed 
+        self.move10 = {0: 0, 1: 4, 2: 8, 3: 13, 4: 18, 5: 23, 6: 28, 7: 33, 8: 38, 9: 43, 10: 48, 11: 0,}
 
     def get_x(self):
         return self.grid_position[0]
@@ -125,7 +127,7 @@ class MummyMazePlayerManager:
             screen.fill((0,0,0))
 
             # Calculate Step Pixels
-            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+            step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames) if self.length != 10 else self.move10[self.movement_frame_index + 1]
 
             self.update_current_frames(self.movement_frame_index)
             
@@ -387,7 +389,7 @@ class MummyMazePlayerManager:
 
             # Calculate Movement Offsets
             if self.player_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened):
-                step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames)
+                step_pixels = (self.movement_frame_index + 1) * (self.speed // self.total_frames) if self.length != 10 else self.move10[self.movement_frame_index + 1]
                 
                 if self.facing_direction == UP:
                     move_distance_y = -step_pixels
