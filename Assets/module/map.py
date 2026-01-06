@@ -123,7 +123,6 @@ class GateKeyManager:
 
         # Update frame index for animation
         if self.__is_changing_gate_status:    # If gate is in the process of opening/closing
-            print("Animating gate...")
             if self.__is_opening_gate:
                 self.__current_gate_frame_index += 1
                 if self.__current_gate_frame_index >= len(self.__gate_frames):
@@ -243,7 +242,6 @@ class MummyMazeMapManager:
         self.length = length  # size of square map (length x length)
         # Map from tile id to a bound drawing method (set up using bound methods)
         # Will be populated after methods are available (we can set here using bound methods)
-        print(data)
         self.map_data = data["map_data"] if data else [["" for _ in range(length)] for _ in range(length)]
         self.stair_positions = stair_position
         self.is_opening_gate = False
@@ -658,7 +656,7 @@ class MummyMazeMapManager:
             print(
                 f"Warning: stair position {self.stair_positions} is invalid. No stair drawn."
             )
-            print("length of map_data:", len(self.map_data[0]))
+
 
     def draw_map(self, screen: pygame.Surface) -> None:
         screen.blit(self.backdrop, (MARGIN_BACKDROP_X, MARGIN_BACKDROP_Y))
@@ -960,7 +958,6 @@ class HintPackage:
                 x, y = x - 1, y
             case "RIGHT":
                 x, y = x + 1, y
-        print(facing_direction)
         current_image = getattr(self.__hint_frame, facing_direction)
         current_shadow = getattr(self.__shadow_hint_frame, facing_direction)
 

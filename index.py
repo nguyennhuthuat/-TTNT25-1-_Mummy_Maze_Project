@@ -1094,7 +1094,6 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
         if scorpion_starts
         else None
     )
-    print(f"Check game data: {game_data}")
     ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore, total_score = game_data.get("total_score", 0))
 
     # To store previous game states for undo functionality
