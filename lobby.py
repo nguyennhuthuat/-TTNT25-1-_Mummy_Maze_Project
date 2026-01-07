@@ -137,7 +137,6 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Mummy Maze - 25TNT1 - Dudes Chase Money")  
 
-
     action = open_lobby(screen)
     
     print(f"Action: {action}")
