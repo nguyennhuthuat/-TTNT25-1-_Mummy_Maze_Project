@@ -43,31 +43,54 @@ def is_lose(superdata: list, player_position: tuple, zombie_positions: list = []
     
     return False
 
-def generate_graph(superdata: list) -> dict: #Generate graph from map data to use in pathfinding algorithms
-
+def generate_graph(superdata: list, gate_opened: bool = False) -> dict:
+    """
+    Generate graph from map data to use in pathfinding algorithms.
+    Graph edges respect gate states. 
+    
+    Args:
+        superdata: Dictionary containing map_data, gate_pos, key_pos, trap_pos
+        gate_opened:  Current state of gate
+    
+    Returns:
+        dict: Graph representation {position: [neighbors]}
+    """
     graph = {}
-
     map_data = superdata["map_data"]
 
     for col_index, col in enumerate(map_data):
-        for row_index, value in enumerate(col):  #row_index is x, col_index is y
+        for row_index, value in enumerate(col):
             position = (row_index + 1, col_index + 1)
+            
             # Pass if position is trap
             if is_trap(superdata, position):
                 graph[position] = []
                 continue
 
             graph[position] = []
-            if is_linked(map_data, position, UP) and not is_trap(superdata, (position[0], position[1]-1)):
-                graph[position].append((row_index + 1, col_index ))  # Up
-            if is_linked(map_data, position, DOWN) and not is_trap(superdata, (position[0], position[1]+1)):
-                graph[position].append((row_index + 1, col_index + 2))  # Down
-            if is_linked(map_data, position, LEFT) and not is_trap(superdata, (position[0]-1, position[1])):
-                graph[position].append((row_index , col_index + 1))  # Left
-            if is_linked(map_data, position, RIGHT) and not is_trap(superdata, (position[0]+1, position[1])):
-                graph[position].append((row_index + 2, col_index + 1))  # Right
+            
+            # Check UP
+            if is_linked(map_data, position, UP, gate_opened, superdata) and \
+               not is_trap(superdata, (position[0], position[1] - 1)):
+                graph[position].append((row_index + 1, col_index))
+            
+            # Check DOWN
+            if is_linked(map_data, position, DOWN, gate_opened, superdata) and \
+               not is_trap(superdata, (position[0], position[1] + 1)):
+                graph[position].append((row_index + 1, col_index + 2))
+            
+            # Check LEFT
+            if is_linked(map_data, position, LEFT, gate_opened, superdata) and \
+               not is_trap(superdata, (position[0] - 1, position[1])):
+                graph[position].append((row_index, col_index + 1))
+            
+            # Check RIGHT
+            if is_linked(map_data, position, RIGHT, gate_opened, superdata) and \
+               not is_trap(superdata, (position[0] + 1, position[1])):
+                graph[position].append((row_index + 2, col_index + 1))
 
     return graph
+
 
 def BFS(graph: dict, start: tuple) -> set:
     visited = set()
@@ -773,116 +796,173 @@ def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, s
     
     return next_zombie_positions, next_scorpion_positions
 
-def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list: 
-
+def Shortest_Path(superdata: dict, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list:
     """
-    Finds shortest path avoiding zombies (2 steps), scorpions (1 step), and traps.
+    Finds shortest path from start to goal while avoiding: 
+    - Zombies (move 2 steps per turn)
+    - Scorpions (move 1 step per turn)  
+    - Traps (static obstacles)
+    - Closed gates (can be opened with keys)
+    
+    Uses BFS with state tracking:  (position, gate_state, zombie_positions, scorpion_positions)
+    
+    Args:
+        superdata: Dictionary containing map_data, gate_pos, key_pos, trap_pos
+        start: Starting position (x, y)
+        goal: Goal position (x, y)
+        zombie_positions: List of zombie positions [(x, y, type), ...]
+        scorpion_positions: List of scorpion positions [(x, y, intelligence_level), ...]
+    
+    Returns:
+        list: Shortest path from start to goal as [(x1,y1), (x2,y2), ...], or [] if no path exists
     """
     
-    #----- STEP 1: INITIALIZE GRAPH AND VARIABLES  -----#
+    #----- STEP 1: INITIALIZE GRAPH AND VARIABLES -----#
     map_data = superdata["map_data"]
-    graph = generate_graph(superdata)
-    visited = set() #((exp_pos, zombie_positions, scorpion_positions), ...)
-
-    # Limit steps to avoid infinite loops
+    
+    # Extract gate and key positions from superdata
+    gate_pos = tuple(superdata. get("gate_pos", [])) if superdata.get("gate_pos") else None
+    key_pos = tuple(superdata.get("key_pos", [])) if superdata.get("key_pos") else None
+    
+    # Initial gate state (assume closed at start, unless player starts on key)
+    initial_gate_opened = False
+    if key_pos and (start[0], start[1]) == (key_pos[0], key_pos[1]):
+        initial_gate_opened = True
+    
+    # Limit steps to avoid infinite loops in complex maps
     count_steps = 0
     threshold_steps = 1000000
     
-    # Check if start or goal is on trap
+    #---------------------------------------------------------------#
+    #---------- STEP 2: VALIDATE START AND GOAL POSITIONS ----------#
+    #---------------------------------------------------------------#
+    
+    #----- Step 2.1: Check if start or goal is on trap -----#
     if is_trap(superdata, start) or is_trap(superdata, goal):
-        print(1)
+        print("Error: Start or goal is on trap position")
         return []
     
+    #----- Step 2.2: Check if already at goal -----#
     if start == goal:
         if not is_lose(superdata, start, zombie_positions, scorpion_positions):
-            return [start] 
+            return [start]
         else:
-            print(2)
+            print("Error: Start equals goal but player dies immediately")
             return []
     
+    #-----------------------------------------------------------------------------------#
+    #---------------------- STEP 3: INITIALIZE BFS DATA STRUCTURES ---------------------#
+    #-----------------------------------------------------------------------------------#
+    
+    #----- Step 3.1: Initialize visited set with state tuples -----#
+    # State = (position, gate_opened, zombie_tuple, scorpion_tuple)
     visited = set()
-    visited.add(start)
-    path = deque([[[start], zombie_positions, scorpion_positions]]) 
-    ## [[ [path], [zombie positions], [scorpion positions] ], ...]
-
+    
+    initial_state = (start, initial_gate_opened, tuple(zombie_positions), tuple(scorpion_positions))
+    visited.add(initial_state)
+    
+    #----- Step 3.2: Initialize path queue -----#
+    # Queue elements:  [[path_list], gate_opened, zombie_list, scorpion_list]
+    path_queue = deque([[[start], initial_gate_opened, zombie_positions, scorpion_positions]])
+    
     #---------------------------------------------------------------------------------------#
-    #------------------------------ BFS TO FIND SHORTEST PATH ------------------------------#
+    #----- STEP 4: BFS LOOP TO FIND SHORTEST PATH -----#
     #---------------------------------------------------------------------------------------#
-    while path and count_steps < threshold_steps: 
-
+    while path_queue and count_steps < threshold_steps: 
         count_steps += 1
-
-        current_path = path.popleft()
-        player_path = current_path[0]      # [ (x1,y1), (x2,y2), ... ]
-        zombie_list = current_path[1]      # [(x,y,k),...]
-        scorpion_list = current_path[2]    # [(x,y,intelligence_level),...]
-
-        #-------------------------------------------------------#
-        #----- STEP 2: CHECK IF PLAYER IS CAUGHT OR ON TRAP -----#
-        #-------------------------------------------------------#
+        
+        #----- Step 4.1: Dequeue current path and state -----#
+        current_data = path_queue.popleft()
+        player_path = current_data[0]          # List:  [(x1,y1), (x2,y2), ...]
+        gate_opened = current_data[1]          # Bool: True/False
+        zombie_list = current_data[2]          # List: [(x,y,type),...]
+        scorpion_list = current_data[3]        # List: [(x,y,intelligence_level),...]
+        
         current_position = player_path[-1]
         
-        # Check if stepped on trap
+        #----- Step 4.2: Skip if current position is a trap -----#
         if is_trap(superdata, current_position):
             continue
         
-        # Check if caught by zombie or scorpion
-        player_died = is_lose(superdata, current_position,zombie_list, scorpion_list)
+        #----- Step 4.3: Check if player is caught by enemies -----#
+        player_died = is_lose(superdata, current_position, zombie_list, scorpion_list)
         
-        #----- Step 2.1: if player is not caught by any enemy -----#
-        if not player_died:  
-
+        #-----------------------------------------------------------------------------------#
+        #----- STEP 5: IF PLAYER IS ALIVE, EXPLORE NEXT POSITIONS -----#
+        #-----------------------------------------------------------------------------------#
+        if not player_died:
+            
+            #----- Step 5.1: Generate graph based on current gate state -----#
+            # Graph changes when gate opens/closes
+            graph = generate_graph(superdata, gate_opened)
+            
             #-----------------------------------------------------------------------------------#
-            #----- STEP 3: GENERATE NEXT POSSIBLE POSITIONS FOR PLAYER, ZOMBIES, SCORPIONS -----#
+            #----- STEP 6: TRY STAYING IN PLACE (IF NOT 4-WAY CONNECTED) -----#
             #-----------------------------------------------------------------------------------#
-
-            #----- Step 3.1: Generate next possible positions for player -----#
-            if len(graph[current_position]) < 4:  # If can stay in this position (not 4-way connected)
-                # Get idle_position (stay in place)
+            if len(graph[current_position]) < 4:
                 neighbor = current_position
-
-                cur_path = player_path.copy()
-                cur_path.append(neighbor)
-
-                # Generate next positions for enemies
+                cur_path = player_path. copy()
+                cur_path. append(neighbor)
+                
+                #----- Step 6.1: Check if stepping on key -> toggle gate state -----#
+                new_gate_opened = gate_opened
+                if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
+                    new_gate_opened = not gate_opened
+                
+                #----- Step 6.2: Generate next positions for enemies after player moves -----#
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
                 new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
                 
-                temp = (neighbor, tuple(new_zombie_positions), tuple(new_scorpion_positions))
-                if temp not in visited:
-                    #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
-                    path.append([cur_path, new_zombie_positions, new_scorpion_positions])
-                    visited.add(temp)
-
-            for neighbor in graph[current_position]:
-                # Skip if neighbor is a trap
+                #----- Step 6.3: Add to queue if state not visited -----#
+                state = (neighbor, new_gate_opened, tuple(new_zombie_positions), tuple(new_scorpion_positions))
+                if state not in visited:
+                    path_queue.append([cur_path, new_gate_opened, new_zombie_positions, new_scorpion_positions])
+                    visited.add(state)
+            
+            #-----------------------------------------------------------------------------------#
+            #----- STEP 7: TRY ALL NEIGHBORING POSITIONS -----#
+            #-----------------------------------------------------------------------------------#
+            for neighbor in graph[current_position]: 
+                
+                #----- Step 7.1: Skip if neighbor is a trap -----#
                 if is_trap(superdata, neighbor):
                     continue
                 
+                #----- Step 7.2: Create new path including this neighbor -----#
                 cur_path = player_path.copy()
                 cur_path.append(neighbor)
-
-                # Generate next positions for enemies
+                
+                #----- Step 7.3: Check if stepping on key -> toggle gate state -----#
+                new_gate_opened = gate_opened
+                if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
+                    new_gate_opened = not gate_opened
+                
+                #----- Step 7.4: Generate next positions for enemies after player moves -----#
                 new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
                 new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
                 new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
-
+                
+                #-----------------------------------------------------------------------------#
+                #----- STEP 8: CHECK IF REACHED GOAL AND PLAYER SURVIVES -----#
+                #-----------------------------------------------------------------------------#
                 if neighbor == goal and not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
-                    #----- STEP 4: RETURN PATH IF GOAL IS REACHED -----#
+                    print(f"Path found in {count_steps} steps!")
                     return cur_path
                 
-                else:
-                    temp = (neighbor, tuple(new_zombie_positions), tuple(new_scorpion_positions))
-                    if temp not in visited:
-                        #----- STEP 5: ADD NEW POSITION TO PATH QUEUE -----#
-                        path.append([cur_path, new_zombie_positions, new_scorpion_positions])
-                        visited.add(temp)
-
-        else: 
-            None # Do nothing if player is caught by enemy in this case
-    print(3)
-    return [] # No path found
+                #----- Step 8.1: Otherwise, add to queue if state not visited -----#
+                state = (neighbor, new_gate_opened, tuple(new_zombie_positions), tuple(new_scorpion_positions))
+                if state not in visited:
+                    path_queue.append([cur_path, new_gate_opened, new_zombie_positions, new_scorpion_positions])
+                    visited.add(state)
+        
+        #----- Step 4.4: If player died, skip this path (do nothing) -----#
+        else:
+            continue
+    
+    #----- STEP 9: NO PATH FOUND -----#
+    print(f"No path found after {count_steps} steps")
+    return []
 
 if __name__ == "__main__":
     import map_collection as maps

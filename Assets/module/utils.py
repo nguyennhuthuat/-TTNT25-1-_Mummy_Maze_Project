@@ -55,40 +55,113 @@ def load_and_scale_image(TILE_SIZE, filename: str = "", is_shadow: bool = False,
         return pygame.transform.smoothscale(surface, new_size)
 
 
-def is_linked(map_data: list, direction: list, facing_direction: str) -> bool: #check if have walls on the way
-        
+def is_linked(map_data: list, direction:  list, facing_direction: str, gate_opened: bool = False, superdata: dict = None) -> bool:
+    """
+    Check if can move from 'direction' in 'facing_direction' considering walls and gates.
+    
+    Args:
+        map_data: Map data matrix
+        direction: Current position [x, y]
+        facing_direction: Direction to move (UP/DOWN/LEFT/RIGHT)
+        gate_opened: Current state of gate (True = opened, False = closed)
+        superdata: Original map data containing gate_pos and key_pos
+    
+    Returns: 
+        bool: True if can move, False otherwise
+    """
     x = direction[0]
     y = direction[1]
-    if facing_direction == UP: #up
-        return (y-1 > 0) and (map_data[y-1][x-1] not in ['t', 'tl','tr','b*','l*','r*']) and (map_data[y-2][x-1] not in ['b','bl','br','t*','l*','r*'])
-    if facing_direction == DOWN: #down
-        return (y+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['b','bl','br','t*','l*','r*']) and (map_data[y][x-1] not in ['t', 'tl','tr','b*','l*','r*'])
-    if facing_direction == LEFT: #left
-        return (x-1 > 0) and (map_data[y-1][x-1] not in ['l', 'tl','bl','b*','t*','r*']) and (map_data[y-1][x-2] not in ['r','br','tr','t*','l*','b*'])
-    if facing_direction == RIGHT: #right
-        return (x+1 <= len(map_data[0])) and (map_data[y-1][x-1] not in ['r','br','tr','t*','l*','b*']) and (map_data[y-1][x] not in ['l', 'tl','bl','b*','t*','r*'])
+    
+    # Check if gate is blocking the path
+    if superdata and superdata.get("gate_pos") and not gate_opened:
+        gx, gy = superdata["gate_pos"]
+        
+        # Check if next position is the gate
+        if facing_direction == UP: 
+            if (x - 1, y - 2) == (gx - 1, gy - 1):
+                return False
+        elif facing_direction == DOWN:
+            if (x - 1, y - 1) == (gx - 1, gy - 1):
+                return False
+        elif facing_direction == LEFT:
+            if (x - 2, y - 1) == (gx - 1, gy - 1):
+                return False
+        elif facing_direction == RIGHT:
+            if (x, y - 1) == (gx - 1, gy - 1):
+                return False
+    
+    # Original wall checking logic
+    if facing_direction == UP:
+        return (y - 1 > 0) and \
+               (map_data[y - 1][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*']) and \
+               (map_data[y - 2][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*'])
+    
+    if facing_direction == DOWN:
+        return (y + 1 <= len(map_data[0])) and \
+               (map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \
+               (map_data[y][x - 1] not in ['t', 'tl', 'tr', 'b*', 'l*', 'r*'])
+    
+    if facing_direction == LEFT:
+        return (x - 1 > 0) and \
+               (map_data[y - 1][x - 1] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*']) and \
+               (map_data[y - 1][x - 2] not in ['r', 'br', 'tr', 't*', 'l*', 'b*'])
+    
+    if facing_direction == RIGHT:
+        return (x + 1 <= len(map_data[0])) and \
+               (map_data[y - 1][x - 1] not in ['r', 'br', 'tr', 't*', 'l*', 'b*']) and \
+               (map_data[y - 1][x] not in ['l', 'tl', 'bl', 'b*', 't*', 'r*'])
+    
     return True
 
 
-def get_face_direction(from_pos:tuple, to_pos:tuple, map_data: None = []) -> str:
-    """Determine the facing direction from one position to another."""
+def get_face_direction(from_pos:  tuple, to_pos: tuple, map_data: list = None, gate_opened: bool = False, superdata: dict = None) -> str:
+    """
+    Determine the facing direction from one position to another.
+    
+    Args:
+        from_pos:  Starting position (x, y)
+        to_pos: Target position (x, y)
+        map_data: Map data matrix
+        gate_opened:  Current state of gate (True = opened, False = closed)
+        superdata: Original map data containing gate_pos and key_pos
+    
+    Returns:
+        str: Direction string (UP/DOWN/LEFT/RIGHT)
+    """
+    
+    #----- STEP 1: EXTRACT COORDINATES -----#
     from_x, from_y = from_pos
     to_x, to_y = to_pos
-    if to_x < from_x:
+    
+    #----- STEP 2: DETERMINE DIRECTION BASED ON COORDINATE DIFFERENCE -----#
+    # Check horizontal difference first
+    if to_x < from_x: 
         return LEFT
     elif from_x < to_x:
         return RIGHT
-    elif to_y < from_y:
+    
+    # Check vertical difference
+    elif to_y < from_y: 
         return UP
-    elif to_y > from_y:
+    elif to_y > from_y: 
         return DOWN
     
-    # if positions are the same, default the wall side
-    possible_directions = [UP, DOWN, LEFT, RIGHT]
-    for direction in possible_directions:
-        if not is_linked(map_data, from_pos, direction):
-            print("Default direction:", direction)
-            return direction
+    #----- STEP 3: IF POSITIONS ARE THE SAME, DEFAULT TO WALL SIDE -----#
+
+    # This handles edge case where from_pos == to_pos
+    # Return direction that faces a wall (for standing still animation)
+    
+    if map_data is not None: 
+        possible_directions = [UP, DOWN, LEFT, RIGHT]
+        
+        for direction in possible_directions: 
+            # Check if this direction is blocked (wall or closed gate)
+            if not is_linked(map_data, from_pos, direction, gate_opened, superdata):
+                print(f"Default direction (blocked): {direction}")
+                return direction
+    
+    # Fallback:  return DOWN if no map_data provided
+    return DOWN
 
 
 # ------------------------------------------------------- #

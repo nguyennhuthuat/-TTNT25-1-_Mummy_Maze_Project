@@ -988,7 +988,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 2, victory_common_surface = victory_common_surface, global_data = global_data):
+def main_game(current_level= 1, victory_common_surface = victory_common_surface, global_data = global_data):
     
     def save(is_playing = False): 
         # Save game state before exiting
@@ -1210,6 +1210,8 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                     if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
                         MummyMazeMap.gate_key.change_gate_status()
                         player_moved = False
+                    else:
+                        player_moved = True
 
             # Check if two zombies in a same position (if any)
             if MummyZombies:
@@ -1425,13 +1427,14 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                     pass  # Thêm hiệu ứng mở bảng options vào
                 
                 elif panel_clicked == "HINT":
+                    # Gọi Shortest_Path để tìm đường đi tối ưu
                     path = Shortest_Path(
-                        map_data, 
+                        map_data,  # superdata (dictionary chứa map_data, gate_pos, key_pos, trap_pos)
                         tuple(MummyExplorer.grid_position), 
                         tuple(winning_position), 
-                        zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
+                        zombie_positions = [tuple(zombie. grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
                         scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []
-                        ) 
+                    ) 
                     
                     if path == []:
                         print("Can't find the way to win. You lose!")
@@ -1440,15 +1443,24 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
                             tuple(MummyExplorer.grid_position),
                             tuple(winning_position),  
                             zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
-                            scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []  
+                            scorpion_positions = [tuple(scorpion. grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []  
                         ))
                     else:
-                        face_direction = get_face_direction(path[0], path[1], MummyMazeMap.map_data) if len(path) >=2 else "WIN"
+                        # ✅ CẬP NHẬT: Thêm gate_opened và superdata vào get_face_direction
+                        current_gate_state = MummyMazeMap.gate_key.is_opening_gate() if MummyMazeMap.is_kg_exists() else True
+                        
+                        face_direction = get_face_direction(
+                            path[0], 
+                            path[1], 
+                            MummyMazeMap.map_data,  # Map data ma trận
+                            gate_opened=current_gate_state,  # ✅ THÊM:  Trạng thái cổng hiện tại
+                            superdata=map_data  # ✅ THÊM: Dữ liệu gốc chứa gate_pos, key_pos
+                        ) if len(path) >= 2 else "WIN"
+                        
                         hint.show_hint = True
                         hint.facing_direction = face_direction
 
                         ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
-                
                 elif panel_clicked == "QUIT TO MAIN":
                     save(is_playing= True)
                     return "main_menu"
