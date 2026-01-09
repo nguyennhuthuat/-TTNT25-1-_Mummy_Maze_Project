@@ -212,8 +212,6 @@ class MummyMazeZombieManager:
         # --- STATE 1: MOVING ---
         if self.movement_list:
             if self.movement_frame_index == 0:
-                self.is_standing = False
-                self.mumwalk_sound.play()
                 self.facing_direction = self.movement_list[0]
 
             # Update walking frames
@@ -224,6 +222,11 @@ class MummyMazeZombieManager:
             can_move = self.zombie_can_move(self.grid_position, self.facing_direction, gate_opened = gate_opened)
 
             if can_move:
+                if self.movement_frame_index == 0:
+                    self.is_standing = False
+                    self.mumwalk_sound.play()
+                    self.facing_direction = self.movement_list[0]
+
                 if self.facing_direction == UP:
                     move_distance_y = -step_pixels
                     grid_dy = -1
@@ -237,22 +240,30 @@ class MummyMazeZombieManager:
                     move_distance_x = step_pixels
                     grid_dx = 1
 
-            self.draw_zombie(screen, move_distance_x, move_distance_y)
+                self.draw_zombie(screen, move_distance_x, move_distance_y)
             
-            # Advance frame
-            self.movement_frame_index += 1
-            
-            # End of step
-            if self.movement_frame_index >= self.total_frames:
-                self.movement_frame_index = 0
-                self.movement_list.pop(0)
+                # Advance frame
+                self.movement_frame_index += 1
                 
-                if can_move:
-                    self.grid_position[0] += grid_dx
-                    self.grid_position[1] += grid_dy
+                # End of step
+                if self.movement_frame_index >= self.total_frames:
+                    self.movement_frame_index = 0
+                    self.movement_list.pop(0)
+                    
+                    if can_move:
+                        self.grid_position[0] += grid_dx
+                        self.grid_position[1] += grid_dy
 
+                    self.is_standing = True
+                    self.start_standing = time.time()
+            else:
+                self.movement_list = []
+                self.movement_frame_index = 0
                 self.is_standing = True
-                self.start_standing = time.time()
+
+                self.draw_zombie(screen, move_distance_x, move_distance_y)
+            
+            
 
         # --- STATE 2: IDLE / EFFECT ---
         else:

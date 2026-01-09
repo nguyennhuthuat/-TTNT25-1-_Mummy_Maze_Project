@@ -119,8 +119,8 @@ except Exception as e:
 # ----------------------------------------------------------------------------- #
 # -------------------------------MAIN GAME SETUP------------------------------- #
 # ----------------------------------------------------------------------------- #
-game_data = load_data()
-current_level = game_data.get("current_level", 0)
+global_data = load_data()
+current_level = global_data[global_data.get("user_name")].get("current_level", 0)
 
 start_button = Button(
     0,  # X tạm thời là 0
@@ -630,6 +630,7 @@ def show_victory_window(
 
     return result, new_total_score
 
+
 def run_loading_screen():
     # Phát nhạc nền (số -1 có nghĩa là lặp vô tận)
     if pygame.mixer.music.get_busy() == False:
@@ -782,6 +783,7 @@ def lobby(screen, clock):
 
         pygame.display.flip()
         clock.tick(60)
+
 
 def main_menu(screen, clock):
     try:
@@ -982,11 +984,12 @@ def create_game_state_image(
 
     return new_screen
 
+
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 15, victory_common_surface = victory_common_surface, game_data = game_data):
-
+def main_game(current_level= 0, victory_common_surface = victory_common_surface, global_data = global_data):
+    
     def save(is_playing = False): 
         # Save game state before exiting
         game_data["is_playing"] = is_playing
@@ -1032,8 +1035,13 @@ def main_game(current_level= 15, victory_common_surface = victory_common_surface
             game_data["bonus_score"] = 0
             game_data["hint_penalty"] = 0
             game_data["time_elapsed"] = 0
-        save_data(game_data)
 
+        global_data[global_data["user_name"]]["game_data"] = game_data
+        save_data(global_data)
+
+
+    # Load previous game data if any
+    game_data = global_data.get(global_data.get("user_name"), {}).get("game_data", {})
     (
         map_length,
         stair_position,
@@ -1774,6 +1782,7 @@ def main(action="main_game"):
 
         elif action == "main_menu":
             action = main_menu(screen, clock)
+
 
         elif action == "main_game":
             action = main_game()
