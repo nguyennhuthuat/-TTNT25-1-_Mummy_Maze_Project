@@ -1,7 +1,7 @@
 from collections import deque
 
 from click import Tuple
-from .utils import is_linked
+from . utils import is_linked
 UP = 'UP'
 DOWN = 'DOWN'
 LEFT = 'LEFT'
@@ -10,7 +10,7 @@ RIGHT = 'RIGHT'
 
 def is_trap(superdata: list, position: tuple) -> bool:
     """
-    Check if a position contains a trap. 
+    Check if a position contains a trap.  
     """
     x, y = position[0], position[1]
     map_data = superdata["map_data"]
@@ -23,7 +23,7 @@ def is_trap(superdata: list, position: tuple) -> bool:
 
 def is_lose(superdata: list, player_position: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> bool:
     """
-    Check if player is caught by zombie or scorpion. 
+    Check if player is caught by zombie or scorpion.  
     """
     # Check traps
     if is_trap(superdata, player_position):
@@ -37,7 +37,7 @@ def is_lose(superdata: list, player_position: tuple, zombie_positions: list = []
     
     # Check scorpions
     if scorpion_positions:
-        for scorpion_info in scorpion_positions: 
+        for scorpion_info in scorpion_positions:  
             if player_position == (scorpion_info[0], scorpion_info[1]):
                 return True
     
@@ -46,11 +46,11 @@ def is_lose(superdata: list, player_position: tuple, zombie_positions: list = []
 def generate_graph(superdata: list, gate_opened: bool = False) -> dict:
     """
     Generate graph from map data to use in pathfinding algorithms.
-    Graph edges respect gate states. 
+    Graph edges respect gate states.  
     
     Args:
-        superdata: Dictionary containing map_data, gate_pos, key_pos, trap_pos
-        gate_opened:  Current state of gate
+        superdata:  Dictionary containing map_data, gate_pos, key_pos, trap_pos
+        gate_opened:   Current state of gate
     
     Returns:
         dict: Graph representation {position: [neighbors]}
@@ -99,8 +99,8 @@ def BFS(graph: dict, start: tuple) -> set:
     
     while queue:
         vertex = queue.popleft()
-        for neighbor in graph[vertex]:
-            if neighbor not in visited:
+        for neighbor in graph[vertex]: 
+            if neighbor not in visited: 
                 visited.add(neighbor)
                 queue.append(neighbor)
     return visited
@@ -108,33 +108,46 @@ def BFS(graph: dict, start: tuple) -> set:
 def DFS(graph: dict, start: tuple) -> set:
     visited = set()
     stack = [start]
-    visited.add(start)
+    visited. add(start)
     while stack:
-        vertex = stack.pop()
+        vertex = stack. pop()
 
-        for neighbor in graph[vertex]:
-            if neighbor not in visited:
+        for neighbor in graph[vertex]: 
+            if neighbor not in visited: 
                 visited.add(neighbor)
                 stack.append(neighbor)
     return visited
 
-def try_move(game_map: list, current_pos: tuple, direction: int, delta_x: int, delta_y: int) -> tuple:
+def try_move(game_map: list, current_pos: tuple, direction: str, delta_x: int, delta_y:  int, 
+             gate_opened: bool = False, superdata: dict = None) -> tuple:
     """
-    Attempts to move in a specific direction.
+    Attempts to move in a specific direction considering walls and gates.
     Returns the new coordinate if linked, otherwise returns the current coordinate.
+    
+    Args:
+        game_map: Map data matrix
+        current_pos: Current position (x, y) in 1-indexed coordinates
+        direction: Direction constant (UP/DOWN/LEFT/RIGHT)
+        delta_x: Change in x coordinate
+        delta_y: Change in y coordinate
+        gate_opened:  Whether gate is currently opened
+        superdata: Full map data including gate_pos, key_pos, trap_pos
+    
+    Returns:
+        tuple: New position if move is valid, otherwise current position
     """
-    if is_linked(game_map, current_pos, direction):
+    if is_linked(game_map, current_pos, direction, gate_opened, superdata):
         return (current_pos[0] + delta_x, current_pos[1] + delta_y)
     return current_pos
 
 def get_horizontal_direction(zombie_x: int, player_x: int) -> tuple:
     """
     Determines the horizontal direction towards the player.
-    Returns: (direction_constant, delta_x, delta_y)
+    Returns:  (direction_constant, delta_x, delta_y)
     """
-    if zombie_x > player_x: 
+    if zombie_x > player_x:  
         return LEFT, -1, 0  # Move Left
-    if zombie_x < player_x: 
+    if zombie_x < player_x:  
         return RIGHT, 1, 0  # Move Right
     
     return None, 0, 0       # Same column
@@ -151,88 +164,125 @@ def get_vertical_direction(zombie_y: int, player_y: int) -> tuple:
     
     return None, 0, 0       # Same row
 
-def generate_next_zombie_positions(map_data: list = [], current_zombie_positions: list = [], current_player_position: tuple = (), show_list: bool = False) -> list:
+#==============================================================================
+#                         ZOMBIE MOVEMENT SYSTEM
+#==============================================================================
 
+def generate_next_zombie_positions(
+    map_data: list = [], 
+    current_zombie_positions: list = [], 
+    current_player_position: tuple = (), 
+    gate_opened: bool = False, 
+    superdata: dict = None, 
+    show_list: bool = False
+) -> list:
+    """
+    Generate next positions for all zombies considering walls, gates, and player position.
+    
+    Args:
+        map_data: Map data matrix
+        current_zombie_positions:  List of zombie tuples [(x, y, type), ...]
+        current_player_position: Player position (x, y)
+        gate_opened: Current state of gate (True = open, False = closed)
+        superdata: Full map data including gate_pos, key_pos, trap_pos
+        show_list:  If True, return movement directions; if False, return positions
+    
+    Returns:
+        List of next zombie positions or movement directions
+    
+    Zombie Types:
+        Type 0: Vertical priority, dumb (freezes if blocked vertically)
+        Type 1: Horizontal priority, dumb (freezes if blocked horizontally)
+        Type 2: Vertical priority, smart (tries horizontal if blocked vertically)
+        Type 3: Horizontal priority, smart (tries vertical if blocked horizontally)
+    """
 
-    def generate_type_0(map_data: list = [], current_zombie_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_0(
+        map_data: list, 
+        current_zombie_position: tuple, 
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 0 Zombie (Tank/Dumb Zombie).
-        - Speed: 2 steps.
-        - Behavior: Prioritizes Vertical movement.
-        - Feature: Freezes if blocked vertically (does not pathfind around walls).
+        Type 0 Zombie:  Vertical Priority, Dumb AI
+        - Speed: 2 steps per turn
+        - Behavior: Prioritizes vertical movement (UP/DOWN)
+        - Weakness: Freezes if blocked vertically, won't try horizontal
         """
-        
-        # Use a local variable to track position updates through the steps
         zombie_pos = current_zombie_position
         move_list = []
-
-        # Loop for the number of steps (Speed = 2)
+        
+        # Determine initial direction
         move_dir, dx, dy = get_vertical_direction(zombie_pos[1], current_player_position[1])
+        
+        # Move up to 2 steps
         for _ in range(2):
             z_x, z_y = zombie_pos
             p_x, p_y = current_player_position
 
-            # Stop moving immediately if the zombie has caught the player
+            # Stop if caught player
             if zombie_pos == current_player_position:
                 break
 
             new_pos = zombie_pos
 
-            # CASE 1: Vertical Alignment Needed
-            if z_y != p_y:
+            # CASE 1: Vertical Alignment Needed (Priority)
+            if z_y != p_y: 
                 # Determine vertical direction
-                if z_y > p_y:
+                if z_y > p_y: 
                     move_dir, dx, dy = UP, 0, -1
                 else:
                     move_dir, dx, dy = DOWN, 0, 1
                 
-                # Attempt to move vertically
-                new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                if new_pos != zombie_pos and move_dir is not None:
+                # Attempt vertical move (gate affects this!)
+                new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != zombie_pos and move_dir is not None: 
                     move_list.append(move_dir)
 
-                # [FEATURE] Wall Stuck Logic:
-                # If the zombie tried to move vertically but hit a wall (position didn't change),
-                # it stops its turn immediately. It is not smart enough to try horizontal moves.
+                # [DUMB AI] Freeze if blocked vertically
                 if new_pos == zombie_pos:
                     break
 
-            # CASE 2: Same Row (Horizontal Alignment)
+            # CASE 2: Same Row - Move Horizontally
             else:
-                # Only move horizontally if already on the same row
                 move_dir, dx, dy = get_horizontal_direction(z_x, p_x)
                 
-                if move_dir is not None:
-                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos and move_dir is not None:
+                if move_dir is not None: 
+                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                    if new_pos != zombie_pos: 
                         move_list.append(move_dir)
 
-            # Update the position for the next iteration of the loop
             zombie_pos = new_pos
 
-        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
-            move_list.append(move_dir)
+        # Add idle animation if can't move
+        if move_list == [] and move_dir is not None:
+            move_list. append(move_dir)
 
-        if show_list == False:
-            return zombie_pos
-        else:
-            return move_list
+        return move_list if show_list else zombie_pos
         
-    def generate_type_1(map_data: list = [], current_zombie_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_1(
+        map_data: list,
+        current_zombie_position:  tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 1 Zombie.
-        - Speed: 2 steps.
-        - Behavior: Prioritizes Horizontal movement (Left/Right) first.
-        - Feature: Freezes if blocked horizontally (does not pathfind vertically).
+        Type 1 Zombie: Horizontal Priority, Dumb AI
+        - Speed: 2 steps per turn
+        - Behavior:  Prioritizes horizontal movement (LEFT/RIGHT)
+        - Weakness:  Freezes if blocked horizontally, won't try vertical
         """
-        
         zombie_pos = current_zombie_position
         move_list = []
 
+        # Determine initial direction
         move_dir, dx, dy = get_horizontal_direction(zombie_pos[0], current_player_position[0])
-
         
-        # Loop for 2 steps
+        # Move up to 2 steps
         for _ in range(2):
             z_x, z_y = zombie_pos
             p_x, p_y = current_player_position
@@ -244,54 +294,56 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
             new_pos = zombie_pos
 
             # CASE 1: Horizontal Alignment Needed (Priority)
-            if z_x != p_x:
+            if z_x != p_x: 
                 move_dir, dx, dy = get_horizontal_direction(z_x, p_x)
                 
-                # Attempt to move horizontally
-                new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                if new_pos != zombie_pos and move_dir is not None:
+                # Attempt horizontal move
+                new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != zombie_pos and move_dir is not None: 
                     move_list.append(move_dir)
                     
-                # [FEATURE] Wall Stuck Logic:
-                # If blocked horizontally, stop turn immediately.
+                # [DUMB AI] Freeze if blocked horizontally
                 if new_pos == zombie_pos:
                     break
 
-            # CASE 2: Same Column (Vertical Alignment)
+            # CASE 2: Same Column - Move Vertically
             else:
-                # Only move vertically if already on the same column
                 move_dir, dx, dy = get_vertical_direction(z_y, p_y)
                 
-                if move_dir is not None:
-                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos and move_dir is not None:
+                if move_dir is not None: 
+                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                    if new_pos != zombie_pos:
                         move_list.append(move_dir)
 
-            # Update position for next iteration
             zombie_pos = new_pos
 
-        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        # Add idle animation if can't move
+        if move_list == [] and move_dir is not None:
             move_list.append(move_dir)
 
-        if show_list == False:
-            return zombie_pos
-        else:
-            return move_list
+        return move_list if show_list else zombie_pos
     
-    def generate_type_2(map_data: list = [], current_zombie_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_2(
+        map_data: list,
+        current_zombie_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 2 Zombie (Smart/Sliding Zombie).
-        - Speed: 2 steps.
-        - Behavior: Prioritizes Vertical movement.
-        - Feature (Smart): If blocked Vertically, it attempts to 'slide' Horizontally 
-        instead of freezing. It only freezes if BOTH Vertical and Horizontal paths are blocked.
+        Type 2 Zombie:  Vertical Priority, Smart AI
+        - Speed: 2 steps per turn
+        - Behavior: Prioritizes vertical movement (UP/DOWN)
+        - Intelligence: If blocked vertically, tries horizontal (sliding)
         """
-        
         zombie_pos = current_zombie_position
         move_list = []
 
+        # Determine initial direction
         move_dir, dx, dy = get_vertical_direction(zombie_pos[1], current_player_position[1])
 
+        # Move up to 2 steps
         for _ in range(2):
             z_x, z_y = zombie_pos
             p_x, p_y = current_player_position
@@ -305,65 +357,64 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
             if z_y != p_y:
                 move_dir, dx, dy = get_vertical_direction(z_y, p_y)
                 
-                # 1.1 Try moving Vertical
-                attempt_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
+                # Try vertical move first (gate may block this!)
+                attempt_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
 
-                # Check if Vertical move succeeded
                 if attempt_pos != zombie_pos:
+                    # Vertical move succeeded
                     new_pos = attempt_pos
-                    if move_dir is not None:
+                    if move_dir is not None: 
                         move_list.append(move_dir)
                 else:
-                    # 1.2 [SMART FALLBACK] Blocked Vertically -> Try Horizontal immediately
-                    # Instead of breaking, check if we can slide Left/Right
+                    # [SMART AI] Blocked vertically -> Try horizontal slide
                     h_dir, h_dx, h_dy = get_horizontal_direction(z_x, p_x)
                     
                     if h_dir is not None:
-                        new_pos = try_move(map_data, zombie_pos, h_dir, h_dx, h_dy)
-                        if new_pos != zombie_pos and h_dir is not None:
+                        new_pos = try_move(map_data, zombie_pos, h_dir, h_dx, h_dy, gate_opened, superdata)
+                        if new_pos != zombie_pos:
                             move_list.append(h_dir)
-                    
-                    # Note: If new_pos is still equal to zombie_pos here, 
-                    # it means both Vertical and Horizontal were blocked (or aligned).
-                    # The zombie stands still (does not reverse/turn back).
 
-            # CASE 2: Already on Same Row (Only Horizontal option)
-            else:
+            # CASE 2: Same Row - Move Horizontally
+            else: 
                 move_dir, dx, dy = get_horizontal_direction(z_x, p_x)
-                if move_dir is not None:
-                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos and move_dir is not None:
+                if move_dir is not None: 
+                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                    if new_pos != zombie_pos:
                         move_list.append(move_dir)
 
-            # Update position
             zombie_pos = new_pos
 
-        if move_list == [] and move_dir is not None: #if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        # Add idle animation if can't move
+        if move_list == [] and move_dir is not None:
             move_list.append(move_dir)
 
-        if show_list == False:
-            return zombie_pos
-        else:
-            return move_list
+        return move_list if show_list else zombie_pos
     
-    def generate_type_3(map_data: list = [], current_zombie_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_3(
+        map_data:  list,
+        current_zombie_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 3 Zombie (Smart Horizontal Zombie).
-        - Speed: 2 steps.
-        - Behavior: Prioritizes Horizontal movement (Left/Right).
-        - Feature (Smart): If blocked Horizontally, it attempts to 'slide' Vertically.
+        Type 3 Zombie:  Horizontal Priority, Smart AI
+        - Speed: 2 steps per turn
+        - Behavior:  Prioritizes horizontal movement (LEFT/RIGHT)
+        - Intelligence: If blocked horizontally, tries vertical (sliding)
         """
-        
         zombie_pos = current_zombie_position
         move_list = []
 
+        # Determine initial direction
         move_dir, dx, dy = get_horizontal_direction(zombie_pos[0], current_player_position[0])
 
+        # Move up to 2 steps
         for _ in range(2):
             z_x, z_y = zombie_pos
             p_x, p_y = current_player_position
 
-            # Stop if caught player
             if zombie_pos == current_player_position:
                 break
 
@@ -373,113 +424,117 @@ def generate_next_zombie_positions(map_data: list = [], current_zombie_positions
             if z_x != p_x:
                 move_dir, dx, dy = get_horizontal_direction(z_x, p_x)
                 
-                # 1.1 Try moving Horizontal
-                attempt_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
+                # Try horizontal move first
+                attempt_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
 
                 if attempt_pos != zombie_pos:
-                    new_pos = attempt_pos # Success
+                    # Horizontal move succeeded
+                    new_pos = attempt_pos
                     if move_dir is not None:
-                        move_list.append(move_dir)
-
+                        move_list. append(move_dir)
                 else:
-                    # 1.2 [SMART FALLBACK] Blocked Horizontally -> Try Vertical immediately
+                    # [SMART AI] Blocked horizontally -> Try vertical slide
                     v_dir, v_dx, v_dy = get_vertical_direction(z_y, p_y)
                     
                     if v_dir is not None:
-                        new_pos = try_move(map_data, zombie_pos, v_dir, v_dx, v_dy)
-                        if new_pos != zombie_pos and v_dir is not None:
+                        new_pos = try_move(map_data, zombie_pos, v_dir, v_dx, v_dy, gate_opened, superdata)
+                        if new_pos != zombie_pos: 
                             move_list.append(v_dir)
 
-            # CASE 2: Already on Same Column (Only Vertical option)
-            else:
+            # CASE 2: Same Column - Move Vertically
+            else: 
                 move_dir, dx, dy = get_vertical_direction(z_y, p_y)
                 if move_dir is not None:
-                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy)
-                    if new_pos != zombie_pos and move_dir is not None:
+                    new_pos = try_move(map_data, zombie_pos, move_dir, dx, dy, gate_opened, superdata)
+                    if new_pos != zombie_pos: 
                         move_list.append(move_dir)
 
-            # Update position for next iteration
             zombie_pos = new_pos
 
-        if move_list == [] and move_dir is not None:#if zombie can't move -> chèn hướng để có hiệu ứng chạy tại chỗ
+        # Add idle animation if can't move
+        if move_list == [] and move_dir is not None: 
             move_list.append(move_dir)
 
-        if show_list == False:
-            return zombie_pos
-        else:
-            return move_list
-
+        return move_list if show_list else zombie_pos
 
     #--------------------------------------------------------#
-    #----- Main logic of GENERATE_NEXT_ZOMBIE_POSITIONS -----#
+    #----- Main Logic:  Process All Zombies -----#
     #--------------------------------------------------------#
-    '''
-    Type of zombie: 
-        0: zombie priotizes moving vertically (UP/DOWN)
-        1: zombie priotizes moving horizontally (LEFT/RIGHT)
-        2: zombie smarter, priotizes moving up/down first, then left/right
-        3: zombie smarter, priotizes moving left/right first, then up/down
-
-    show_list: bool (Apply for all small functions inside)
-        If True: return list of movements
-        If False: return next positions only
-     '''
     
     next_zombie_pos = []
+    move_list = []
 
-    move_list = [] #use for only one zombie
-
-    for zombie_info in current_zombie_positions:
+    for zombie_info in current_zombie_positions: 
         current_zombie_position = (zombie_info[0], zombie_info[1])
         zombie_type = zombie_info[2]
 
+        # Dispatch to appropriate AI type
         if zombie_type == 0:
-            # Choose vertical move first
-            next_zombie_pos.append(generate_type_0(map_data, current_zombie_position, current_player_position) + (zombie_type,))
-            if show_list:
-                move_list += generate_type_0(map_data, current_zombie_position, current_player_position, show_list=show_list)
+            result = generate_type_0(map_data, current_zombie_position, current_player_position, gate_opened, superdata, show_list)
         elif zombie_type == 1:
-            # Choose horizontal move first
-            next_zombie_pos.append(generate_type_1(map_data, current_zombie_position, current_player_position) + (zombie_type,))
-            if show_list:
-                move_list += generate_type_1(map_data, current_zombie_position, current_player_position, show_list=show_list)
+            result = generate_type_1(map_data, current_zombie_position, current_player_position, gate_opened, superdata, show_list)
         elif zombie_type == 2:
-            # Smart vertical prioritization
-            next_zombie_pos.append(generate_type_2(map_data, current_zombie_position, current_player_position) + (zombie_type,))
-            if show_list:
-                move_list += generate_type_2(map_data, current_zombie_position, current_player_position, show_list=show_list)
+            result = generate_type_2(map_data, current_zombie_position, current_player_position, gate_opened, superdata, show_list)
         elif zombie_type == 3:
-            # Smart horizontal prioritization
-            next_zombie_pos.append(generate_type_3(map_data, current_zombie_position, current_player_position) + (zombie_type,))
-            if show_list:
-                move_list += generate_type_3(map_data, current_zombie_position, current_player_position, show_list=show_list)
-    if show_list == False:   
-        return next_zombie_pos
-    else:
-        return move_list
+            result = generate_type_3(map_data, current_zombie_position, current_player_position, gate_opened, superdata, show_list)
+        else:
+            continue  # Invalid zombie type
+        
+        if show_list:
+            move_list += result
+        else:
+            next_zombie_pos. append(result + (zombie_type,))
+    
+    return move_list if show_list else next_zombie_pos
 
-def generate_next_scorpion_positions(map_data: list = [], current_scorpion_positions: list = [], current_player_position: tuple = (), show_list: bool = False) -> list:
+
+#==============================================================================
+#                        SCORPION MOVEMENT SYSTEM
+#==============================================================================
+
+def generate_next_scorpion_positions(
+    map_data: list = [], 
+    current_scorpion_positions: list = [], 
+    current_player_position: tuple = (),
+    gate_opened: bool = False,
+    superdata:  dict = None,
+    show_list: bool = False
+) -> list:
     """
-    Generates the next positions for all scorpions on the map.
+    Generate next positions for all scorpions considering walls, gates, and player position. 
     
     Args:
-        map_data: The game map representation
-        current_scorpion_positions: List of tuples (x, y, intelligence_level)
-        current_player_position:  Tuple (x, y) of player's current position
-        show_list:  If True, return list of movements; If False, return next positions only
+        map_data: Map data matrix
+        current_scorpion_positions: List of scorpion tuples [(x, y, intelligence_level), ...]
+        current_player_position: Player position (x, y)
+        gate_opened:  Current state of gate (True = open, False = closed)
+        superdata: Full map data including gate_pos, key_pos, trap_pos
+        show_list: If True, return movement directions; if False, return positions
     
     Returns:
-        If show_list == False: List of new scorpion positions [(x, y, intelligence_level), ...]
-        If show_list == True: List of movement directions for animation
+        List of next scorpion positions or movement directions
+    
+    Scorpion Types: 
+        Type 0: Vertical priority, dumb (freezes if blocked vertically)
+        Type 1: Horizontal priority, dumb (freezes if blocked horizontally)
+        Type 2: Vertical priority, smart (tries horizontal if blocked vertically)
+        Type 3: Horizontal priority, smart (tries vertical if blocked horizontally)
     """
-    def generate_type_0(map_data: list = [], current_scorpion_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    
+    def generate_type_0(
+        map_data: list,
+        current_scorpion_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 0 Scorpion (Dumb Scorpion).
-        - Speed: 1 step.
-        - Behavior: Prioritizes Vertical movement. 
-        - Feature: Freezes if blocked vertically (does not pathfind around walls).
+        Type 0 Scorpion: Vertical Priority, Dumb AI
+        - Speed: 1 step per turn
+        - Behavior: Prioritizes vertical movement (UP/DOWN)
+        - Weakness: Freezes if blocked vertically
         """
-        
         scorpion_pos = current_scorpion_position
         move_list = []
         
@@ -489,10 +544,7 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         p_x, p_y = current_player_position
 
         if scorpion_pos == current_player_position:
-            if show_list == False:
-                return scorpion_pos
-            else:
-                return move_list
+            return move_list if show_list else scorpion_pos
 
         new_pos = scorpion_pos
 
@@ -503,8 +555,8 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
             else:
                 move_dir, dx, dy = DOWN, 0, 1
             
-            new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-            if new_pos != scorpion_pos and move_dir is not None:
+            new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+            if new_pos != scorpion_pos and move_dir is not None: 
                 move_list.append(move_dir)
 
         # CASE 2: Same Row (Horizontal Alignment)
@@ -512,26 +564,29 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
             move_dir, dx, dy = get_horizontal_direction(s_x, p_x)
             
             if move_dir is not None:
-                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-                if new_pos != scorpion_pos and move_dir is not None:
+                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != scorpion_pos:
                     move_list. append(move_dir)
 
         if move_list == [] and move_dir is not None:
             move_list.append(move_dir)
 
-        if show_list == False:
-            return new_pos
-        else:
-            return move_list
+        return move_list if show_list else new_pos
         
-    def generate_type_1(map_data: list = [], current_scorpion_position:  tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_1(
+        map_data: list,
+        current_scorpion_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 1 Scorpion. 
-        - Speed: 1 step.
-        - Behavior: Prioritizes Horizontal movement (Left/Right) first. 
-        - Feature: Freezes if blocked horizontally (does not pathfind vertically).
+        Type 1 Scorpion: Horizontal Priority, Dumb AI
+        - Speed:  1 step per turn
+        - Behavior: Prioritizes horizontal movement (LEFT/RIGHT)
+        - Weakness: Freezes if blocked horizontally
         """
-        
         scorpion_pos = current_scorpion_position
         move_list = []
         
@@ -541,10 +596,7 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         p_x, p_y = current_player_position
 
         if scorpion_pos == current_player_position:
-            if show_list == False:
-                return scorpion_pos
-            else:
-                return move_list
+            return move_list if show_list else scorpion_pos
 
         new_pos = scorpion_pos
 
@@ -552,8 +604,8 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         if s_x != p_x:
             move_dir, dx, dy = get_horizontal_direction(s_x, p_x)
             
-            new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-            if new_pos != scorpion_pos and move_dir is not None:
+            new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+            if new_pos != scorpion_pos and move_dir is not None: 
                 move_list.append(move_dir)
 
         # CASE 2: Same Column (Vertical Alignment)
@@ -561,41 +613,39 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
             move_dir, dx, dy = get_vertical_direction(s_y, p_y)
             
             if move_dir is not None:
-                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-                if new_pos != scorpion_pos and move_dir is not None:
+                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != scorpion_pos:
                     move_list.append(move_dir)
 
         if move_list == [] and move_dir is not None: 
             move_list.append(move_dir)
 
-        if show_list == False:
-            return new_pos
-        else:
-            return move_list
+        return move_list if show_list else new_pos
     
-    def generate_type_2(map_data: list = [], current_scorpion_position:  tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_2(
+        map_data: list,
+        current_scorpion_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata:  dict,
+        show_list:  bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 2 Scorpion (Smart Vertical Scorpion).
-        - Speed: 1 step. 
-        - Behavior: Prioritizes Vertical movement. 
-        - Feature (Smart): If blocked Vertically, it attempts to 'slide' Horizontally 
-        instead of freezing. It only freezes if BOTH Vertical and Horizontal paths are blocked.
+        Type 2 Scorpion:  Vertical Priority, Smart AI
+        - Speed: 1 step per turn
+        - Behavior: Prioritizes vertical movement (UP/DOWN)
+        - Intelligence: If blocked vertically, tries horizontal
         """
-        
         scorpion_pos = current_scorpion_position
         move_list = []
         
         move_dir, dx, dy = get_vertical_direction(scorpion_pos[1], current_player_position[1])
 
-
         s_x, s_y = scorpion_pos
         p_x, p_y = current_player_position
 
-        if scorpion_pos == current_player_position:
-            if show_list == False:
-                return scorpion_pos
-            else:
-                return move_list
+        if scorpion_pos == current_player_position: 
+            return move_list if show_list else scorpion_pos
 
         new_pos = scorpion_pos
 
@@ -603,45 +653,48 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         if s_y != p_y:
             move_dir, dx, dy = get_vertical_direction(s_y, p_y)
             
-            attempt_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
+            attempt_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
 
             if attempt_pos != scorpion_pos:
                 new_pos = attempt_pos
                 if move_dir is not None: 
                     move_list.append(move_dir)
             else:
-                # [SMART FALLBACK] Blocked Vertically -> Try Horizontal immediately
+                # [SMART AI] Blocked Vertically -> Try Horizontal
                 h_dir, h_dx, h_dy = get_horizontal_direction(s_x, p_x)
                 
-                if h_dir is not None:
-                    new_pos = try_move(map_data, scorpion_pos, h_dir, h_dx, h_dy)
-                    if new_pos != scorpion_pos and h_dir is not None:
+                if h_dir is not None: 
+                    new_pos = try_move(map_data, scorpion_pos, h_dir, h_dx, h_dy, gate_opened, superdata)
+                    if new_pos != scorpion_pos:
                         move_list.append(h_dir)
 
-        # CASE 2: Already on Same Row (Only Horizontal option)
+        # CASE 2: Same Row (Horizontal only)
         else:
             move_dir, dx, dy = get_horizontal_direction(s_x, p_x)
             if move_dir is not None: 
-                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-                if new_pos != scorpion_pos and move_dir is not None: 
+                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != scorpion_pos: 
                     move_list.append(move_dir)
 
         if move_list == [] and move_dir is not None:
             move_list.append(move_dir)
 
-        if show_list == False:
-            return new_pos
-        else:
-            return move_list
+        return move_list if show_list else new_pos
     
-    def generate_type_3(map_data:  list = [], current_scorpion_position: tuple = [], current_player_position: tuple = (), show_list: bool = False) -> tuple:
+    def generate_type_3(
+        map_data: list,
+        current_scorpion_position: tuple,
+        current_player_position: tuple,
+        gate_opened: bool,
+        superdata: dict,
+        show_list: bool = False
+    ) -> tuple:
         """
-        Calculates the new position for a Type 3 Scorpion (Smart Horizontal Scorpion).
-        - Speed: 1 step.
-        - Behavior: Prioritizes Horizontal movement (Left/Right).
-        - Feature (Smart): If blocked Horizontally, it attempts to 'slide' Vertically. 
+        Type 3 Scorpion: Horizontal Priority, Smart AI
+        - Speed: 1 step per turn
+        - Behavior: Prioritizes horizontal movement (LEFT/RIGHT)
+        - Intelligence: If blocked horizontally, tries vertical
         """
-        
         scorpion_pos = current_scorpion_position
         move_list = []
         
@@ -650,64 +703,46 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         s_x, s_y = scorpion_pos
         p_x, p_y = current_player_position
 
-        if scorpion_pos == current_player_position:
-            if show_list == False:
-                return scorpion_pos
-            else: 
-                return move_list
+        if scorpion_pos == current_player_position: 
+            return move_list if show_list else scorpion_pos
 
         new_pos = scorpion_pos
 
         # CASE 1: Horizontal Alignment Needed (Priority)
-        if s_x != p_x:
+        if s_x != p_x: 
             move_dir, dx, dy = get_horizontal_direction(s_x, p_x)
             
-            attempt_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
+            attempt_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
 
             if attempt_pos != scorpion_pos:
                 new_pos = attempt_pos
-                if move_dir is not None:
-                    move_list. append(move_dir)
+                if move_dir is not None: 
+                    move_list.append(move_dir)
             else:
-                # [SMART FALLBACK] Blocked Horizontally -> Try Vertical immediately
+                # [SMART AI] Blocked Horizontally -> Try Vertical
                 v_dir, v_dx, v_dy = get_vertical_direction(s_y, p_y)
                 
                 if v_dir is not None:
-                    new_pos = try_move(map_data, scorpion_pos, v_dir, v_dx, v_dy)
-                    if new_pos != scorpion_pos and v_dir is not None:
+                    new_pos = try_move(map_data, scorpion_pos, v_dir, v_dx, v_dy, gate_opened, superdata)
+                    if new_pos != scorpion_pos: 
                         move_list.append(v_dir)
 
-        # CASE 2: Already on Same Column (Only Vertical option)
+        # CASE 2: Same Column (Vertical only)
         else:
             move_dir, dx, dy = get_vertical_direction(s_y, p_y)
             if move_dir is not None:
-                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy)
-                if new_pos != scorpion_pos and move_dir is not None:
-                    move_list. append(move_dir)
+                new_pos = try_move(map_data, scorpion_pos, move_dir, dx, dy, gate_opened, superdata)
+                if new_pos != scorpion_pos:
+                    move_list.append(move_dir)
 
-        if move_list == [] and move_dir is not None:
+        if move_list == [] and move_dir is not None: 
             move_list.append(move_dir)
 
-        if show_list == False:
-            return new_pos
-        else:
-            return move_list
-
+        return move_list if show_list else new_pos
 
     #----------------------------------------------------------#
-    #----- Main logic of GENERATE_NEXT_SCORPION_POSITIONS -----#
+    #----- Main Logic: Process All Scorpions -----#
     #----------------------------------------------------------#
-    '''
-    Type of scorpion: 
-        0: scorpion prioritizes moving vertically (UP/DOWN)
-        1: scorpion prioritizes moving horizontally (LEFT/RIGHT)
-        2: scorpion smarter, prioritizes moving up/down first, then left/right
-        3: scorpion smarter, prioritizes moving left/right first, then up/down
-
-    show_list: bool (Apply for all small functions inside)
-        If True: return list of movements
-        If False: return next positions only
-     '''
     
     next_scorpion_pos = []
     move_list = []
@@ -716,30 +751,27 @@ def generate_next_scorpion_positions(map_data: list = [], current_scorpion_posit
         current_scorpion_position = (scorpion_info[0], scorpion_info[1])
         intelligence_level = scorpion_info[2]
 
+        # Dispatch to appropriate AI type
         if intelligence_level == 0:
-            next_scorpion_pos.append(generate_type_0(map_data, current_scorpion_position, current_player_position) + (intelligence_level,))
-            if show_list: 
-                move_list += generate_type_0(map_data, current_scorpion_position, current_player_position, show_list=show_list)
+            result = generate_type_0(map_data, current_scorpion_position, current_player_position, gate_opened, superdata, show_list)
         elif intelligence_level == 1:
-            next_scorpion_pos.append(generate_type_1(map_data, current_scorpion_position, current_player_position) + (intelligence_level,))
-            if show_list:
-                move_list += generate_type_1(map_data, current_scorpion_position, current_player_position, show_list=show_list)
+            result = generate_type_1(map_data, current_scorpion_position, current_player_position, gate_opened, superdata, show_list)
         elif intelligence_level == 2:
-            next_scorpion_pos.append(generate_type_2(map_data, current_scorpion_position, current_player_position) + (intelligence_level,))
-            if show_list:
-                move_list += generate_type_2(map_data, current_scorpion_position, current_player_position, show_list=show_list)
+            result = generate_type_2(map_data, current_scorpion_position, current_player_position, gate_opened, superdata, show_list)
         elif intelligence_level == 3:
-            next_scorpion_pos.append(generate_type_3(map_data, current_scorpion_position, current_player_position) + (intelligence_level,))
-            if show_list:
-                move_list += generate_type_3(map_data, current_scorpion_position, current_player_position, show_list=show_list)
+            result = generate_type_3(map_data, current_scorpion_position, current_player_position, gate_opened, superdata, show_list)
+        else:
+            continue  # Invalid scorpion type
 
+        if show_list:
+            move_list += result
+        else:
+            next_scorpion_pos.append(result + (intelligence_level,))
             
-    if show_list == False:    
-        return next_scorpion_pos
-    else: 
-        return move_list
+    return move_list if show_list else next_scorpion_pos
 
-def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, superdata = None) -> Tuple:
+
+def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, superdata = None) -> Tuple: 
     # Check if two zombie in a same position
     zombie_i = 0
     while zombie_i < len(next_zombie_positions):
@@ -748,7 +780,7 @@ def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, s
             if (next_zombie_positions[zombie_i][0], next_zombie_positions[zombie_i][1]) == (next_zombie_positions[zombie_j][0], next_zombie_positions[zombie_j][1]):
                 # If two zombies in same position, keep the one with higher type value
                 if next_zombie_positions[zombie_i][2] >= next_zombie_positions[zombie_j][2]:
-                    next_zombie_positions.pop(zombie_j)
+                    next_zombie_positions. pop(zombie_j)
                 else:
                     next_zombie_positions.pop(zombie_i)
                     zombie_i -= 1
@@ -765,7 +797,7 @@ def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, s
             if (next_scorpion_positions[scorpion_i][0], next_scorpion_positions[scorpion_i][1]) == (next_scorpion_positions[scorpion_j][0], next_scorpion_positions[scorpion_j][1]):
                 # If two scorpions in same position, keep the one with higher intelligence level
                 if next_scorpion_positions[scorpion_i][2] >= next_scorpion_positions[scorpion_j][2]:
-                    next_scorpion_positions.pop(scorpion_j)
+                    next_scorpion_positions. pop(scorpion_j)
                 else:
                     next_scorpion_positions.pop(scorpion_i)
                     scorpion_i -= 1
@@ -796,178 +828,322 @@ def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, s
     
     return next_zombie_positions, next_scorpion_positions
 
-def Shortest_Path(superdata: dict, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list:
+def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list:
     """
-    Finds shortest path from start to goal while avoiding: 
-    - Zombies (move 2 steps per turn)
-    - Scorpions (move 1 step per turn)  
-    - Traps (static obstacles)
-    - Closed gates (can be opened with keys)
+    Finds shortest path from start to goal using BFS with state-space search.
     
-    Uses BFS with state tracking:  (position, gate_state, zombie_positions, scorpion_positions)
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║                          GAME MECHANICS                                  ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+    
+    1.  GATE SYSTEM:
+       ✓ Gates block vertical movement (UP/DOWN) when closed
+       ✓ Gates do NOT block horizontal movement (LEFT/RIGHT)
+       ✓ Gates start CLOSED by default
+       ✓ Gate state:  CLOSED (False) or OPEN (True)
+    
+    2. KEY SYSTEM (TOGGLE SWITCH):
+       ✓ Key is placed at a specific position on the map
+       ✓ When player steps on key position → Gate TOGGLES state
+       ✓ CLOSED → OPEN or OPEN → CLOSED
+       ✓ Player can toggle gate multiple times by revisiting key
+       ✓ This creates puzzle-like gameplay (timing matters!)
+    
+    3. STATE SPACE:
+       ✓ State = (position, gate_opened, zombie_positions, scorpion_positions)
+       ✓ Each unique state is visited only once (prevents infinite loops)
+       ✓ BFS explores all reachable states
+       ✓ Shortest path is guaranteed by BFS nature
+    
+    4. ENEMY MOVEMENT:
+       ✓ Zombies:  2 steps per turn
+       ✓ Scorpions: 1 step per turn
+       ✓ Enemies are affected by gate state
+       ✓ Enemies move AFTER player moves
     
     Args:
-        superdata: Dictionary containing map_data, gate_pos, key_pos, trap_pos
-        start: Starting position (x, y)
+        superdata: Dictionary containing: 
+            - map_data: 2D array of wall tiles
+            - gate_pos: [x, y] position of gate (1-indexed)
+            - key_pos: [x, y] position of key (1-indexed)
+            - trap_pos: List of trap positions
+        start: Player starting position (x, y)
         goal: Goal position (x, y)
-        zombie_positions: List of zombie positions [(x, y, type), ...]
-        scorpion_positions: List of scorpion positions [(x, y, intelligence_level), ...]
+        zombie_positions: List of [(x, y, type), ...]
+        scorpion_positions: List of [(x, y, intelligence_level), ...]
     
     Returns:
-        list: Shortest path from start to goal as [(x1,y1), (x2,y2), ...], or [] if no path exists
+        list:  Shortest path as [(x1,y1), (x2,y2), ..., goal] or [] if no path
+    
+    Algorithm Complexity:
+        - Time: O(V * 2 * E) where V=positions, 2=gate states, E=enemy configs
+        - Space: O(V * 2 * E) for visited set
+        - BFS guarantees shortest path in unweighted graph
     """
     
-    #----- STEP 1: INITIALIZE GRAPH AND VARIABLES -----#
+    #══════════════════════════════════════════════════════════════════════════
+    #                         STEP 1: INITIALIZATION
+    #══════════════════════════════════════════════════════════════════════════
+    
     map_data = superdata["map_data"]
     
-    # Extract gate and key positions from superdata
-    gate_pos = tuple(superdata. get("gate_pos", [])) if superdata.get("gate_pos") else None
-    key_pos = tuple(superdata.get("key_pos", [])) if superdata.get("key_pos") else None
+    # Extract game object positions
+    gate_pos = superdata. get("gate_pos", [])
+    key_pos = superdata.get("key_pos", [])
     
-    # Initial gate state (assume closed at start, unless player starts on key)
+    # Convert to tuples for hashability
+    gate_pos = tuple(gate_pos) if gate_pos and gate_pos != [] else None
+    key_pos = tuple(key_pos) if key_pos and key_pos != [] else None
+    
+    # Initial gate state:  CLOSED by default
     initial_gate_opened = False
+    
+    # Special case: Player starts ON the key → Gate toggles immediately
     if key_pos and (start[0], start[1]) == (key_pos[0], key_pos[1]):
-        initial_gate_opened = True
+        initial_gate_opened = True  # Toggle from False to True
+        print(f"🔑 Player starts on key at {key_pos} → Gate toggles to OPEN")
     
-    # Limit steps to avoid infinite loops in complex maps
+    # Performance limit
     count_steps = 0
-    threshold_steps = 1000000
+    MAX_ITERATIONS = 1000000
     
-    #---------------------------------------------------------------#
-    #---------- STEP 2: VALIDATE START AND GOAL POSITIONS ----------#
-    #---------------------------------------------------------------#
+    #══════════════════════════════════════════════════════════════════════════
+    #                         STEP 2: INPUT VALIDATION
+    #══════════════════════════════════════════════════════════════════════════
     
-    #----- Step 2.1: Check if start or goal is on trap -----#
-    if is_trap(superdata, start) or is_trap(superdata, goal):
-        print("Error: Start or goal is on trap position")
+    if is_trap(superdata, start):
+        print(f"❌ Start position {start} is on a trap!")
         return []
     
-    #----- Step 2.2: Check if already at goal -----#
+    if is_trap(superdata, goal):
+        print(f"❌ Goal position {goal} is on a trap!")
+        return []
+    
     if start == goal:
         if not is_lose(superdata, start, zombie_positions, scorpion_positions):
             return [start]
         else:
-            print("Error: Start equals goal but player dies immediately")
+            print(f"❌ Start equals goal but player dies immediately")
             return []
     
-    #-----------------------------------------------------------------------------------#
-    #---------------------- STEP 3: INITIALIZE BFS DATA STRUCTURES ---------------------#
-    #-----------------------------------------------------------------------------------#
+    #══════════════════════════════════════════════════════════════════════════
+    #                    STEP 3: BFS DATA STRUCTURES
+    #══════════════════════════════════════════════════════════════════════════
     
-    #----- Step 3.1: Initialize visited set with state tuples -----#
-    # State = (position, gate_opened, zombie_tuple, scorpion_tuple)
     visited = set()
     
-    initial_state = (start, initial_gate_opened, tuple(zombie_positions), tuple(scorpion_positions))
+    initial_state = (
+        start,
+        initial_gate_opened,
+        tuple(zombie_positions),
+        tuple(scorpion_positions)
+    )
     visited.add(initial_state)
     
-    #----- Step 3.2: Initialize path queue -----#
-    # Queue elements:  [[path_list], gate_opened, zombie_list, scorpion_list]
-    path_queue = deque([[[start], initial_gate_opened, zombie_positions, scorpion_positions]])
+    queue = deque([[
+        [start],              # path
+        initial_gate_opened,  # gate_opened
+        zombie_positions,     # zombie_list
+        scorpion_positions    # scorpion_list
+    ]])
     
-    #---------------------------------------------------------------------------------------#
-    #----- STEP 4: BFS LOOP TO FIND SHORTEST PATH -----#
-    #---------------------------------------------------------------------------------------#
-    while path_queue and count_steps < threshold_steps: 
+    # Statistics tracking
+    max_path_length = 0
+    states_explored = 0
+    
+    #══════════════════════════════════════════════════════════════════════════
+    #                    STEP 4: BFS MAIN LOOP
+    #══════════════════════════════════════════════════════════════════════════
+    
+    while queue and count_steps < MAX_ITERATIONS: 
         count_steps += 1
+        states_explored += 1
         
-        #----- Step 4.1: Dequeue current path and state -----#
-        current_data = path_queue.popleft()
-        player_path = current_data[0]          # List:  [(x1,y1), (x2,y2), ...]
-        gate_opened = current_data[1]          # Bool: True/False
-        zombie_list = current_data[2]          # List: [(x,y,type),...]
-        scorpion_list = current_data[3]        # List: [(x,y,intelligence_level),...]
+        # Dequeue current state
+        current_data = queue.popleft()
+        path = current_data[0]
+        gate_opened = current_data[1]
+        zombie_list = current_data[2]
+        scorpion_list = current_data[3]
         
-        current_position = player_path[-1]
+        current_pos = path[-1]
         
-        #----- Step 4.2: Skip if current position is a trap -----#
-        if is_trap(superdata, current_position):
+        # Track longest path for debugging
+        if len(path) > max_path_length:
+            max_path_length = len(path)
+        
+        # Skip traps
+        if is_trap(superdata, current_pos):
             continue
         
-        #----- Step 4.3: Check if player is caught by enemies -----#
-        player_died = is_lose(superdata, current_position, zombie_list, scorpion_list)
-        
-        #-----------------------------------------------------------------------------------#
-        #----- STEP 5: IF PLAYER IS ALIVE, EXPLORE NEXT POSITIONS -----#
-        #-----------------------------------------------------------------------------------#
-        if not player_died:
-            
-            #----- Step 5.1: Generate graph based on current gate state -----#
-            # Graph changes when gate opens/closes
-            graph = generate_graph(superdata, gate_opened)
-            
-            #-----------------------------------------------------------------------------------#
-            #----- STEP 6: TRY STAYING IN PLACE (IF NOT 4-WAY CONNECTED) -----#
-            #-----------------------------------------------------------------------------------#
-            if len(graph[current_position]) < 4:
-                neighbor = current_position
-                cur_path = player_path. copy()
-                cur_path. append(neighbor)
-                
-                #----- Step 6.1: Check if stepping on key -> toggle gate state -----#
-                new_gate_opened = gate_opened
-                if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
-                    new_gate_opened = not gate_opened
-                
-                #----- Step 6.2: Generate next positions for enemies after player moves -----#
-                new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
-                new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
-                new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
-                
-                #----- Step 6.3: Add to queue if state not visited -----#
-                state = (neighbor, new_gate_opened, tuple(new_zombie_positions), tuple(new_scorpion_positions))
-                if state not in visited:
-                    path_queue.append([cur_path, new_gate_opened, new_zombie_positions, new_scorpion_positions])
-                    visited.add(state)
-            
-            #-----------------------------------------------------------------------------------#
-            #----- STEP 7: TRY ALL NEIGHBORING POSITIONS -----#
-            #-----------------------------------------------------------------------------------#
-            for neighbor in graph[current_position]: 
-                
-                #----- Step 7.1: Skip if neighbor is a trap -----#
-                if is_trap(superdata, neighbor):
-                    continue
-                
-                #----- Step 7.2: Create new path including this neighbor -----#
-                cur_path = player_path.copy()
-                cur_path.append(neighbor)
-                
-                #----- Step 7.3: Check if stepping on key -> toggle gate state -----#
-                new_gate_opened = gate_opened
-                if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
-                    new_gate_opened = not gate_opened
-                
-                #----- Step 7.4: Generate next positions for enemies after player moves -----#
-                new_zombie_positions = generate_next_zombie_positions(map_data, zombie_list, neighbor)
-                new_scorpion_positions = generate_next_scorpion_positions(map_data, scorpion_list, neighbor)
-                new_zombie_positions, new_scorpion_positions = check_same_pos(new_zombie_positions, new_scorpion_positions, superdata)
-                
-                #-----------------------------------------------------------------------------#
-                #----- STEP 8: CHECK IF REACHED GOAL AND PLAYER SURVIVES -----#
-                #-----------------------------------------------------------------------------#
-                if neighbor == goal and not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
-                    print(f"Path found in {count_steps} steps!")
-                    return cur_path
-                
-                #----- Step 8.1: Otherwise, add to queue if state not visited -----#
-                state = (neighbor, new_gate_opened, tuple(new_zombie_positions), tuple(new_scorpion_positions))
-                if state not in visited:
-                    path_queue.append([cur_path, new_gate_opened, new_zombie_positions, new_scorpion_positions])
-                    visited.add(state)
-        
-        #----- Step 4.4: If player died, skip this path (do nothing) -----#
-        else:
+        # Skip if player dies
+        if is_lose(superdata, current_pos, zombie_list, scorpion_list):
             continue
+        
+        #──────────────────────────────────────────────────────────────────────
+        #              STEP 5: GENERATE GRAPH BASED ON GATE STATE
+        #──────────────────────────────────────────────────────────────────────
+        
+        # Graph changes dynamically based on gate state! 
+        graph = generate_graph(superdata, gate_opened)
+        
+        # Get reachable neighbors
+        neighbors = graph.get(current_pos, [])
+        
+        # Optimization: Allow "wait" move if not fully connected
+        if len(neighbors) < 4:
+            neighbors = [current_pos] + neighbors
+        
+        #──────────────────────────────────────────────────────────────────────
+        #              STEP 6: EXPLORE EACH NEIGHBOR
+        #──────────────────────────────────────────────────────────────────────
+        
+        for neighbor in neighbors: 
+            
+            # Skip traps
+            if is_trap(superdata, neighbor):
+                continue
+            
+            # Build new path
+            new_path = path + [neighbor]
+            
+            #╔═══════════════════════════════════════════════════════════════╗
+            #║             KEY MECHANIC: TOGGLE SWITCH                       ║
+            #╚═══════════════════════════════════════════════════════════════╝
+            
+            new_gate_opened = gate_opened  # Inherit current state
+            
+            # Check if stepping on key position
+            if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
+                # TOGGLE gate state every time player touches key
+                new_gate_opened = not gate_opened
+                
+                # Debug output (only for first few steps to avoid spam)
+                if count_steps <= 50:
+                    old_state = "OPEN" if gate_opened else "CLOSED"
+                    new_state = "OPEN" if new_gate_opened else "CLOSED"
+                    print(f"🔑 Step {len(new_path)}: Key touched at {neighbor} → Gate:  {old_state} → {new_state}")
+            
+            #──────────────────────────────────────────────────────────────────
+            #              ENEMY MOVEMENT SIMULATION
+            #──────────────────────────────────────────────────────────────────
+            
+            # Important: Enemies see the NEW gate state (after toggle)
+            new_zombie_positions = generate_next_zombie_positions(
+                map_data=map_data,
+                current_zombie_positions=zombie_list,
+                current_player_position=neighbor,
+                gate_opened=new_gate_opened,  # Use NEW gate state! 
+                superdata=superdata
+            )
+            
+            new_scorpion_positions = generate_next_scorpion_positions(
+                map_data=map_data,
+                current_scorpion_positions=scorpion_list,
+                current_player_position=neighbor,
+                gate_opened=new_gate_opened,  # Use NEW gate state! 
+                superdata=superdata
+            )
+            
+            # Handle enemy collisions and trap deaths
+            new_zombie_positions, new_scorpion_positions = check_same_pos(
+                new_zombie_positions,
+                new_scorpion_positions,
+                superdata
+            )
+            
+            #──────────────────────────────────────────────────────────────────
+            #              GOAL CHECK
+            #──────────────────────────────────────────────────────────────────
+            
+            if neighbor == goal:
+                if not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
+                    # SUCCESS! 
+                    print(f"")
+                    print(f"╔═══════════════════════════════════════════════════════════════╗")
+                    print(f"║              ✅ PATH FOUND - SUCCESS!                         ║")
+                    print(f"╚═══════════════════════════════════════════════════════════════╝")
+                    print(f"")
+                    print(f"  📊 Statistics:")
+                    print(f"     • BFS iterations:      {count_steps: ,}")
+                    print(f"     • States explored:    {states_explored:,}")
+                    print(f"     • Path length:        {len(new_path)} steps")
+                    print(f"     • Final gate state:   {'OPEN' if new_gate_opened else 'CLOSED'}")
+                    print(f"     • Zombies remaining:   {len(new_zombie_positions)}")
+                    print(f"     • Scorpions remaining:  {len(new_scorpion_positions)}")
+                    print(f"")
+                    
+                    # Count how many times key was touched
+                    key_touches = 0
+                    if key_pos:
+                        for pos in new_path:
+                            if (pos[0], pos[1]) == (key_pos[0], key_pos[1]):
+                                key_touches += 1
+                    
+                    if key_touches > 0:
+                        print(f"  🔑 Key touched {key_touches} time(s) during path")
+                        print(f"     Gate toggled {key_touches} time(s)")
+                    
+                    print(f"")
+                    print(f"╔═══════════════════════════════════════════════════════════════╗")
+                    
+                    return new_path
+            
+            #──────────────────────────────────────────────────────────────────
+            #              STATE TRACKING
+            #──────────────────────────────────────────────────────────────────
+            
+            new_state = (
+                neighbor,
+                new_gate_opened,
+                tuple(new_zombie_positions),
+                tuple(new_scorpion_positions)
+            )
+            
+            if new_state not in visited:
+                visited.add(new_state)
+                queue. append([
+                    new_path,
+                    new_gate_opened,
+                    new_zombie_positions,
+                    new_scorpion_positions
+                ])
     
-    #----- STEP 9: NO PATH FOUND -----#
-    print(f"No path found after {count_steps} steps")
+    #══════════════════════════════════════════════════════════════════════════
+    #                    STEP 7: NO PATH FOUND
+    #══════════════════════════════════════════════════════════════════════════
+    
+    print(f"")
+    print(f"╔═══════════════════════════════════════════════════════════════╗")
+    print(f"║              ❌ NO PATH FOUND - FAILURE                       ║")
+    print(f"╚═══════════════════════════════════════════════════════════════╝")
+    print(f"")
+    print(f"  📊 Statistics:")
+    print(f"     • BFS iterations:      {count_steps:,}")
+    print(f"     • States explored:    {states_explored:,}")
+    print(f"     • States in visited:  {len(visited):,}")
+    print(f"     • Max path length:    {max_path_length}")
+    print(f"")
+    print(f"  🎮 Map Info:")
+    print(f"     • Start:     {start}")
+    print(f"     • Goal:     {goal}")
+    print(f"     • Key pos:  {key_pos}")
+    print(f"     • Gate pos: {gate_pos}")
+    print(f"     • Zombies:  {len(zombie_positions)}")
+    print(f"     • Scorpions: {len(scorpion_positions)}")
+    print(f"")
+    print(f"  💡 Possible reasons:")
+    print(f"     • Goal is unreachable (blocked by walls/gate)")
+    print(f"     • Enemies block all possible paths")
+    print(f"     • Map design has no solution")
+    print(f"")
+    print(f"╔═══════════════════════════════════════════════════════════════╗")
+    
     return []
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     import map_collection as maps
     #------------------ TESTING CODE ------------------#
     map_collection = maps.maps_collection
 
     print(Shortest_Path(map_collection[0]['map_data'], (2,5), (3,5), [(2,5,3)]))
-    # print(is_linked(map_collection[0]['map_data'], (2,2), UP))

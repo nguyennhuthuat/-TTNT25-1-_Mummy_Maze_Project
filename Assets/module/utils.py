@@ -83,12 +83,6 @@ def is_linked(map_data: list, direction:  list, facing_direction: str, gate_open
         elif facing_direction == DOWN:
             if (x - 1, y - 1) == (gx - 1, gy - 1):
                 return False
-        elif facing_direction == LEFT:
-            if (x - 2, y - 1) == (gx - 1, gy - 1):
-                return False
-        elif facing_direction == RIGHT:
-            if (x, y - 1) == (gx - 1, gy - 1):
-                return False
     
     # Original wall checking logic
     if facing_direction == UP:
