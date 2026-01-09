@@ -1311,7 +1311,14 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                 return "exit"
 
             # Xử lý sự kiện SidePanel
-            if MummyExplorer.movement_list == []:
+            if not MummyExplorer.movement_list and (
+                not MummyZombies
+                or all(not zombie.movement_list for zombie in MummyZombies)
+            ) and (
+                not MummyScorpions 
+                or all(not scorpion.movement_list for scorpion in MummyScorpions)
+            ):
+                
                 panel_clicked = side_panel.handle_event(event)
                 if panel_clicked == "UNDO MOVE":
                     if history_states != []:
@@ -1427,39 +1434,36 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                     pass  # Thêm hiệu ứng mở bảng options vào
                 
                 elif panel_clicked == "HINT":
-                    # Gọi Shortest_Path để tìm đường đi tối ưu
+                    # ✅ GET CURRENT GATE STATE FROM GAME
+                    current_gate_state = False  # Default:  gate closed
+                    if MummyMazeMap.is_kg_exists():
+                        current_gate_state = MummyMazeMap.gate_key.is_opening_gate()
+
+                    # Gọi Shortest_Path với CURRENT gate state
                     path = Shortest_Path(
                         map_data,  # superdata (dictionary chứa map_data, gate_pos, key_pos, trap_pos)
                         tuple(MummyExplorer.grid_position), 
                         tuple(winning_position), 
-                        zombie_positions = [tuple(zombie. grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
-                        scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []
+                        zombie_positions=[tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
+                        scorpion_positions=[tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else [],
+                        current_gate_opened=current_gate_state  # ✅ TRUYỀN GATE STATE HIỆN TẠI! 
                     ) 
                     
                     if path == []:
                         print("Can't find the way to win. You lose!")
-                        print(Shortest_Path(
-                            map_data,
-                            tuple(MummyExplorer.grid_position),
-                            tuple(winning_position),  
-                            zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
-                            scorpion_positions = [tuple(scorpion. grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []  
-                        ))
                     else:
-                        # ✅ CẬP NHẬT: Thêm gate_opened và superdata vào get_face_direction
-                        current_gate_state = MummyMazeMap.gate_key.is_opening_gate() if MummyMazeMap.is_kg_exists() else True
-                        
+                        # ✅ CẬP NHẬT:  Thêm gate_opened và superdata vào get_face_direction
                         face_direction = get_face_direction(
                             path[0], 
                             path[1], 
                             MummyMazeMap.map_data,  # Map data ma trận
-                            gate_opened=current_gate_state,  # ✅ THÊM:  Trạng thái cổng hiện tại
-                            superdata=map_data  # ✅ THÊM: Dữ liệu gốc chứa gate_pos, key_pos
+                            gate_opened=current_gate_state,  # ✅ TRUYỀN GATE STATE
+                            superdata=map_data  # ✅ Dữ liệu gốc chứa gate_pos, key_pos
                         ) if len(path) >= 2 else "WIN"
                         
-                        hint.show_hint = True
+                        hint. show_hint = True
                         hint.facing_direction = face_direction
-
+                        
                         ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
                 elif panel_clicked == "QUIT TO MAIN":
                     save(is_playing= True)
@@ -1469,7 +1473,7 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
             if not MummyExplorer.movement_list and (
                 not MummyZombies
                 or all(not zombie.movement_list for zombie in MummyZombies)
-            ):  # Only allow player input if zombies are standing
+            ) and (not MummyScorpions or all(not scorpion.movement_list for scorpion in MummyScorpions)):  # Only allow player input if zombies are standing
 
                 if event.type == pygame.KEYDOWN:
                     # change show_hint to False when player makes a move

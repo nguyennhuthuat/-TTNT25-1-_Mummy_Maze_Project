@@ -151,7 +151,6 @@ def get_face_direction(from_pos:  tuple, to_pos: tuple, map_data: list = None, g
         for direction in possible_directions: 
             # Check if this direction is blocked (wall or closed gate)
             if not is_linked(map_data, from_pos, direction, gate_opened, superdata):
-                print(f"Default direction (blocked): {direction}")
                 return direction
     
     # Fallback:  return DOWN if no map_data provided
