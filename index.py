@@ -1053,7 +1053,7 @@ def main_game(current_level= 2, victory_common_surface = victory_common_surface,
     ) = load_level(current_level)
 
     winning_position, goal_direction = get_winning_position(stair_position, map_length)
-
+ 
     current_tile_size = (
         480 // map_length
     )  # Dynamically set tile size based on map length
