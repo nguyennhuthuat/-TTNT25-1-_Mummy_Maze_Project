@@ -86,13 +86,13 @@ class MummyMazeZombieManager:
     def load_zombie_frames(self) -> Tuple[Any, Any]:
         """Load zombie sprite sheet and split into directional frames."""
 
-        _path = "whitemummy.gif" if self.zombie_type in [0,2] else "redmummy.gif"
+        _path = "whitemummy.png" if self.zombie_type in [0,2] else "redmummy.png"
         # Load Resources
         zombie_surface = self._load_and_scale_image(_path, is_shadow=False)
         # zombie_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._load_and_scale_image("_" + _path, is_shadow=True)
+        shadow_surface = self._load_and_scale_image("_mummy.gif", is_shadow=True)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # Extract Frames

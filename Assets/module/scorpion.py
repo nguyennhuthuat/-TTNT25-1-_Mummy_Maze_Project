@@ -82,13 +82,13 @@ class MummyMazeScorpionManager:
     def load_scorpion_frames(self) -> Tuple[Any, Any]:
         """Load scorpion sprite sheet and split into directional frames."""
 
-        _path = "scorpion.gif"
+        _path = "scorpion.png"
         # Load Resources
         scorpion_surface = self._load_and_scale_image(_path, is_shadow=False)
         # scorpion_surface.set_colorkey((0, 0, 0))
         
         # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._load_and_scale_image("_" + _path, is_shadow=True)
+        shadow_surface = self._load_and_scale_image("_scorpion.gif", is_shadow=True)
         shadow_surface = self.get_black_shadow_surface(shadow_surface)
 
         # Extract Frames

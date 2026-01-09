@@ -266,7 +266,7 @@ class MummyMazePlayerManager:
         """Load player sprite sheet and split into directional frames."""
         
         # 1. Load NORMAL sprite
-        player_surface = self._load_and_scale_image("explorer.gif", is_shadow=False).convert_alpha()
+        player_surface = self._load_and_scale_image("explorer.png", is_shadow=False).convert_alpha()
         player_surface.set_colorkey((0, 0, 0))
 
         # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
