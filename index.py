@@ -1724,63 +1724,104 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
         # ---------------------------------------------------------------------------------- #
         # -------------------------------- RENDERING/DRAW----------------------------------- #
         # ---------------------------------------------------------------------------------- #
+
         
         # 1. CLEAR SCREEN
-        screen.blit(
+        screen. blit(
             pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0)
         )  
 
         # 2. DRAW LEFT SIDE PANEL
-        side_panel.update()
-        side_panel.draw(screen, display_score)
+        side_panel. update()
+        side_panel. draw(screen, display_score)
 
         # 3. DRAW MAP (NOT INCLUDE WALLS)
         MummyMazeMap.draw_map(screen)
 
-        # 3.1 DRAW TRAPS & KEY IF ANY
+        # 3.1 DRAW TRAPS IF ANY
         MummyMazeMap.draw_trap(screen) 
 
-        # NO NEED TO DRAW KEY TWICE 
-        # if MummyMazeMap.is_kg_exists() and MummyMazeMap.gate_key.is_opening_gate():
-        #     MummyMazeMap.draw_gate_key(screen)
-
-        # 4. DRAW PLAYER
-        if MummyMazeMap.is_kg_exists():
-            player_turn_completed = MummyExplorer.update_player(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
-        else:
-            player_turn_completed = MummyExplorer.update_player(screen)
+        # ============================================================================
+        # CONDITIONAL RENDERING BASED ON GATE STATE
+        # - Gate OPEN:  Draw gate first, then characters (characters appear on top)
+        # - Gate CLOSED:  Draw characters first, then gate (gate appears on top)
+        # ============================================================================
         
-        # 5. DRAW ZOMBIES
-        for zombie in MummyZombies or []:
-            if player_turn_completed:
-                zombie.zombie_movement(MummyExplorer.grid_position)
+        # Check if gate exists and whether it's open
+        gate_is_open = False
+        if MummyMazeMap.is_kg_exists():
+            gate_is_open = MummyMazeMap.gate_key.is_opening_gate()
+        
+        # CASE 1: GATE OPEN - Gate behind characters
+        if gate_is_open:
+            # Draw gate first
+            MummyMazeMap.draw_gate_key(screen)
             
+            # Draw player
             if MummyMazeMap.is_kg_exists():
-                zombie.update_zombie(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+                player_turn_completed = MummyExplorer. update_player(screen, gate_opened=True)
             else:
-                zombie.update_zombie(screen)
-
-        # 6. DRAW SCORPIONS
-        for scorpion in MummyScorpions or []:
-            if player_turn_completed:
-                scorpion.scorpion_movement(MummyExplorer.grid_position)
+                player_turn_completed = MummyExplorer.update_player(screen)
             
-            if MummyMazeMap.is_kg_exists():
-                scorpion.update_scorpion(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
-            else:
-                scorpion.update_scorpion(screen)
+            # Draw zombies
+            for zombie in MummyZombies or []:
+                if player_turn_completed:
+                    zombie.zombie_movement(MummyExplorer.grid_position)
+                
+                if MummyMazeMap.is_kg_exists():
+                    zombie. update_zombie(screen, gate_opened=True)
+                else: 
+                    zombie.update_zombie(screen)
 
-        # 7. DRAW KEY & GATE IF ANY
-        MummyMazeMap.draw_gate_key(screen)
+            # Draw scorpions
+            for scorpion in MummyScorpions or []:
+                if player_turn_completed:
+                    scorpion.scorpion_movement(MummyExplorer. grid_position)
+                
+                if MummyMazeMap.is_kg_exists():
+                    scorpion.update_scorpion(screen, gate_opened=True)
+                else: 
+                    scorpion.update_scorpion(screen)
+        
+        # CASE 2: GATE CLOSED (or no gate) - Gate on top of characters
+        else: 
+            # Draw player
+            if MummyMazeMap.is_kg_exists():
+                player_turn_completed = MummyExplorer. update_player(screen, gate_opened=False)
+            else:
+                player_turn_completed = MummyExplorer.update_player(screen)
+            
+            # Draw zombies
+            for zombie in MummyZombies or []:
+                if player_turn_completed:
+                    zombie.zombie_movement(MummyExplorer.grid_position)
+                
+                if MummyMazeMap.is_kg_exists():
+                    zombie. update_zombie(screen, gate_opened=False)
+                else: 
+                    zombie.update_zombie(screen)
+
+            # Draw scorpions
+            for scorpion in MummyScorpions or []:
+                if player_turn_completed:
+                    scorpion.scorpion_movement(MummyExplorer. grid_position)
+                
+                if MummyMazeMap.is_kg_exists():
+                    scorpion.update_scorpion(screen, gate_opened=False)
+                else: 
+                    scorpion.update_scorpion(screen)
+            
+            # Draw gate last (covers characters when closed)
+            MummyMazeMap.draw_gate_key(screen)
+
+        # ============================================================================
 
         # 8. DRAW HINT IF ANY
         if hint.show_hint:
-            hint.draw(screen, (MummyExplorer.get_x(), MummyExplorer.get_y()))
+            hint.draw(screen, (MummyExplorer. get_x(), MummyExplorer.get_y()))
 
         # 9. DRAW WALLS OVER EVERYTHING
         MummyMazeMap.draw_walls(screen)
-        # if MummyMazeMap.is_kg_exists() and not MummyMazeMap.gate_key.is_opening_gate():
-        #     MummyMazeMap.draw_gate_key(screen)
 
         pygame.display.flip()
         clock.tick(120)
