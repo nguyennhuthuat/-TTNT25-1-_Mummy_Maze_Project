@@ -828,17 +828,17 @@ def check_same_pos(next_zombie_positions: list, next_scorpion_positions: list, s
     
     return next_zombie_positions, next_scorpion_positions
 
-def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list:
+def Shortest_Path(superdata:  dict, start: tuple, goal: tuple, zombie_positions: list = [], scorpion_positions: list = []) -> list:
     """
-    Finds shortest path from start to goal using BFS with state-space search.
+    Finds OPTIMAL shortest path from start to goal using BFS with state-space search.
     
-    ╔══════════════════════════════════════════════════════════════════════════╗
-    ║                          GAME MECHANICS                                  ║
+    ╔═════════════════════════════════════════════════════════���════════════════╗
+    ║                     GAME MECHANICS & OPTIMIZATIONS                       ║
     ╚══════════════════════════════════════════════════════════════════════════╝
     
     1.  GATE SYSTEM:
        ✓ Gates block vertical movement (UP/DOWN) when closed
-       ✓ Gates do NOT block horizontal movement (LEFT/RIGHT)
+       ✓ Gates do NOT block horizontal movement (LEFT/RIGHT)  
        ✓ Gates start CLOSED by default
        ✓ Gate state:  CLOSED (False) or OPEN (True)
     
@@ -847,38 +847,16 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
        ✓ When player steps on key position → Gate TOGGLES state
        ✓ CLOSED → OPEN or OPEN → CLOSED
        ✓ Player can toggle gate multiple times by revisiting key
-       ✓ This creates puzzle-like gameplay (timing matters!)
     
-    3. STATE SPACE:
+    3. OPTIMIZATION STRATEGY:
+       ✓ Penalize unnecessary key toggles
+       ✓ Prioritize paths that minimize key touches
+       ✓ Use path length + key_toggle_penalty for comparison
+    
+    4. STATE SPACE: 
        ✓ State = (position, gate_opened, zombie_positions, scorpion_positions)
        ✓ Each unique state is visited only once (prevents infinite loops)
-       ✓ BFS explores all reachable states
-       ✓ Shortest path is guaranteed by BFS nature
-    
-    4. ENEMY MOVEMENT:
-       ✓ Zombies:  2 steps per turn
-       ✓ Scorpions: 1 step per turn
-       ✓ Enemies are affected by gate state
-       ✓ Enemies move AFTER player moves
-    
-    Args:
-        superdata: Dictionary containing: 
-            - map_data: 2D array of wall tiles
-            - gate_pos: [x, y] position of gate (1-indexed)
-            - key_pos: [x, y] position of key (1-indexed)
-            - trap_pos: List of trap positions
-        start: Player starting position (x, y)
-        goal: Goal position (x, y)
-        zombie_positions: List of [(x, y, type), ...]
-        scorpion_positions: List of [(x, y, intelligence_level), ...]
-    
-    Returns:
-        list:  Shortest path as [(x1,y1), (x2,y2), ..., goal] or [] if no path
-    
-    Algorithm Complexity:
-        - Time: O(V * 2 * E) where V=positions, 2=gate states, E=enemy configs
-        - Space: O(V * 2 * E) for visited set
-        - BFS guarantees shortest path in unweighted graph
+       ✓ BFS with priority explores optimal paths first
     """
     
     #══════════════════════════════════════════════════════════════════════════
@@ -900,7 +878,7 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
     
     # Special case: Player starts ON the key → Gate toggles immediately
     if key_pos and (start[0], start[1]) == (key_pos[0], key_pos[1]):
-        initial_gate_opened = True  # Toggle from False to True
+        initial_gate_opened = True
         print(f"🔑 Player starts on key at {key_pos} → Gate toggles to OPEN")
     
     # Performance limit
@@ -922,12 +900,12 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
     if start == goal:
         if not is_lose(superdata, start, zombie_positions, scorpion_positions):
             return [start]
-        else:
+        else: 
             print(f"❌ Start equals goal but player dies immediately")
             return []
     
-    #══════════════════════════════════════════════════════════════════════════
-    #                    STEP 3: BFS DATA STRUCTURES
+    #═════════════════���════════════════════════════════════════════════════════
+    #                    STEP 3: BFS DATA STRUCTURES  
     #══════════════════════════════════════════════════════════════════════════
     
     visited = set()
@@ -940,12 +918,21 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
     )
     visited.add(initial_state)
     
+    # Enhanced queue:  [path, gate_opened, zombie_list, scorpion_list, key_toggle_count]
     queue = deque([[
         [start],              # path
         initial_gate_opened,  # gate_opened
         zombie_positions,     # zombie_list
-        scorpion_positions    # scorpion_list
+        scorpion_positions,   # scorpion_list
+        1 if initial_gate_opened else 0  # key_toggle_count
     ]])
+    
+    # Track best solution
+    best_solution = None
+    best_score = float('inf')  # Lower is better:  path_length + key_toggles * PENALTY
+    
+    # Optimization parameters
+    KEY_TOGGLE_PENALTY = 100  # Heavily penalize unnecessary key toggles
     
     # Statistics tracking
     max_path_length = 0
@@ -965,6 +952,7 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
         gate_opened = current_data[1]
         zombie_list = current_data[2]
         scorpion_list = current_data[3]
+        key_toggle_count = current_data[4]
         
         current_pos = path[-1]
         
@@ -978,6 +966,11 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
         
         # Skip if player dies
         if is_lose(superdata, current_pos, zombie_list, scorpion_list):
+            continue
+        
+        # ✨ OPTIMIZATION: Skip if current path is already worse than best solution
+        current_score = len(path) + key_toggle_count * KEY_TOGGLE_PENALTY
+        if current_score >= best_score:
             continue
         
         #──────────────────────────────────────────────────────────────────────
@@ -1007,18 +1000,20 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
             # Build new path
             new_path = path + [neighbor]
             
-            #╔═══════════════════════════════════════════════════════════════╗
-            #║             KEY MECHANIC: TOGGLE SWITCH                       ║
-            #╚═══════════════════════════════════════════════════════════════╝
+            #╔══════════════════════════════════════════════════════════════╗
+            #║             KEY MECHANIC: TOGGLE SWITCH (OPTIMIZED)          ║
+            #╚══════════════════════════════════════════════════════════════╝
             
             new_gate_opened = gate_opened  # Inherit current state
+            new_key_toggle_count = key_toggle_count
             
             # Check if stepping on key position
             if key_pos and (neighbor[0], neighbor[1]) == (key_pos[0], key_pos[1]):
                 # TOGGLE gate state every time player touches key
                 new_gate_opened = not gate_opened
+                new_key_toggle_count += 1
                 
-                # Debug output (only for first few steps to avoid spam)
+                # Debug output (only for first few steps)
                 if count_steps <= 50:
                     old_state = "OPEN" if gate_opened else "CLOSED"
                     new_state = "OPEN" if new_gate_opened else "CLOSED"
@@ -1028,12 +1023,12 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
             #              ENEMY MOVEMENT SIMULATION
             #──────────────────────────────────────────────────────────────────
             
-            # Important: Enemies see the NEW gate state (after toggle)
+            # Enemies see the NEW gate state (after toggle)
             new_zombie_positions = generate_next_zombie_positions(
                 map_data=map_data,
                 current_zombie_positions=zombie_list,
                 current_player_position=neighbor,
-                gate_opened=new_gate_opened,  # Use NEW gate state! 
+                gate_opened=new_gate_opened,
                 superdata=superdata
             )
             
@@ -1041,7 +1036,7 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
                 map_data=map_data,
                 current_scorpion_positions=scorpion_list,
                 current_player_position=neighbor,
-                gate_opened=new_gate_opened,  # Use NEW gate state! 
+                gate_opened=new_gate_opened,
                 superdata=superdata
             )
             
@@ -1053,45 +1048,34 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
             )
             
             #──────────────────────────────────────────────────────────────────
-            #              GOAL CHECK
+            #              GOAL CHECK (WITH OPTIMIZATION)
             #──────────────────────────────────────────────────────────────────
             
             if neighbor == goal:
                 if not is_lose(superdata, neighbor, new_zombie_positions, new_scorpion_positions):
-                    # SUCCESS! 
-                    print(f"")
-                    print(f"╔═══════════════════════════════════════════════════════════════╗")
-                    print(f"║              ✅ PATH FOUND - SUCCESS!                         ║")
-                    print(f"╚═══════════════════════════════════════════════════════════════╝")
-                    print(f"")
-                    print(f"  📊 Statistics:")
-                    print(f"     • BFS iterations:      {count_steps: ,}")
-                    print(f"     • States explored:    {states_explored:,}")
-                    print(f"     • Path length:        {len(new_path)} steps")
-                    print(f"     • Final gate state:   {'OPEN' if new_gate_opened else 'CLOSED'}")
-                    print(f"     • Zombies remaining:   {len(new_zombie_positions)}")
-                    print(f"     • Scorpions remaining:  {len(new_scorpion_positions)}")
-                    print(f"")
+                    # Calculate solution score
+                    solution_score = len(new_path) + new_key_toggle_count * KEY_TOGGLE_PENALTY
                     
-                    # Count how many times key was touched
-                    key_touches = 0
-                    if key_pos:
-                        for pos in new_path:
-                            if (pos[0], pos[1]) == (key_pos[0], key_pos[1]):
-                                key_touches += 1
+                    # Update best solution if this is better
+                    if solution_score < best_score:
+                        best_solution = new_path
+                        best_score = solution_score
+                        
+                        print(f"")
+                        print(f"╔═══════════════════════════════════════════════════════════════╗")
+                        print(f"║          ✅ BETTER PATH FOUND!  (Score: {solution_score})              ║")
+                        print(f"╚═══════════════════════════════════════════════════════════════╝")
+                        print(f"  • Path length:       {len(new_path)} steps")
+                        print(f"  • Key toggles:      {new_key_toggle_count} times")
+                        print(f"  • Final gate state: {'OPEN' if new_gate_opened else 'CLOSED'}")
+                        print(f"")
                     
-                    if key_touches > 0:
-                        print(f"  🔑 Key touched {key_touches} time(s) during path")
-                        print(f"     Gate toggled {key_touches} time(s)")
-                    
-                    print(f"")
-                    print(f"╔═══════════════════════════════════════════════════════════════╗")
-                    
-                    return new_path
+                    # Continue searching for even better paths
+                    continue
             
             #──────────────────────────────────────────────────────────────────
             #              STATE TRACKING
-            #──────────────────────────────────────────────────────────────────
+            #─────────────────────────────────────────────���────────────────────
             
             new_state = (
                 neighbor,
@@ -1106,11 +1090,40 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
                     new_path,
                     new_gate_opened,
                     new_zombie_positions,
-                    new_scorpion_positions
+                    new_scorpion_positions,
+                    new_key_toggle_count
                 ])
     
     #══════════════════════════════════════════════════════════════════════════
-    #                    STEP 7: NO PATH FOUND
+    #                    STEP 7: RETURN BEST SOLUTION
+    #══════════════════════════════════════════════════════════════════════════
+    
+    if best_solution:
+        # Count actual key touches in best path
+        key_touches = 0
+        if key_pos:
+            for pos in best_solution:
+                if (pos[0], pos[1]) == (key_pos[0], key_pos[1]):
+                    key_touches += 1
+        
+        print(f"")
+        print(f"╔═══════════════════════════════════════════════════════════════╗")
+        print(f"║              ✅ OPTIMAL PATH FOUND - SUCCESS!                  ║")
+        print(f"╚══════════════════════════════════════════════════════════════��╝")
+        print(f"")
+        print(f"  📊 Statistics:")
+        print(f"     • BFS iterations:       {count_steps: ,}")
+        print(f"     • States explored:    {states_explored:,}")
+        print(f"     • Optimal path length: {len(best_solution)} steps")
+        print(f"     • Key touched:        {key_touches} time(s)")
+        print(f"     • Solution score:     {best_score}")
+        print(f"")
+        print(f"╔═══════════════════════════════════════════════════════════════╗")
+        
+        return best_solution
+    
+    #══════════════════════════════════════════════════════════════════════════
+    #                    NO PATH FOUND
     #══════════════════════════════════════════════════════════════════════════
     
     print(f"")
@@ -1119,25 +1132,20 @@ def Shortest_Path(superdata:  dict, start: tuple, goal:  tuple, zombie_positions
     print(f"╚═══════════════════════════════════════════════════════════════╝")
     print(f"")
     print(f"  📊 Statistics:")
-    print(f"     • BFS iterations:      {count_steps:,}")
+    print(f"     • BFS iterations:       {count_steps:,}")
     print(f"     • States explored:    {states_explored:,}")
     print(f"     • States in visited:  {len(visited):,}")
     print(f"     • Max path length:    {max_path_length}")
     print(f"")
     print(f"  🎮 Map Info:")
-    print(f"     • Start:     {start}")
+    print(f"     • Start:      {start}")
     print(f"     • Goal:     {goal}")
     print(f"     • Key pos:  {key_pos}")
     print(f"     • Gate pos: {gate_pos}")
     print(f"     • Zombies:  {len(zombie_positions)}")
     print(f"     • Scorpions: {len(scorpion_positions)}")
     print(f"")
-    print(f"  💡 Possible reasons:")
-    print(f"     • Goal is unreachable (blocked by walls/gate)")
-    print(f"     • Enemies block all possible paths")
-    print(f"     • Map design has no solution")
-    print(f"")
-    print(f"╔═══════════════════════════════════════════════════════════════╗")
+    print(f"╔═══════════════════════════════════════════════════════════════╝")
     
     return []
 

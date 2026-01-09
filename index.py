@@ -1211,7 +1211,7 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                         MummyMazeMap.gate_key.change_gate_status()
                         player_moved = False
                     else:
-                        player_moved = True
+                        player_moved = False
 
             # Check if two zombies in a same position (if any)
             if MummyZombies:
@@ -1471,7 +1471,6 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                 or all(not zombie.movement_list for zombie in MummyZombies)
             ):  # Only allow player input if zombies are standing
 
-                player_moved = True  # Player is about to make a move
                 if event.type == pygame.KEYDOWN:
                     # change show_hint to False when player makes a move
                     hint.show_hint = False
@@ -1511,15 +1510,19 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                     # Handle player movement
                     if event.key == pygame.K_UP:
                         MummyExplorer.update_player_status(UP)
+                        player_moved = True  # Player is about to make a move
 
                     elif event.key == pygame.K_DOWN:
                         MummyExplorer.update_player_status(DOWN)
+                        player_moved = True  # Player is about to make a move
 
                     elif event.key == pygame.K_LEFT:
                         MummyExplorer.update_player_status(LEFT)
+                        player_moved = True  # Player is about to make a move
 
                     elif event.key == pygame.K_RIGHT:
                         MummyExplorer.update_player_status(RIGHT)
+                        player_moved = True  # Player is about to make a move
 
                     ####################### CHECK WIN CONDITION #######################
                     if (
