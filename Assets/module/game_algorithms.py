@@ -790,12 +790,14 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
     
     # Check if start or goal is on trap
     if is_trap(superdata, start) or is_trap(superdata, goal):
+        print(1)
         return []
     
     if start == goal:
         if not is_lose(superdata, start, zombie_positions, scorpion_positions):
             return [start] 
         else:
+            print(2)
             return []
     
     visited = set()
@@ -879,7 +881,7 @@ def Shortest_Path(superdata: list, start: tuple, goal: tuple, zombie_positions: 
 
         else: 
             None # Do nothing if player is caught by enemy in this case
-
+    print(3)
     return [] # No path found
 
 if __name__ == "__main__":
