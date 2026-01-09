@@ -985,7 +985,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 31, victory_common_surface = victory_common_surface, game_data = game_data):
+def main_game(current_level= 15, victory_common_surface = victory_common_surface, game_data = game_data):
 
     def save(is_playing = False):
         # Save game state before exiting
@@ -1524,6 +1524,7 @@ def main_game(current_level= 31, victory_common_surface = victory_common_surface
                         if current_level < len(maps_collection):
                             prev_facing = MummyExplorer.facing_direction
 
+
                             ScoreTracker.player.reset()
                             (
                                 map_length,
@@ -1541,6 +1542,11 @@ def main_game(current_level= 31, victory_common_surface = victory_common_surface
                             current_tile_size = (
                                 480 // map_length
                             )  # Dynamically set tile size based on map length
+
+                            # hint package update
+                            if hint.TILE_SIZE != current_tile_size:
+                                hint = HintPackage(current_tile_size)
+
                             MummyMazeMap = MummyMazeMapManager(
                                 length=map_length,
                                 stair_position=stair_position,
