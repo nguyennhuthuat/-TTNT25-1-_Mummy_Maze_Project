@@ -987,7 +987,7 @@ victory_common_surface = create_victory_common_surface()
 
 def main_game(current_level= 15, victory_common_surface = victory_common_surface, game_data = game_data):
 
-    def save(is_playing = False):
+    def save(is_playing = False): 
         # Save game state before exiting
         game_data["is_playing"] = is_playing
         game_data["level"] = current_level + 1
