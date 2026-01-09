@@ -1,131 +1,133 @@
 import pygame
 import sys
+from fonts import MetricFont
+
+# Import 2 hàm từ file register_window.py vừa tạo
+from register_window import open_register_window
+from switch_account_window import open_switch_account_window
+
+# --- Dữ liệu giả lập danh sách tài khoản (để test) ---
+# Thử xóa hết tên trong list này để test trường hợp chưa có tài khoản
+EXISTING_ACCOUNTS = ["ProPlayer1", "DragonSlayer", "NoobMaster"] 
 
 def open_lobby(screen):
     try:
-        main_font = pygame.font.SysFont("comic sans ms", 24) 
-        footer_font = pygame.font.SysFont("comic sans ms", 14) # Thêm dòng này (size 14 thay vì 24)
-        title_font = pygame.font.SysFont("comic sans ms", 50)
-        font_btn = pygame.font.SysFont('Arial', 50, bold = 30)
+        footer_font = pygame.font.SysFont("comic sans ms", 14)
+        font_btn = MetricFont(font_name="headerfont", scale_height=40) 
     except Exception as e:
-        main_font = pygame.font.Font(None, 36)
-        footer_font = pygame.font.Font(None, 18) # Font mặc định nhỏ hơn
-        title_font = pygame.font.Font(None, 52)
+        footer_font = pygame.font.Font(None, 18)
+        font_btn = pygame.font.Font(None, 50)
 
-    # Màu sắc
     COLOR_BG_OVERLAY = (0, 0, 0)
     TEXT_COLOR       = (40, 20, 10)
+    HOVER_COLOR      = (255, 0, 0)
 
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
 
-    # Tải Background chính
+    # Load Resources
     try:
         bg = pygame.image.load('./assets/images/background_window.png').convert()
-        bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    except:
-        bg = None
-    
+        bg = pygame.transform.scale(bg, (w, h))
+    except: bg = None
     try:
         logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
-    except:
-        print("Can't load logo image")
-
-
-    # TẢI ẢNH WINDOW
+    except: pass
     try:
         board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
-        scale_factor = 1.48
-        new_w = int(board_img.get_width() * scale_factor)
-        new_h = int(board_img.get_height() * scale_factor)
+        scale_factor = 1.48; new_w = int(board_img.get_width()*scale_factor); new_h = int(board_img.get_height()*scale_factor)
         board_img = pygame.transform.smoothscale(board_img, (new_w, new_h))
         board_rect = board_img.get_rect(center=(center_x, center_y))
     except:
-        board_img = None
-        board_rect = pygame.Rect(center_x - 250, center_y - 150, 500, 300)
-
-    #TẢI TÊN GAME
-    scale_size = 1.2
+        board_img = None; board_rect = pygame.Rect(center_x-250, center_y-150, 500, 300)
+    
     logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
-    # logo_img = pygame.transform.smoothscale(logo_img, (int(logo_img.get_width() * scale_size), int(logo_img.get_height() * scale_size)))
     logo_rect = logo_img.get_rect(center=(center_x, center_y - 230))
 
-    # Định vị nút bấm
-    btn_w, btn_h = 300, 100
-    gap = 60            
+    btn_w, btn_h = 300, 100; gap = 60            
+    pos_classic   = (center_x - (btn_w//2 + gap), center_y + 190)
+    pos_reg       = (center_x - (btn_w//2 + gap), center_y + 190 + 90)
+    pos_tut       = (center_x + (btn_w//2 + gap), center_y + 190)
+    pos_quit      = (center_x + (btn_w//2 + gap), center_y + 190 + 90)
 
-    rect_classic_mode = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_classic_mode.center = (center_x - (btn_w // 2 + gap), center_y + 190)
+    # Cấu hình nút: Action "btn_register_click" để xử lý riêng
+    buttons_config = [
+        ("CLASSIC MODE", pos_classic, "enter classic mode"),
+        ("TUTORIALS", pos_tut, "open tutorials"),
+        ("REGISTER", pos_reg, "btn_register_click"),
+        ("QUIT GAME", pos_quit, "quit game")
+    ]
 
-    rect_adventure = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_adventure.center = (center_x - (btn_w // 2 + gap), center_y + 190 + 90)
-    
-    rect_tutorials = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_tutorials.center = (center_x + (btn_w // 2 + gap), center_y + 190)
-
-    rect_quit_game = pygame.Rect(0, 0, btn_w, btn_h)
-    rect_quit_game.center = (center_x + (btn_w // 2 + gap), center_y + 190 + 90)
-
-    # Tạo lớp phủ mờ (Alpha)
-    overlay = pygame.Surface((w, h))
-    overlay.set_alpha(150) # Độ mờ (0-255)
-    overlay.fill(COLOR_BG_OVERLAY)
-    
-    running = True
-    user_action = None
+    overlay = pygame.Surface((w, h)); overlay.set_alpha(150); overlay.fill(COLOR_BG_OVERLAY)
+    running = True; user_action = None
 
     while running:
         mouse_pos = pygame.mouse.get_pos()
+        active_buttons = []
+        for txt, p, act in buttons_config:
+            s = font_btn.render(txt, True, TEXT_COLOR)
+            active_buttons.append((s, s.get_rect(center=p), act))
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if rect_classic_mode.collidepoint(mouse_pos):
-                    user_action = "enter classic mode"; running = False
-                elif rect_tutorials.collidepoint(mouse_pos):
-                    user_action = "open tutorials"; running = False
-                elif rect_adventure.collidepoint(mouse_pos):
-                    user_action = "open adventure"; running = False
-                elif rect_quit_game.collidepoint(mouse_pos):
-                    user_action = "quit game"; running = False
-        
-        # 1. Vẽ ảnh nền Game trước
-        if bg:
-            screen.blit(bg, (0, 0))
-        else:
-            screen.fill((100, 150, 100))
+                for _, r, action in active_buttons:
+                    if r.collidepoint(mouse_pos):
+                        
+                        # --- LOGIC XỬ LÝ NÚT REGISTER ---
+                        if action == "btn_register_click":
+                            if len(EXISTING_ACCOUNTS) > 0:
+                                # A. Đã có tài khoản -> Mở Switch Account Window
+                                switch_res = open_switch_account_window(screen, EXISTING_ACCOUNTS)
+                                
+                                if switch_res:
+                                    status, data = switch_res
+                                    if status == "goto_register":
+                                        # Người dùng chọn "New Account" từ danh sách
+                                        reg_data = open_register_window(screen)
+                                        if reg_data: 
+                                            print(f"New User Registered: {reg_data}")
+                                            user_action = "register_success"
+                                            running = False
+                                    elif status == "select":
+                                        print(f"User switched to: {data}")
+                                        user_action = f"login_{data}"
+                                        running = False
+                                    elif status == "back":
+                                        pass # Quay lại lobby
+                            else:
+                                # B. Chưa có tài khoản -> Mở Register Window trực tiếp
+                                reg_data = open_register_window(screen)
+                                if reg_data:
+                                    print(f"Registered: {reg_data}")
+                                    user_action = "register_success"
+                                    running = False
+                        
+                        else:
+                            # Các nút khác (Classic, Tutorial...)
+                            user_action = action
+                            running = False
 
-        screen.blit(overlay, (0, 0))
+        if bg: screen.blit(bg, (0,0))
+        else: screen.fill((100,150,100))
+        screen.blit(overlay, (0,0))
+        if logo_img: screen.blit(logo_img, logo_rect)
+        if board_img: screen.blit(board_img, board_rect)
+        else: pygame.draw.rect(screen, (210,180,140), board_rect)
+        if logo_img: screen.blit(logo_img, logo_rect)
 
-        screen.blit(logo_img, logo_rect)
+        for s, r, _ in active_buttons:
+            col = HOVER_COLOR if r.collidepoint(mouse_pos) else TEXT_COLOR
+            for txt, pos_orig, act_orig in buttons_config:
+                if r.center == pos_orig: # So khớp vị trí để tìm text
+                    s_colored = font_btn.render(txt, True, col)
+                    screen.blit(s_colored, r)
+                    break
 
-        # 2. Vẽ lose_window
-        if board_img:
-            screen.blit(board_img, board_rect)
-        else:
-            pygame.draw.rect(screen, (210, 180, 140), board_rect)
-        
-        # Vẽ tên game
-        screen.blit(logo_img, logo_rect)
-
-        # 3. Vẽ chữ lên các nút
-        for rect, text in [(rect_classic_mode, "CLASSIC MODE"), 
-                           (rect_tutorials, "TUTORIALS"),
-                           (rect_adventure, "ADVENTURE"),
-                           (rect_quit_game, "QUIT GAME")]:
-            txt_surf = font_btn.render(text, True, TEXT_COLOR)
-            txt_rect = txt_surf.get_rect(center=rect.center)
-            screen.blit(txt_surf, txt_rect)
-
-        footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
-        footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
-        screen.blit(footer_text_surf, footer_text_rect)
-        
-        screen.blit(logo_icon, (30, SCREEN_HEIGHT - 120))
-
+        footer = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
+        screen.blit(footer, footer.get_rect(centerx=w//2, bottom=h))
+        if 'logo_icon' in locals(): screen.blit(logo_icon, (30, h-120))
 
         pygame.display.flip()
         

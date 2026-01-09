@@ -87,9 +87,12 @@ def open_win_window(screen):
 
         #Vẽ các chữ
         text_str = 'You have escaped the maze'
-        text_w = noti_font.get_width(text_str)
-        noti_font.render(screen, text_str, center_x - (text_w // 2), center_y - 250)
-        
+        text_surface = noti_font.render(text_str, True, TEXT_COLOR)
+        text_w = text_surface.get_width()
+        render_x = center_x - (text_w // 2)
+        render_y = center_y - 250
+        screen.blit(text_surface, (render_x, render_y))
+
         footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
         footer_text_rect = footer_text_surf.get_rect(centerx = SCREEN_WIDTH // 2, bottom = SCREEN_HEIGHT)
         screen.blit(footer_text_surf, footer_text_rect)
