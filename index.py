@@ -15,6 +15,7 @@ from Assets.module.settings import *
 from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
 from Assets.module.game_algorithms import Shortest_Path
+from Assets.module.options_menu import OptionsMenu  # Import OptionsMenu
 
 # ---------------------------------------------------------------------------- #
 # ----------------------------Initial Game Setup------------------------------ #
@@ -1004,9 +1005,7 @@ def create_game_state_image(
     new_screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # 1. CLEAR SCREEN
-    screen.blit(
-        pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0)
-    )  
+    screen.blit(pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
 
     # 2. DRAW LEFT SIDE PANEL
     side_panel.update()
@@ -1016,25 +1015,31 @@ def create_game_state_image(
     MummyMazeMap.draw_map(new_screen)
 
     # 3.1 DRAW TRAPS IF ANY
-    MummyMazeMap.draw_trap(new_screen) 
+    MummyMazeMap.draw_trap(new_screen)
 
     # 4. DRAW PLAYER
     if MummyMazeMap.is_kg_exists():
-        player_turn_completed = MummyExplorer.update_player(new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+        player_turn_completed = MummyExplorer.update_player(
+            new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+        )
     else:
         player_turn_completed = MummyExplorer.update_player(new_screen)
-        
+
     # 5. DRAW ZOMBIES
     for zombie in MummyZombies or []:
         if MummyMazeMap.is_kg_exists():
-            zombie.update_zombie(new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+            zombie.update_zombie(
+                new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+            )
         else:
             zombie.update_zombie(new_screen)
 
     # 6. DRAW SCORPIONS
     for scorpion in MummyScorpions or []:
         if MummyMazeMap.is_kg_exists():
-            scorpion.update_scorpion(new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+            scorpion.update_scorpion(
+                new_screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+            )
         else:
             scorpion.update_scorpion(new_screen)
 
@@ -1047,10 +1052,10 @@ def create_game_state_image(
     return new_screen
 
 
-def main_game(current_level= current_level):
+def main_game(current_level=current_level):
     print(current_level)
 
-    def save(is_playing = False):
+    def save(is_playing=False):
         # Save game state before exiting
         game_data["is_playing"] = is_playing
         game_data["level"] = current_level + 1
@@ -1111,9 +1116,9 @@ def main_game(current_level= current_level):
         480 // map_length
     )  # Dynamically set tile size based on map length
 
-#--------------------------------------------------------#
-#------------INITIALIZE GAME OBJECTS HERE----------------#
-#--------------------------------------------------------#
+    # --------------------------------------------------------#
+    # ------------INITIALIZE GAME OBJECTS HERE----------------#
+    # --------------------------------------------------------#
     MummyMazeMap = MummyMazeMapManager(
         length=map_length,
         stair_position=stair_position,
@@ -1155,29 +1160,40 @@ def main_game(current_level= current_level):
     ScoreTracker = GlobalPointPackage(BaseLevelScore=BaseLevelScore)
 
     # To store previous game states for undo functionality
-    history_states = []  
+    history_states = []
 
     # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
     side_panel = SidePanel(x=MARGIN_LEFT_OFFSET, y=16)
 
-    #----------------------------------------------------------------------#
-    #-----------------------HANDLE LOADED GAME STATE-----------------------#
-    #----------------------------------------------------------------------#
+    # Initialize Options Menu
+    options_menu = OptionsMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    # ----------------------------------------------------------------------#
+    # -----------------------HANDLE LOADED GAME STATE-----------------------#
+    # ----------------------------------------------------------------------#
 
     # If is_playing is True, load previous state
     if game_data.get("is_playing", False):
 
         # Explorer
-        if game_data.get("explorer_position", None) is not None and game_data.get("explorer_direction", None) is not None:
+        if (
+            game_data.get("explorer_position", None) is not None
+            and game_data.get("explorer_direction", None) is not None
+        ):
             MummyExplorer.grid_position = game_data["explorer_position"].copy()
             MummyExplorer.facing_direction = game_data["explorer_direction"]
 
         # Zombies
-        if MummyZombies and game_data.get("zombie_positions", None) is not None and \
-            game_data.get("zombie_directions", None) is not None:
+        if (
+            MummyZombies
+            and game_data.get("zombie_positions", None) is not None
+            and game_data.get("zombie_directions", None) is not None
+        ):
             saved_zombie_positions = game_data["zombie_positions"]
-            saved_zombie_directions = game_data.get("zombie_directions", []) # facing directions
-            
+            saved_zombie_directions = game_data.get(
+                "zombie_directions", []
+            )  # facing directions
+
             # if counts match, restore positions and directions
             if len(saved_zombie_positions) == len(MummyZombies):
                 for idx, zombie in enumerate(MummyZombies):
@@ -1187,13 +1203,18 @@ def main_game(current_level= current_level):
             else:
                 print(f"Warning: Zombie count mismatch. Using default positions.")
                 game_data["is_playing"] = False
-        
+
         # Scorpions
-        if MummyScorpions and game_data.get("scorpion_positions", None) is not None and \
-            game_data.get("scorpion_directions", None) is not None:
+        if (
+            MummyScorpions
+            and game_data.get("scorpion_positions", None) is not None
+            and game_data.get("scorpion_directions", None) is not None
+        ):
             saved_scorpion_positions = game_data["scorpion_positions"]
-            saved_scorpion_directions = game_data.get("scorpion_directions", []) # facing directions
-            
+            saved_scorpion_directions = game_data.get(
+                "scorpion_directions", []
+            )  # facing directions
+
             # if counts match, restore positions and directions
             if len(saved_scorpion_positions) == len(MummyScorpions):
                 for idx, scorpion in enumerate(MummyScorpions):
@@ -1204,7 +1225,6 @@ def main_game(current_level= current_level):
                 print(f"Warning: Scorpion count mismatch. Using default positions.")
                 game_data["is_playing"] = False
 
-
         # ScoreTracker
         ScoreTracker.player.start_counting = time.time() - game_data.get(
             "time_elapsed", 0
@@ -1213,13 +1233,16 @@ def main_game(current_level= current_level):
         ScoreTracker.player.hint_penalty = game_data.get("hint_penalty", 0)
 
         # History States
-        history_states = (
-            game_data.get("history_states", []).copy()
-        )
+        history_states = game_data.get("history_states", []).copy()
 
     # Start game effect
     copied_image_screen = create_game_state_image(
-        MummyMazeMap, MummyExplorer, MummyZombies, MummyScorpions, side_panel=side_panel, ScoreTracker=ScoreTracker
+        MummyMazeMap,
+        MummyExplorer,
+        MummyZombies,
+        MummyScorpions,
+        side_panel=side_panel,
+        ScoreTracker=ScoreTracker,
     )
     MummyExplorer.start_game_effect(
         screen,
@@ -1230,24 +1253,53 @@ def main_game(current_level= current_level):
 
     # Reset time after effect
     if game_data.get("is_playing", False):
-        ScoreTracker.player.start_counting = time.time() - game_data.get("time_elapsed", 0)
+        ScoreTracker.player.start_counting = time.time() - game_data.get(
+            "time_elapsed", 0
+        )
     else:
         ScoreTracker.player.start_counting = time.time()
 
-    #--------------------------------------------------------#
-    #----------------------MAIN GAME-------------------------#
-    #--------------------------------------------------------#
+    # --------------------------------------------------------#
+    # ----------------------MAIN GAME-------------------------#
+    # --------------------------------------------------------#
     running = True
-    player_moved = False   # To track if player made a move this turn
+    player_moved = False  # To track if player made a move this turn
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_data["is_playing"] = True
-                save(is_playing= True)
+                save(is_playing=True)
                 return "exit"
+
+            # Handle Options Menu Events
+            if options_menu.is_open:
+                opt_action = options_menu.handle_event(event)
+                # If you need to handle specific button actions:
+                # if opt_action == "High Scores": ...
+                continue  # Block other events while menu is open
 
             # Xử lý sự kiện SidePanel
             panel_clicked = side_panel.handle_event(event)
+            if panel_clicked == "OPTIONS":
+                # Calculate current score to pass to high scores screen
+                current_level_score_temp = max(
+                    ScoreTracker.player.max_score // 2,
+                    round(
+                        ScoreTracker.player.max_score
+                        - 5 * ScoreTracker.player.current_time_elapsed
+                        - ScoreTracker.player.hint_penalty
+                        * 0.01
+                        * ScoreTracker.player.max_score
+                        + ScoreTracker.player.bonus_score
+                    ),
+                )
+                current_total_score = (
+                    ScoreTracker.player.total_score + current_level_score_temp
+                )
+                # Set current player info for high scores (use "Player" as default name)
+                options_menu.set_current_player("Player", current_total_score)
+                options_menu.is_open = True
+
             if panel_clicked == "UNDO MOVE":
                 if history_states:
                     last_state = history_states.pop()
@@ -1268,7 +1320,7 @@ def main_game(current_level= current_level):
                     ScoreTracker.player.hint_penalty = last_state["hint_penalty"]
                     MummyMazeMap.is_opening_gate = last_state["is_opening_gate"]
             elif panel_clicked == "RESET MAZE":
-                
+
                 # Reset side panel buttons first
                 side_panel.reset_button_states()
 
@@ -1329,7 +1381,12 @@ def main_game(current_level= current_level):
 
                 # Start game effect
                 copied_image_screen = create_game_state_image(
-                    MummyMazeMap, MummyExplorer, MummyZombies, MummyScorpions, side_panel=side_panel, ScoreTracker=ScoreTracker
+                    MummyMazeMap,
+                    MummyExplorer,
+                    MummyZombies,
+                    MummyScorpions,
+                    side_panel=side_panel,
+                    ScoreTracker=ScoreTracker,
                 )
                 MummyExplorer.start_game_effect(
                     screen,
@@ -1344,23 +1401,39 @@ def main_game(current_level= current_level):
 
             elif panel_clicked == "OPTIONS":
                 pass  # Thêm hiệu ứng mở bảng options vào
-            
+
             elif panel_clicked == "HINT":
                 path = Shortest_Path(
-                    map_data, 
-                    tuple(MummyExplorer.grid_position), 
-                    tuple(winning_position), 
-                    zombie_positions = [tuple(zombie.grid_position + [zombie.zombie_type]) for zombie in MummyZombies] if MummyZombies else [],
-                    scorpion_positions = [tuple(scorpion.grid_position + [scorpion.scorpion_type]) for scorpion in MummyScorpions] if MummyScorpions else []
-                    ) 
+                    map_data,
+                    tuple(MummyExplorer.grid_position),
+                    tuple(winning_position),
+                    zombie_positions=(
+                        [
+                            tuple(zombie.grid_position + [zombie.zombie_type])
+                            for zombie in MummyZombies
+                        ]
+                        if MummyZombies
+                        else []
+                    ),
+                    scorpion_positions=(
+                        [
+                            tuple(scorpion.grid_position + [scorpion.scorpion_type])
+                            for scorpion in MummyScorpions
+                        ]
+                        if MummyScorpions
+                        else []
+                    ),
+                )
                 if path == []:
                     print("Can't find the way to win. You lose!")
                 else:
-                    print("Suggested next move:", path[1]) # path[0] is current position
+                    print(
+                        "Suggested next move:", path[1]
+                    )  # path[0] is current position
                 pass  # Thêm hiệu ứng mở world map vào
             elif panel_clicked == "QUIT TO MAIN":
                 game_data["is_playing"] = True
-                save(is_playing= True)
+                save(is_playing=True)
                 return "main_menu"
 
             if not MummyExplorer.movement_list and (
@@ -1387,14 +1460,21 @@ def main_game(current_level= current_level):
                                 else []
                             ),
                             "scorpion_directions": (
-                                [scorpion.facing_direction for scorpion in MummyScorpions]
+                                [
+                                    scorpion.facing_direction
+                                    for scorpion in MummyScorpions
+                                ]
                                 if MummyScorpions
                                 else []
                             ),
                             "time_elapsed": ScoreTracker.player.current_time_elapsed,
                             "bonus_score": ScoreTracker.player.bonus_score,
                             "hint_penalty": ScoreTracker.player.hint_penalty,
-                            "is_opening_gate": MummyMazeMap.gate_key.is_opening_gate() if MummyMazeMap.is_kg_exists() else True,
+                            "is_opening_gate": (
+                                MummyMazeMap.gate_key.is_opening_gate()
+                                if MummyMazeMap.is_kg_exists()
+                                else True
+                            ),
                         }
                     )
 
@@ -1422,7 +1502,7 @@ def main_game(current_level= current_level):
                         # Stop counting time, caculate score (base score + bonus score)
                         ScoreTracker.player.end_counting()
                         game_data["is_playing"] = False
-                        save(is_playing= False)
+                        save(is_playing=False)
 
                         continue_game = show_victory_window(
                             screen,
@@ -1504,7 +1584,12 @@ def main_game(current_level= current_level):
                             # Start game effect for new level
                             MummyExplorer.facing_direction = prev_facing
                             copied_image_screen = create_game_state_image(
-                                MummyMazeMap, MummyExplorer, MummyZombies, MummyScorpions, side_panel=side_panel, ScoreTracker=ScoreTracker
+                                MummyMazeMap,
+                                MummyExplorer,
+                                MummyZombies,
+                                MummyScorpions,
+                                side_panel=side_panel,
+                                ScoreTracker=ScoreTracker,
                             )
                             MummyExplorer.start_game_effect(
                                 screen,
@@ -1550,7 +1635,7 @@ def main_game(current_level= current_level):
         if reason is not None:
             MummyExplorer.start_lose_effect(screen, reason=reason)
             game_data["is_playing"] = False
-            save(is_playing = False)
+            save(is_playing=False)
 
             user_choice = show_lose_window(screen)
 
@@ -1561,19 +1646,13 @@ def main_game(current_level= current_level):
                 # Placeholder for undo move function
                 if history_states:
                     last_state = history_states.pop()
-                    MummyExplorer.grid_position = last_state[
-                        "explorer_position"
-                    ].copy()
-                    MummyExplorer.facing_direction = last_state[
-                        "explorer_direction"
-                    ]
+                    MummyExplorer.grid_position = last_state["explorer_position"].copy()
+                    MummyExplorer.facing_direction = last_state["explorer_direction"]
                     for idx, zombie in enumerate(MummyZombies or []):
                         zombie.grid_position = last_state["zombie_positions"][
                             idx
                         ].copy()
-                        zombie.facing_direction = last_state["zombie_directions"][
-                            idx
-                        ]
+                        zombie.facing_direction = last_state["zombie_directions"][idx]
                     ScoreTracker.player.start_counting = (
                         time.time() - last_state["time_elapsed"]
                     )
@@ -1588,7 +1667,6 @@ def main_game(current_level= current_level):
                 # Placeholder for save game function
                 return "exit"
 
-
         # Calculate total_score
         current_level_score = max(
             ScoreTracker.player.max_score // 2,
@@ -1602,15 +1680,13 @@ def main_game(current_level= current_level):
             ),
         )
         display_score = ScoreTracker.player.total_score + current_level_score
-        
+
         # -------------------------------------------------------- #
         # ------------------- RENDERING/DRAW---------------------- #
         # -------------------------------------------------------- #
-        
+
         # 1. CLEAR SCREEN
-        screen.blit(
-            pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0)
-        )  
+        screen.blit(pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
 
         # 2. DRAW LEFT SIDE PANEL
         side_panel.update()
@@ -1620,25 +1696,29 @@ def main_game(current_level= current_level):
         MummyMazeMap.draw_map(screen)
 
         # 3.1 DRAW TRAPS & KEY IF ANY
-        MummyMazeMap.draw_trap(screen) 
+        MummyMazeMap.draw_trap(screen)
 
-        # NO NEED TO DRAW KEY TWICE 
+        # NO NEED TO DRAW KEY TWICE
         # if MummyMazeMap.is_kg_exists() and MummyMazeMap.gate_key.is_opening_gate():
         #     MummyMazeMap.draw_gate_key(screen)
 
         # 4. DRAW PLAYER
         if MummyMazeMap.is_kg_exists():
-            player_turn_completed = MummyExplorer.update_player(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+            player_turn_completed = MummyExplorer.update_player(
+                screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+            )
         else:
             player_turn_completed = MummyExplorer.update_player(screen)
-        
+
         # 5. DRAW ZOMBIES
         for zombie in MummyZombies or []:
             if player_turn_completed:
                 zombie.zombie_movement(MummyExplorer.grid_position)
-            
+
             if MummyMazeMap.is_kg_exists():
-                zombie.update_zombie(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+                zombie.update_zombie(
+                    screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+                )
             else:
                 zombie.update_zombie(screen)
 
@@ -1646,9 +1726,11 @@ def main_game(current_level= current_level):
         for scorpion in MummyScorpions or []:
             if player_turn_completed:
                 scorpion.scorpion_movement(MummyExplorer.grid_position)
-            
+
             if MummyMazeMap.is_kg_exists():
-                scorpion.update_scorpion(screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate())
+                scorpion.update_scorpion(
+                    screen, gate_opened=MummyMazeMap.gate_key.is_opening_gate()
+                )
             else:
                 scorpion.update_scorpion(screen)
 
@@ -1660,12 +1742,22 @@ def main_game(current_level= current_level):
         # if MummyMazeMap.is_kg_exists() and not MummyMazeMap.gate_key.is_opening_gate():
         #     MummyMazeMap.draw_gate_key(screen)
 
-        #---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
+        # Draw Options Menu on top of everything
+        if options_menu.is_open:
+            options_menu.draw(screen)
+
+        # ---- CHECK IF PLAYER TOUCH KEY/ TOUCH TRAPS ----#
         if player_turn_completed:
             if MummyMazeMap.is_kg_exists():
                 print("Key exists")
-                if MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0] and MummyExplorer.get_y() ==  MummyMazeMap.gate_key.get_key_pos()[1]:
-                    if MummyMazeMap.gate_key.is_finished_changeing_gate_status() and player_moved:
+                if (
+                    MummyExplorer.get_x() == MummyMazeMap.gate_key.get_key_pos()[0]
+                    and MummyExplorer.get_y() == MummyMazeMap.gate_key.get_key_pos()[1]
+                ):
+                    if (
+                        MummyMazeMap.gate_key.is_finished_changeing_gate_status()
+                        and player_moved
+                    ):
                         MummyMazeMap.gate_key.change_gate_status()
                         print("Gate key has been changed status!")
                         player_moved = False

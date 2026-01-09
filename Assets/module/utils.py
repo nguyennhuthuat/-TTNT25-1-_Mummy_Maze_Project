@@ -1,10 +1,10 @@
-
 from typing import List, Tuple, Optional
 from .map_collection import maps_collection
 from .settings import *
 import pygame
 from dataclasses import dataclass
 from .settings import COLOR_BUTTON, COLOR_BUTTON_HOVER, COLOR_TEXT
+
 
 # --------------------------------------------------- #
 # --------------------- HELPERS --------------------- #
@@ -14,14 +14,19 @@ def clean_map_data(map_data: List[List[str]]) -> List[List[str]]:
     return [[(cell or "").strip() for cell in col] for col in map_data]
 
 
-def extract_sprite_frames(sheet: pygame.Surface, frame_width: int, frame_height: int) -> List[pygame.Surface]:
+def extract_sprite_frames(
+    sheet: pygame.Surface, frame_width: int, frame_height: int
+) -> List[pygame.Surface]:
     """Extract frames from a sprite sheet given each frame's width and height."""
     sheet_width, sheet_height = sheet.get_size()
     frames: List[pygame.Surface] = []
     for y in range(0, sheet_height, frame_height):
         for x in range(0, sheet_width, frame_width):
-            frames.append(sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height)))
+            frames.append(
+                sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+            )
     return frames
+
 
 def double_list(input_list: List[pygame.Surface]) -> List[pygame.Surface]:
     """Duplicate each element in the list (used to expand animation frames)."""
@@ -31,11 +36,13 @@ def double_list(input_list: List[pygame.Surface]) -> List[pygame.Surface]:
 # ------------------------------------------------------- #
 # --------------------- LEVEL HELPER--------------------- #
 # ------------------------------------------------------- #
-def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> Optional[List[int]]:
+def get_winning_position(
+    stair_pos: Tuple[int, int], map_len: int
+) -> Optional[List[int]]:
     """Determines the grid cell in front of the stair to win."""
     row, col = stair_pos
     if col == 0:  # Stair is at the top edge
-        return [row, 1],  UP
+        return [row, 1], UP
     elif col == map_len + 1:  # Stair is at the bottom edge
         return [row, map_len], DOWN
     elif row == 0:  # Stair is at the left edge
@@ -43,6 +50,7 @@ def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> Optional[L
     elif row == map_len + 1:  # Stair is at the right edge
         return [map_len, col], RIGHT
     return None
+
 
 def load_level(level_index: int):
     """Load a level from maps_collection and return its components (cleaned)."""
@@ -64,9 +72,11 @@ def load_level(level_index: int):
         level_data.get("level_score", 1000),
     )
 
+
 # -------------------------------------------------------- #
 # --------------------- CLASS HELPER --------------------- #
 # -------------------------------------------------------- #
+
 
 @dataclass
 class FrameSet:
@@ -75,32 +85,50 @@ class FrameSet:
     LEFT: List[pygame.Surface]
     RIGHT: List[pygame.Surface]
 
+
 # -------------------------------------------------------- #
 # --------------------- CLASS HELPER --------------------- #
 # -------------------------------------------------------- #
 class Button:
-    
-    def __init__(self, x, y, width, height, text='', image_path=None, hover_image_path=None, color=COLOR_BUTTON, hover_color=COLOR_BUTTON_HOVER):
+
+    def __init__(
+        self,
+        x,
+        y,
+        width,
+        height,
+        text="",
+        image_path=None,
+        hover_image_path=None,
+        color=COLOR_BUTTON,
+        hover_color=COLOR_BUTTON_HOVER,
+        keep_aspect_ratio=True,
+    ):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.color = color
         self.hover_color = hover_color
         self.is_hovered = False
         self.mask = None
-        
+
         # Tải hình ảnh cho nút
         self.image = None
         if image_path:
             try:
                 img_orig = pygame.image.load(image_path).convert_alpha()
-                orig_w, orig_h = img_orig.get_size()
-                aspect_ratio = orig_w / orig_h
-                # Tính width mới để giữ đúng tỉ lệ ảnh dựa trên height bạn nhập
-                new_width = int(height * aspect_ratio)
-                
-                self.image = pygame.transform.scale(img_orig, (new_width, height))
-                # Cập nhật rect khớp với kích thước ảnh thực tế
-                self.rect = pygame.Rect(x, y, new_width, height)
+
+                if keep_aspect_ratio:
+                    orig_w, orig_h = img_orig.get_size()
+                    aspect_ratio = orig_w / orig_h
+                    # Tính width mới để giữ đúng tỉ lệ ảnh dựa trên height bạn nhập
+                    new_width = int(height * aspect_ratio)
+                    self.image = pygame.transform.scale(img_orig, (new_width, height))
+                    # Cập nhật rect khớp với kích thước ảnh thực tế
+                    self.rect = pygame.Rect(x, y, new_width, height)
+                else:
+                    self.image = pygame.transform.scale(img_orig, (width, height))
+                    self.rect = pygame.Rect(x, y, width, height)
+
                 self.mask = pygame.mask.from_surface(self.image)
             except Exception as e:
                 print(f"Không tải được hình ảnh {image_path}. Lỗi: {e}")
@@ -110,10 +138,12 @@ class Button:
             try:
                 h_orig = pygame.image.load(hover_image_path).convert_alpha()
                 # Ép ảnh hover theo đúng kích thước rect đã tính
-                self.hover_image = pygame.transform.scale(h_orig, (self.rect.width, self.rect.height))
+                self.hover_image = pygame.transform.scale(
+                    h_orig, (self.rect.width, self.rect.height)
+                )
             except Exception as e:
                 print(f"Không tải được hình ảnh hover {hover_image_path}. Lỗi: {e}")
-                
+
     def draw(self, surface):
         # Trường hợp 1: Có hình ảnh
         if self.image:
@@ -121,13 +151,13 @@ class Button:
             # Vẽ đè ảnh hover lên nếu đang hover
             if self.is_hovered and self.hover_image:
                 surface.blit(self.hover_image, self.rect.topleft)
-        
+
         # Trường hợp 2: Không có hình ảnh (hoặc ảnh lỗi), vẽ hình chữ nhật màu
         else:
             current_color = self.hover_color if self.is_hovered else self.color
             pygame.draw.rect(surface, current_color, self.rect)
-            pygame.draw.rect(surface, (255, 255, 255), self.rect, 2) # Viền trắng
-        
+            pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)  # Viền trắng
+
         # Luôn vẽ Text nếu có (để debug hoặc dùng cho nút không ảnh)
         if self.text != "":
             text_surf = main_font.render(self.text, True, COLOR_TEXT)
