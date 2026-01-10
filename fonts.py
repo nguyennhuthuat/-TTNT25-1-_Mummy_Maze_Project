@@ -5,29 +5,40 @@ import os
 class MetricFont:
     def __init__(self, font_name="font1", scale_height=None):
         self.chars = {}
-        
+        self.error_state = False # Cờ đánh dấu nếu font bị lỗi
+
         # 0. Thiết lập tên font
-        if font_name in ["font1", "biggestfont", "headerfont", "pyramidfont", "scorefont"]:
+        valid_fonts = ["font1", "biggestfont", "headerfont", "pyramidfont", "scorefont"]
+        if font_name in valid_fonts:
             image_path = os.path.join("assets", "fonts", f"{font_name}.png")
             metrics_file = os.path.join("assets", "fonts", "data", f"{font_name}.txt")
             metrics_data = read_metrics_from_file(metrics_file)
         else:
-            print(f"Lỗi:  Tên font '{font_name}' không hợp lệ.")
+            print(f"Lỗi: Tên font '{font_name}' không hợp lệ. Đang dùng cấu hình mặc định.")
+            self.error_state = True
+            # Gán giá trị mặc định để không bị crash game
+            self.line_height = scale_height if scale_height else 20
+            self.space_width = 10
             return
 
         # 1. Load ảnh
         try:
             self.sheet = pygame.image.load(image_path).convert_alpha()
             self.sheet.set_colorkey((0, 0, 0))
-        except FileNotFoundError:
-            print(f"Lỗi: Không tìm thấy file ảnh '{image_path}'")
+        except (FileNotFoundError, pygame.error) as e:
+            print(f"Lỗi: Không tìm thấy file ảnh hoặc lỗi load ảnh '{image_path}': {e}")
+            self.error_state = True
+            self.line_height = scale_height if scale_height else 20
+            self.space_width = 10
             return
 
-        # 2. Xử lý dữ liệu metrics (Được truyền vào từ file text)
+        # 2. Xử lý dữ liệu metrics
         parts = metrics_data.split()
-        
         if len(parts) < 2:
             print("Lỗi: File metrics không đúng định dạng hoặc bị rỗng.")
+            self.error_state = True
+            self.line_height = scale_height if scale_height else 20
+            self.space_width = 10
             return
 
         # Lấy thông số chung
@@ -37,7 +48,7 @@ class MetricFont:
         raw_data = parts[2:] 
         
         # 3. Tính tỷ lệ Scale
-        self. scale_ratio = 1
+        self.scale_ratio = 1
         if scale_height is not None: 
             self.scale_ratio = scale_height / self.font_height
             self.line_height = scale_height
@@ -65,10 +76,10 @@ class MetricFont:
             if current_x + char_width <= self.sheet.get_width():
                 original = self.sheet.subsurface(rect)
                 
-                if self. scale_ratio != 1:
+                if self.scale_ratio != 1:
                     new_w = int(char_width * self.scale_ratio)
                     new_h = int(self.font_height * self.scale_ratio)
-                    final_img = pygame. transform.scale(original, (new_w, new_h))
+                    final_img = pygame.transform.scale(original, (new_w, new_h))
                 else:
                     final_img = original
                 
@@ -76,20 +87,12 @@ class MetricFont:
             
             current_x += char_width
 
-
     def render(self, text, antialias, color, background=None):
-        """
-        Render text thành Surface - GIỐNG CHÍNH XÁC pygame.font.Font. render()
-        
-        Args: 
-            text: Chuỗi text cần render
-            antialias: Không sử dụng (để tương thích với pygame.font)
-            color: Màu của text (RGB tuple hoặc Color object)
-            background: Màu nền (RGB tuple), None để trong suốt
-            
-        Returns:
-            pygame.Surface chứa text đã render
-        """
+        # Kiểm tra lỗi khởi tạo trước khi render
+        if getattr(self, 'error_state', True):
+            return pygame.Surface((1, 1)) # Trả về surface rỗng nếu lỗi
+
+        # ... (Phần còn lại giữ nguyên như cũ, nhớ xóa các khoảng trắng thừa sau dấu chấm)
         # Chuyển color về tuple nếu là Color object
         if isinstance(color, pygame.Color):
             color = (color.r, color.g, color.b, color.a)
@@ -99,7 +102,7 @@ class MetricFont:
         # Tính tổng chiều rộng của text
         total_width = 0
         for char in text:
-            if char in self. chars:
+            if char in self.chars:
                 total_width += self.chars[char].get_width() + int(1 * self.scale_ratio)
             elif char == " ":
                 total_width += int(self.space_width)
@@ -114,14 +117,13 @@ class MetricFont:
         
         # Tạo surface mới
         if background is not None: 
-            # Chuyển background về tuple nếu là Color object
             if isinstance(background, pygame.Color):
                 background = (background.r, background.g, background.b)
             surface = pygame.Surface((total_width, int(self.line_height)))
             surface.fill(background)
         else:
             surface = pygame.Surface((total_width, int(self.line_height)), pygame.SRCALPHA)
-            surface.fill((0, 0, 0, 0))  # Trong suốt
+            surface.fill((0, 0, 0, 0))
         
         # Vẽ từng ký tự lên surface
         current_x = 0
@@ -129,118 +131,34 @@ class MetricFont:
             if char in self.chars:
                 img = self.chars[char].copy()
                 
-                # Áp dụng màu lên ảnh
-                # Tạo một surface với màu mong muốn
                 colored_img = pygame.Surface(img.get_size(), pygame.SRCALPHA)
                 colored_img.fill(color)
                 
-                # Sử dụng alpha của ảnh gốc làm mask
-                # Nhân alpha của màu với alpha của ảnh gốc
                 for x in range(img.get_width()):
                     for y in range(img.get_height()):
                         pixel_color = img.get_at((x, y))
-                        if pixel_color[3] > 0:  # Nếu pixel không trong suốt
+                        if pixel_color[3] > 0:
                             new_color = (color[0], color[1], color[2], pixel_color[3])
                             colored_img.set_at((x, y), new_color)
                         else:
                             colored_img.set_at((x, y), (0, 0, 0, 0))
                 
                 surface.blit(colored_img, (current_x, 0))
-                current_x += img. get_width() + int(1 * self.scale_ratio)
+                current_x += img.get_width() + int(1 * self.scale_ratio)
             elif char == " ": 
                 current_x += int(self.space_width)
         
         return surface
 
-    def get_rect(self, text="", **kwargs):
-        """
-        TẠO rect từ text - Để sử dụng như:  txt_surf.get_rect(center=...)
-        
-        QUAN TRỌNG: Hàm này chỉ để tạo rect với kích thước đúng. 
-        Trong thực tế, bạn nên gọi từ Surface đã render: 
-        
-        txt_surf = font. render(text, True, color)
-        txt_rect = txt_surf.get_rect(center=rect.center)  # Gọi từ Surface
-        
-        Args:
-            text: Text để tính kích thước
-            **kwargs: Các tham số vị trí như center, topleft, midtop, etc. 
-            
-        Returns:
-            pygame.Rect object
-        """
-        # Tính tổng chiều rộng của text
-        total_width = 0
-        for char in text:
-            if char in self.chars:
-                total_width += self.chars[char].get_width() + int(1 * self.scale_ratio)
-            elif char == " ":
-                total_width += int(self.space_width)
-        
-        # Loại bỏ khoảng cách thừa ở cuối
-        if total_width > 0:
-            total_width -= int(1 * self.scale_ratio)
-        
-        # Đảm bảo width tối thiểu là 1
-        if total_width <= 0:
-            total_width = 1
-        
-        # Tạo rect với kích thước tính được
-        rect = pygame.Rect(0, 0, total_width, int(self.line_height))
-        
-        # Áp dụng các tham số vị trí
-        for key, value in kwargs.items():
-            setattr(rect, key, value)
-        
-        return rect
-    
-    def get_width(self, text):
-        width = 0
-        for char in text:
-            if char in self.chars:
-                width += self.chars[char].get_width() + (1 * self.scale_ratio)
-            elif char == " ":
-                width += self.space_width
-        return width
-    
-    def size(self, text):
-        """
-        Lấy kích thước của text - GIỐNG pygame.font.Font. size()
-        
-        Args: 
-            text: Text cần đo
-            
-        Returns:
-            Tuple (width, height)
-        """
-        total_width = 0
-        for char in text:
-            if char in self.chars:
-                total_width += self.chars[char].get_width() + int(1 * self.scale_ratio)
-            elif char == " ": 
-                total_width += int(self.space_width)
-        
-        # Loại bỏ khoảng cách thừa ở cuối
-        if total_width > 0:
-            total_width -= int(1 * self.scale_ratio)
-        
-        if total_width <= 0:
-            total_width = 1
-        
-        return (total_width, int(self.line_height))
-    
     def get_height(self):
         """Lấy chiều cao của font"""
+        # Nếu chưa khởi tạo xong line_height (do lỗi init), trả về 0 hoặc giá trị mặc định
+        if not hasattr(self, 'line_height'):
+            return 20 
         return int(self.line_height)
-    
-    def get_linesize(self):
-        """Lấy khoảng cách giữa các dòng"""
-        return int(self.line_height)
-
 
 # --- HÀM ĐỌC FILE ---
 def read_metrics_from_file(filename):
-    """Đọc toàn bộ nội dung file text và trả về chuỗi string"""
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             data = f.read().strip()
@@ -248,7 +166,6 @@ def read_metrics_from_file(filename):
     except FileNotFoundError:
         print(f"LỖI: Không tìm thấy file '{filename}'")
         return ""
-
 
 # --- DEMO:  SO SÁNH MetricFont vs pygame.font. Font ---
 if __name__ == "__main__": 

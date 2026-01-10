@@ -37,7 +37,7 @@ def open_win_window(screen):
     next_level_img = pygame.image.load('./assets/images/nextlevel.png').convert_alpha()
 
     try:
-        noti_font = MetricFont(font_name="scorefont", scale_height = 40)
+        noti_font = MetricFont(font_name="font1", scale_height = 40)
 
         main_font = pygame.font.SysFont("comic sans ms", 24) 
         footer_font = pygame.font.SysFont("comic sans ms", 14)

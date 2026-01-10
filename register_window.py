@@ -66,7 +66,7 @@ def open_register_window(screen):
 
     # --- 3. LOAD ẢNH KHUNG NHẬP LIỆU ---
     try:
-        input_frame_img = pygame.image.load('./assets/images/register_frame.png').convert_alpha()
+        input_frame_img = pygame.image.load('./assets/images/input_frame.png').convert_alpha()
         input_frame_img = pygame.transform.scale(input_frame_img, (300, 50))
     except:
         input_frame_img = None
@@ -150,7 +150,7 @@ def open_register_window(screen):
                                 result_data = (username_text, password_text)
                                 running = False
                             else:
-                                print("Vui lòng nhập đầy đủ thông tin!")
+                                print("Please enter your full information!")
             
             if event.type == pygame.KEYDOWN:
                 if active_field is not None:
