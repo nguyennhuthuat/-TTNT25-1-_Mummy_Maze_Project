@@ -464,7 +464,7 @@ class MapGenerator:
 
 if __name__ == "__main__":
     # Test
-    gen = MapGenerator(6)
+    gen = MapGenerator(16)
     map_dict = gen.create_map()
     if map_dict:
         print("Successfully generated map:")
