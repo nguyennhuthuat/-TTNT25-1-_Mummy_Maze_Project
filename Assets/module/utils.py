@@ -176,7 +176,6 @@ def get_winning_position(stair_pos: Tuple[int, int], map_len: int) -> Optional[L
 def load_level(level_index: int):
     """Load a level from maps_collection and return its components (cleaned)."""
     if level_index < 0 or level_index >= len(maps_collection):
-        print(f"Error: Level {level_index} is out of range.")
         return None, None, None, None, None, None, None
 
     level_data = maps_collection[level_index]
@@ -246,8 +245,7 @@ class Button:
 
                 self.mask = pygame.mask.from_surface(self.image)
             except Exception as e:
-                print(f"Không tải được hình ảnh {image_path}. Lỗi: {e}")
-
+                pass
         self.hover_image = None
         if hover_image_path:
             try:
@@ -257,8 +255,7 @@ class Button:
                     h_orig, (self.rect.width, self.rect.height)
                 )
             except Exception as e:
-                print(f"Không tải được hình ảnh hover {hover_image_path}. Lỗi: {e}")
-
+                pass
     def draw(self, surface):
         # Trường hợp 1: Có hình ảnh
         if self.image:
@@ -333,7 +330,7 @@ class Button:
 
                 self.mask = pygame.mask.from_surface(self.image)
             except Exception as e:
-                print(f"Không tải được hình ảnh {image_path}. Lỗi: {e}")
+                pass
 
         self.hover_image = None
         if hover_image_path:
@@ -344,7 +341,7 @@ class Button:
                     h_orig, (self.rect.width, self.rect.height)
                 )
             except Exception as e:
-                print(f"Không tải được hình ảnh hover {hover_image_path}. Lỗi: {e}")
+                pass
 
     def draw(self, surface):
         # Trường hợp 1: Có hình ảnh
@@ -422,7 +419,7 @@ class Button:
                 self.mask = pygame.mask.from_surface(self.image)
 
             except Exception as e:
-                print(f"Không tải được hình ảnh {image_path}. Lỗi: {e}")   
+                pass
             self.hover_image = None
             try:
                 h_orig = pygame.image.load(hover_image_path).convert_alpha()
@@ -431,8 +428,7 @@ class Button:
                     h_orig, (self.rect.width, self.rect.height)
                 )
             except Exception as e:
-                print(f"Không tải được hình ảnh hover {hover_image_path}. Lỗi: {e}")  
-                       
+                pass
     def draw(self, surface):
         # Trường hợp 1: Có hình ảnh
         if self.image:

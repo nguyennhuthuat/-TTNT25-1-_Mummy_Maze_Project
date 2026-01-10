@@ -1232,6 +1232,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                     else:
                         player_moved = False
 
+
             # Check if two zombies in a same position (if any)
             if MummyZombies:
                 zombie_i = 0
@@ -1244,6 +1245,8 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                             and MummyZombies[zombie_i].get_y()
                             == MummyZombies[zombie_j].get_y()
                         ):
+                            ScoreTracker.player.bonus_score += 20  # Reward for zombie clash
+
                             if MummyZombies[zombie_i].zombie_type > MummyZombies[zombie_j].zombie_type:
                                 # if zombie_i has higher type, remove zombie_j
                                 MummyZombies.pop(zombie_j)
@@ -1263,7 +1266,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                     if MummyMazeMap.is_position_in_trap(
                         MummyZombies[zombie_i].grid_position
                     ):
-                        # Insert sound
+                        ScoreTracker.player.bonus_score += 20  # Reward for zombie trap
 
                         # Reset the position of the zombie
                         MummyZombies.pop(zombie_i)
@@ -1282,6 +1285,9 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                             and MummyScorpions[scorpion_i].get_y()
                             == MummyScorpions[scorpion_j].get_y()
                         ):
+                            
+                            ScoreTracker.player.bonus_score += 20  # Reward for scorpion clash
+
                             if MummyScorpions[scorpion_i].scorpion_type > MummyScorpions[scorpion_j].scorpion_type:
                                 # if scorpion_i has higher type, remove scorpion_j
                                 MummyScorpions.pop(scorpion_j)
@@ -1303,6 +1309,8 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                     ):
                         # Insert sound
 
+                        ScoreTracker.player.bonus_score += 20  # Reward for scorpion trap
+
                         # Reset the position of the scorpion
                         MummyScorpions.pop(scorpion_i)
                     else:
@@ -1321,6 +1329,8 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                             == MummyScorpions[scorpion_j].get_y()
                         ):
                             # Insert sound
+
+                            ScoreTracker.player.bonus_score += 20  # Reward for zombie and scorpion clash
 
                             # Reset the position of both
                             MummyZombies.pop(zombie_i)
@@ -1368,7 +1378,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                 
                 panel_clicked = side_panel.handle_event(event)
 
-                if panel_clicked == "UNDO MOVE":
+                if panel_clicked == "UNDO MOVE" or (event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE):
                     if history_states != []:
                         last_state = history_states.pop()
 
@@ -1403,7 +1413,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                         # update hint penalty
                         ScoreTracker.player.hint_penalty += 1
                 
-                elif panel_clicked == "RESET MAZE":
+                elif panel_clicked == "RESET MAZE" or (event.type == pygame.KEYDOWN and event.key == pygame.K_r):
                     
                     # Reset side panel buttons first
                     side_panel.reset_button_states()
@@ -1483,7 +1493,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                     options_menu.set_current_player("Player", ScoreTracker.player.total_score)
                     options_menu.is_open = True
                 
-                elif panel_clicked == "HINT":
+                elif panel_clicked == "HINT" or (event.type == pygame.KEYDOWN and event.key == pygame.K_h):
                     # ✅ GET CURRENT GATE STATE FROM GAME
                     current_gate_state = False  # Default:  gate closed
                     if MummyMazeMap.is_kg_exists():
@@ -1511,11 +1521,11 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                             superdata=map_data  # ✅ Dữ liệu gốc chứa gate_pos, key_pos
                         ) if len(path) >= 2 else "WIN"
                         
-                        hint. show_hint = True
+                        hint.show_hint = True
                         hint.facing_direction = face_direction
                         
                         ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
-                elif panel_clicked == "QUIT TO MAIN":
+                elif panel_clicked == "QUIT TO MAIN" or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
                     global_data = save(is_playing= True)
                     return "main_menu"
 
@@ -1562,19 +1572,19 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
                     )
 
                     # Handle player movement
-                    if event.key == pygame.K_UP:
+                    if event.key == pygame.K_UP or event.key == pygame.K_w:
                         MummyExplorer.update_player_status(UP)
                         player_moved = True  # Player is about to make a move
 
-                    elif event.key == pygame.K_DOWN:
+                    elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
                         MummyExplorer.update_player_status(DOWN)
                         player_moved = True  # Player is about to make a move
 
-                    elif event.key == pygame.K_LEFT:
+                    elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         MummyExplorer.update_player_status(LEFT)
                         player_moved = True  # Player is about to make a move
 
-                    elif event.key == pygame.K_RIGHT:
+                    elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         MummyExplorer.update_player_status(RIGHT)
                         player_moved = True  # Player is about to make a move
 

@@ -171,8 +171,6 @@ class MummyMazePlayerManager:
 
         # Calculate max radiant needed
         max_radiant = max(max(base_x, SCREEN_WIDTH - base_x), max(base_y, SCREEN_HEIGHT - base_y))
-        print("Starting board reveal effect...", max_radiant)
-
 
         while radiant < max_radiant:  # Continue until full screen is revealed
             for event in pygame.event.get():
