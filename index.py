@@ -16,6 +16,7 @@ from Assets.module.pointpackage import PersonalPointPackage, GlobalPointPackage
 from Assets.module.load_save_data import save_data, load_data
 from Assets.module.game_algorithms import Shortest_Path
 from Assets.module.fonts import MetricFont
+from Assets.module.options_menu import OptionsMenu
 
 
 # ---------------------------------------------------------------------------- #
@@ -1110,6 +1111,9 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
     # Khởi tạo SidePanel (khung bên trái với các button) - căn giữa cùng với game
     side_panel = SidePanel(x=MARGIN_LEFT_OFFSET, y=16)
 
+    # Initialize Options Menu
+    options_menu = OptionsMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
+
     # Initialize hint package
     hint = HintPackage(current_tile_size)
 
@@ -1318,6 +1322,8 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                 save(is_playing= True)
                 return "exit"
 
+            
+
             # Xử lý sự kiện SidePanel
             if not MummyExplorer.movement_list and (
                 not MummyZombies
@@ -1326,8 +1332,22 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                 not MummyScorpions 
                 or all(not scorpion.movement_list for scorpion in MummyScorpions)
             ):
+
+                # Handle Options Menu Events
+                if options_menu.is_open:
+                    opt_action = options_menu.handle_event(event)
+                    # If you need to handle specific button actions:
+                    # if opt_action == "High Scores": ...
+                    continue  # Block other events while menu is open
                 
                 panel_clicked = side_panel.handle_event(event)
+
+                if panel_clicked == "OPTIONS":
+                    # Set current player info for high scores (use "Player" as default name)
+                    options_menu.set_current_player("Player", ScoreTracker.player.total_score)
+                    options_menu.is_open = True
+
+
                 if panel_clicked == "UNDO MOVE":
                     if history_states != []:
                         last_state = history_states.pop()
@@ -1831,6 +1851,10 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
         # 9. DRAW WALLS OVER EVERYTHING
         MummyMazeMap.draw_walls(screen)
 
+        # 10. DRAW OPTIONS MENU IF OPEN
+        if options_menu.is_open:
+            options_menu.draw(screen)
+            
         pygame.display.flip()
         clock.tick(120)
         time.sleep(0.04)
