@@ -177,7 +177,7 @@ def load_level(level_index: int):
     """Load a level from maps_collection and return its components (cleaned)."""
     if level_index < 0 or level_index >= len(maps_collection):
         print(f"Error: Level {level_index} is out of range.")
-        return None, None, None, None, None
+        return None, None, None, None, None, None, None
 
     level_data = maps_collection[level_index]
     cleaned_map_data = clean_map_data(level_data["map_data"])

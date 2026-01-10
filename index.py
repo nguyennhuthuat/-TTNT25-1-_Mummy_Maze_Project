@@ -120,8 +120,6 @@ except Exception as e:
 # ----------------------------------------------------------------------------- #
 # -------------------------------MAIN GAME SETUP------------------------------- #
 # ----------------------------------------------------------------------------- #
-global_data = load_data()
-current_level = global_data[global_data.get("user_name")].get("current_level", 0)
 
 start_button = Button(
     0,  # X tạm thời là 0
@@ -989,16 +987,24 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= current_level, victory_common_surface = victory_common_surface, global_data = global_data):
+def main_game(current_level, victory_common_surface = victory_common_surface, global_data = None):
     
-    def save(is_playing = False): 
+    def save(is_playing = False, is_win = False, load_prev_level = False): 
         # Save game state before exiting
         game_data["is_playing"] = is_playing
-        game_data["level"] = current_level + 1
+
+        if is_win:
+            game_data["level"] = game_data.get("level", 0) + 1 
+            game_data["score_queue"].append(game_data.get("total_score", 0))
+        if load_prev_level:
+            game_data["level"] = game_data.get("level", 0) - 1
+            game_data["total_score"] = game_data["score_queue"].pop() if game_data["score_queue"] != [] else 0
+        
         game_data["time_elapsed"] = ScoreTracker.player.current_time_elapsed
         game_data["bonus_score"] = ScoreTracker.player.bonus_score
         game_data["hint_penalty"] = ScoreTracker.player.hint_penalty
-        game_data["total_score"] = ScoreTracker.player.total_score
+        if not load_prev_level:
+            game_data["total_score"] = ScoreTracker.player.total_score
 
         if game_data["is_playing"]:
             game_data["explorer_position"] = MummyExplorer.grid_position.copy()
@@ -1024,6 +1030,7 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
                 if MummyScorpions
                 else []
             )
+            game_data["gate_status"] = MummyMazeMap.gate_key.is_opening_gate() if MummyMazeMap.is_kg_exists() else None
             game_data["history_states"] = history_states.copy()
         else:
             game_data["explorer_position"] = None
@@ -1036,9 +1043,12 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
             game_data["bonus_score"] = 0
             game_data["hint_penalty"] = 0
             game_data["time_elapsed"] = 0
+            game_data["gate_status"] = None
 
         global_data[global_data["user_name"]]["game_data"] = game_data
         save_data(global_data)
+
+        return global_data
 
 
     # Load previous game data if any
@@ -1176,10 +1186,15 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
         ScoreTracker.player.bonus_score = game_data.get("bonus_score", 0)
         ScoreTracker.player.hint_penalty = game_data.get("hint_penalty", 0)
         ScoreTracker.player.total_score = game_data.get("total_score", 0)
+        
         # History States
         history_states = (
             game_data.get("history_states", []).copy()
         )
+
+        # Gate & Key
+        if MummyMazeMap.is_kg_exists() and game_data.get("gate_status", None) is not None:
+            MummyMazeMap.gate_key.change_gate_status() if game_data["gate_status"] != MummyMazeMap.gate_key.is_opening_gate() else None
 
     # Start game effect
     copied_image_screen = create_game_state_image(
@@ -1318,7 +1333,6 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_data["is_playing"] = True
                 save(is_playing= True)
                 return "exit"
 
@@ -1341,8 +1355,10 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
 
                     if opt_action == "Back To The Previous Level":
                         options_menu.is_open = False
-                        global_data[global_data["user_name"]]["current_level"] = current_level - 1 if current_level > 0 else 0
-                        save(is_playing= False)
+                        if current_level > 0:
+                            save(is_playing= False, load_prev_level= True)
+                        else:
+                            save(is_playing= False)
                         return "main_game"
                     
                     elif opt_action == "Tutorial":
@@ -1500,7 +1516,7 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
                         
                         ScoreTracker.player.hint_penalty += 5  # Increase hint penalty
                 elif panel_clicked == "QUIT TO MAIN":
-                    save(is_playing= True)
+                    global_data = save(is_playing= True)
                     return "main_menu"
 
             # Handle player movement only if no ongoing movement
@@ -1572,7 +1588,11 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
 
                         # Stop counting time, caculate score (total score = base score + bonus score)
                         ScoreTracker.player.end_counting()
-                        save(is_playing= False)
+                        global_data = save(is_playing= False, is_win= True)
+                        try:
+                            current_level = global_data[global_data["user_name"]]["game_data"]["level"]
+                        except:
+                            current_level += 1
 
                         continue_game = show_victory_window(
                             screen,
@@ -1591,7 +1611,6 @@ def main_game(current_level= current_level, victory_common_surface = victory_com
                             running = False
                             continue
 
-                        current_level += 1
                         if current_level < len(maps_collection):
                             prev_facing = MummyExplorer.facing_direction
 
@@ -1893,7 +1912,9 @@ def main(action="main_game"):
 
 
         elif action == "main_game":
-            action = main_game()
+            global_data = load_data()
+            current_level = global_data.get(global_data.get("user_name"),{}).get("game_data", {}).get("level", 0)
+            action = main_game(current_level = current_level, global_data=global_data)
 
         elif action == "tutorials":
             # Placeholder for tutorials function

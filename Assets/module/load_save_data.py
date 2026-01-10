@@ -47,7 +47,11 @@ def load_data(filename = "global_status.sav"):
     path = os.path.join("assets", "save", filename)
     if not os.path.exists(path):
         print("Không tìm thấy file save.")
-        return {}
+        return  {
+        "user_name": "Player",
+        "Player": {'game_data': {'score_queue': [],},
+                   },
+            }
     try:
         # 1. Đọc file mã hóa (chế độ rb - read binary)
         with open(path, 'rb') as f:
