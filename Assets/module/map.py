@@ -364,7 +364,7 @@ class MummyMazeMapManager:
         )
 
         area_stair_surface = pygame.image.load(
-            os.path.join("assets", "images", "stairs6.png")
+            os.path.join("assets", "images", "stairs.png")
         ).convert_alpha()
 
         area_to_cut = pygame.Rect(2, 0, 54, 66)

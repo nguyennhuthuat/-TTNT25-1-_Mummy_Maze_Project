@@ -1225,10 +1225,14 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                             and MummyZombies[zombie_i].get_y()
                             == MummyZombies[zombie_j].get_y()
                         ):
-                            # Insert sound
-
-                            # Reset the position of the latter zombie
-                            MummyZombies.pop(zombie_j)
+                            if MummyZombies[zombie_i].zombie_type > MummyZombies[zombie_j].zombie_type:
+                                # if zombie_i has higher type, remove zombie_j
+                                MummyZombies.pop(zombie_j)
+                            else:
+                                # else remove zombie_i
+                                MummyZombies.pop(zombie_i)
+                                zombie_i -= 1
+                                break  # Exit inner loop to avoid index issues
                         else:
                             zombie_j += 1
                     zombie_i += 1
@@ -1259,10 +1263,14 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                             and MummyScorpions[scorpion_i].get_y()
                             == MummyScorpions[scorpion_j].get_y()
                         ):
-                            # Insert sound
-
-                            # Reset the position of the latter zombie
-                            MummyScorpions.pop(scorpion_j)
+                            if MummyScorpions[scorpion_i].scorpion_type > MummyScorpions[scorpion_j].scorpion_type:
+                                # if scorpion_i has higher type, remove scorpion_j
+                                MummyScorpions.pop(scorpion_j)
+                            else:
+                                # else remove scorpion_i
+                                MummyScorpions.pop(scorpion_i)
+                                scorpion_i -= 1
+                                break  # Exit inner loop to avoid index issues
                         else:
                             scorpion_j += 1
                     scorpion_i += 1

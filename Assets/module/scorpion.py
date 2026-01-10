@@ -26,7 +26,7 @@ class MummyMazeScorpionManager:
         self.__superdata = data
 
         # 1. Load Resources
-        self.scorpion_frames, self.shadow_scorpion_frames = self.load_scorpion_frames()
+        self.scorpion_frames= self.load_scorpion_frames()
         self.scorwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "scorpwalk1.wav"))
 
         # 2. Movement State
@@ -56,16 +56,8 @@ class MummyMazeScorpionManager:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
         self.current_frame = getattr(self.scorpion_frames, direction_key)[frame_index]
-        self.current_shadow_frame = getattr(self.shadow_scorpion_frames, direction_key)[frame_index]
 
-    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
-        """Convert an original shadow surface to a pure black silhouette."""
-        image = frame.copy()
-        image.set_colorkey((0, 0, 0))
-        mask = pygame.mask.from_surface(image)
-        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-
-    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False) -> pygame.Surface:
+    def _load_and_scale_image(self, filename: str = "") -> pygame.Surface:
         """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
@@ -73,30 +65,22 @@ class MummyMazeScorpionManager:
         scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
-        if is_shadow:
-            return pygame.transform.scale(surface, new_size)
-        else: 
-            surface.set_colorkey((0, 0, 0))
-            return pygame.transform.smoothscale(surface, new_size)
+        
+        return pygame.transform.smoothscale(surface, new_size)
         
     def load_scorpion_frames(self) -> Tuple[Any, Any]:
         """Load scorpion sprite sheet and split into directional frames."""
 
         _path = "scorpion.png"
         # Load Resources
-        scorpion_surface = self._load_and_scale_image(_path, is_shadow=False)
+        scorpion_surface = self._load_and_scale_image(_path)
         # scorpion_surface.set_colorkey((0, 0, 0))
         
-        # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._load_and_scale_image("_scorpion.gif", is_shadow=True)
-        shadow_surface = self.get_black_shadow_surface(shadow_surface)
-
         # Extract Frames
         w_frame = scorpion_surface.get_width() // 5
         h_frame = scorpion_surface.get_height() // 4
         
         s_frames_list = extract_sprite_frames(scorpion_surface, w_frame, h_frame)
-        shadow_frames_list = extract_sprite_frames(shadow_surface, w_frame, h_frame)
 
         # Helper to assign to FrameSet
         def create_frameset(source_list):
@@ -107,7 +91,7 @@ class MummyMazeScorpionManager:
             fs.LEFT = double_list(source_list[16:20] + [source_list[15]])
             return fs
 
-        return create_frameset(s_frames_list), create_frameset(shadow_frames_list)
+        return create_frameset(s_frames_list)
 
    
     def scorpion_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
@@ -172,7 +156,6 @@ class MummyMazeScorpionManager:
         base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + offset_x
         base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + offset_y
         
-        screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
     def update_scorpion(self, screen: pygame.Surface, gate_opened: bool = False) -> None:

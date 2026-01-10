@@ -25,8 +25,8 @@ class MummyMazeZombieManager:
         self.map_data = data["map_data"] if data and "map_data" in data else []
 
         # 1. Load Resources
-        self.zombie_frames, self.shadow_zombie_frames = self.load_zombie_frames()
-        self.effect_frames, self.shadow_effect_frames = self.load_zombie_effect_frames()
+        self.zombie_frames= self.load_zombie_frames()
+        self.effect_frames = self.load_zombie_effect_frames()
         self.mumwalk_sound = pygame.mixer.Sound(os.path.join("Assets", "sounds", "mumwalk60b.wav"))
 
         # 2. Movement State
@@ -60,16 +60,8 @@ class MummyMazeZombieManager:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
         self.current_frame = getattr(self.zombie_frames, direction_key)[frame_index]
-        self.current_shadow_frame = getattr(self.shadow_zombie_frames, direction_key)[frame_index]
 
-    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
-        """Convert an original shadow surface to a pure black silhouette."""
-        image = frame.copy()
-        image.set_colorkey((0, 0, 0))
-        mask = pygame.mask.from_surface(image)
-        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-
-    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False) -> pygame.Surface:
+    def _load_and_scale_image(self, filename: str = "") -> pygame.Surface:
         """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
@@ -77,30 +69,21 @@ class MummyMazeZombieManager:
         scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
-        if is_shadow:
-            return pygame.transform.scale(surface, new_size)
-        else: 
-            surface.set_colorkey((0, 0, 0))
-            return pygame.transform.smoothscale(surface, new_size)
+        
+        return pygame.transform.smoothscale(surface, new_size)
         
     def load_zombie_frames(self) -> Tuple[Any, Any]:
         """Load zombie sprite sheet and split into directional frames."""
 
         _path = "whitemummy.png" if self.zombie_type in [0,2] else "redmummy.png"
         # Load Resources
-        zombie_surface = self._load_and_scale_image(_path, is_shadow=False)
-        # zombie_surface.set_colorkey((0, 0, 0))
-        
-        # Load Shadow (process image then convert to black silhouette)
-        shadow_surface = self._load_and_scale_image("_mummy.gif", is_shadow=True)
-        shadow_surface = self.get_black_shadow_surface(shadow_surface)
+        zombie_surface = self._load_and_scale_image(_path)
 
         # Extract Frames
         w_frame = zombie_surface.get_width() // 5
         h_frame = zombie_surface.get_height() // 4
         
         z_frames_list = extract_sprite_frames(zombie_surface, w_frame, h_frame)
-        s_frames_list = extract_sprite_frames(shadow_surface, w_frame, h_frame)
 
         # Helper to assign to FrameSet
         def create_frameset(source_list):
@@ -111,7 +94,7 @@ class MummyMazeZombieManager:
             fs.LEFT = double_list(source_list[16:20] + [source_list[15]])
             return fs
 
-        return create_frameset(z_frames_list), create_frameset(s_frames_list)
+        return create_frameset(z_frames_list)
 
     def load_zombie_effect_frames(self) -> Tuple[List[pygame.Surface], List[pygame.Surface]]:
         """Load special effect/idle animation frames."""
@@ -125,17 +108,13 @@ class MummyMazeZombieManager:
 
         # Load Resources
 
-        image_path = "whitelisten.gif" if self.zombie_type in [0,2] else "reddance.gif"
-        effect_surface = self._load_and_scale_image(image_path, is_shadow=False)
-        effect_surface.set_colorkey((0, 0, 0))
-        
-        shadow_effect_surface = self._load_and_scale_image("_" + image_path, is_shadow=True)
-        shadow_effect_surface = self.get_black_shadow_surface(shadow_effect_surface)
+        image_path = "whitelisten" if self.zombie_type in [0,2] else "reddance"
+        effect_surface = self._load_and_scale_image(image_path+".png")
+
         # Extract
         frame_h = effect_surface.get_height()
         effect_frames = extract_effect_frames(effect_surface, frame_h)
-        shadow_effect_frames = extract_effect_frames(shadow_effect_surface, frame_h)
-        return effect_frames, shadow_effect_frames
+        return effect_frames
 
     def zombie_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
         """Check if zombie can move in facing_direction considering wall tiles."""
@@ -199,7 +178,6 @@ class MummyMazeZombieManager:
         base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + offset_x
         base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + offset_y
         
-        screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
     def update_zombie(self, screen: pygame.Surface, gate_opened: bool = False) -> None:
@@ -278,7 +256,6 @@ class MummyMazeZombieManager:
                 
                 # Override with effect frames
                 self.current_frame = self.effect_frames[self.effect_frame_index]
-                self.current_shadow_frame = self.shadow_effect_frames[self.effect_frame_index]
                 
                 self.effect_frame_index += 1
 

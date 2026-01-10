@@ -25,8 +25,8 @@ class MummyMazePlayerManager:
         # 1. Load Resources
 
         # Giữ nguyên logic load riêng biệt để đảm bảo shadow không bị lỗi
-        self.player_frames, self.shadow_player_frames = self.load_player_frames()
-        self.finding_frames, self.shadow_finding_frames = self.load_player_finding_frames()
+        self.player_frames= self.load_player_frames()
+        self.finding_frames = self.load_player_finding_frames()
         
         # 2. Movement State
         self.movement_list: List[str] = []
@@ -228,17 +228,8 @@ class MummyMazePlayerManager:
         """Helper to update both sprite and shadow frames based on direction."""
         direction_key = str(self.facing_direction)
         self.current_frame = getattr(self.player_frames, direction_key)[frame_index]
-        self.current_shadow_frame = getattr(self.shadow_player_frames, direction_key)[frame_index]
 
-    def get_black_shadow_surface(self, frame: pygame.Surface) -> pygame.Surface:
-        """Convert an original shadow surface to a black silhouette."""
-        image = frame.copy()
-        image.set_colorkey((0, 0, 0))
-        mask = pygame.mask.from_surface(image)
-        # setcolor=(0, 0, 0) -> Absolute black
-        return mask.to_surface(setcolor=(0, 0, 0), unsetcolor=None)
-
-    def _load_and_scale_image(self, filename: str = "", is_shadow: bool = False) -> pygame.Surface:
+    def _load_and_scale_image(self, filename: str = "") -> pygame.Surface:
         """Helper just for loading and scaling, NOT applying shadow logic."""
         path = os.path.join("assets", "images", filename)
         surface = pygame.image.load(path).convert_alpha()
@@ -246,11 +237,8 @@ class MummyMazePlayerManager:
         scale_factor = self.TILE_SIZE / 60
         new_size = (int(surface.get_width() * scale_factor), 
                     int(surface.get_height() * scale_factor))
-        if is_shadow:
-            return pygame.transform.scale(surface, new_size)
-        else: 
-            surface.set_colorkey((0, 0, 0))
-            return pygame.transform.smoothscale(surface, new_size)
+        
+        return pygame.transform.smoothscale(surface, new_size)
 
     def _create_frameset(self, frames_list: List[pygame.Surface]) -> Any:
         """Helper to map a list of frames to UP/RIGHT/DOWN/LEFT logic."""
@@ -266,21 +254,15 @@ class MummyMazePlayerManager:
         """Load player sprite sheet and split into directional frames."""
         
         # 1. Load NORMAL sprite
-        player_surface = self._load_and_scale_image("explorer.png", is_shadow=False).convert_alpha()
-        player_surface.set_colorkey((0, 0, 0))
-
-        # 2. Load SHADOW sprite (Load -> Scale -> then Convert to Black)
-        shadow_surface = self._load_and_scale_image("_explorer.gif", is_shadow=True)
-        shadow_surface = self.get_black_shadow_surface(shadow_surface)
+        player_surface = self._load_and_scale_image("explorer.png")
 
         # 3. Extract Frames
         w_frame = player_surface.get_width() // 5
         h_frame = player_surface.get_height() // 4
         
         player_frames_list = extract_sprite_frames(player_surface, w_frame, h_frame)
-        shadow_frames_list = extract_sprite_frames(shadow_surface, w_frame, h_frame)
 
-        return self._create_frameset(player_frames_list), self._create_frameset(shadow_frames_list)
+        return self._create_frameset(player_frames_list)
 
     def load_player_finding_frames(self) -> Tuple[List[pygame.Surface], List[pygame.Surface]]:
         """Load player finding sprite sheet (horizontal strip)."""
@@ -294,14 +276,12 @@ class MummyMazePlayerManager:
             return frames
 
         # 1. Load NORMAL finding
-        finding_surface = self._load_and_scale_image("explorer_finding.gif", is_shadow=False)
+        finding_surface = self._load_and_scale_image("explorer_finding.png")
         # finding_surface.set_colorkey((0, 0, 0))
 
-        # 2. Load SHADOW finding
-        shadow_finding_surface = self._load_and_scale_image("_explorer_finding.gif", is_shadow=True)
-        shadow_finding_surface = self.get_black_shadow_surface(shadow_finding_surface)
 
-        return extract_strip_frames(finding_surface), extract_strip_frames(shadow_finding_surface)
+
+        return extract_strip_frames(finding_surface)
 
     def player_can_move(self, position: List[int], facing_direction: str, gate_opened: bool = False) -> bool:
         """Check if player can move in facing_direction considering wall tiles."""
@@ -362,11 +342,10 @@ class MummyMazePlayerManager:
         self.expwalk_sound.play()
 
     def draw_player(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
-        """Render player and shadow with offset."""
+        
         base_x = MARGIN_LEFT + self.TILE_SIZE * (self.grid_position[0] - 1) + offset_x
         base_y = MARGIN_TOP + self.TILE_SIZE * (self.grid_position[1] - 1) + offset_y
         
-        screen.blit(self.current_shadow_frame, (base_x, base_y))
         screen.blit(self.current_frame, (base_x, base_y))
 
     def update_player(self, screen: pygame.Surface, gate_opened: bool = False) -> bool:
@@ -436,9 +415,7 @@ class MummyMazePlayerManager:
             is_idle_timeout = (time.time() - self.start_standing >= self.idle_time_threshold)
 
             if self.is_standing and self.facing_direction == DOWN and is_idle_timeout:
-                self.current_frame = self.finding_frames[self.finding_frame_index]
-                self.current_shadow_frame = self.shadow_finding_frames[self.finding_frame_index]
-                
+                self.current_frame = self.finding_frames[self.finding_frame_index]                
                 self.finding_frame_index += 1
 
                 # If finding loop finishes
