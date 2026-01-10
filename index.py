@@ -989,7 +989,7 @@ def create_game_state_image(
 # Pre-create common victory surface to optimize performance
 victory_common_surface = create_victory_common_surface()
 
-def main_game(current_level= 1, victory_common_surface = victory_common_surface, global_data = global_data):
+def main_game(current_level= current_level, victory_common_surface = victory_common_surface, global_data = global_data):
     
     def save(is_playing = False): 
         # Save game state before exiting
@@ -1336,17 +1336,21 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                 # Handle Options Menu Events
                 if options_menu.is_open:
                     opt_action = options_menu.handle_event(event)
-                    # If you need to handle specific button actions:
-                    # if opt_action == "High Scores": ...
+                    
+                    # done and show high scores logic is handled inside options_menu
+
+                    if opt_action == "Back To The Previous Level":
+                        options_menu.is_open = False
+                        global_data[global_data["user_name"]]["current_level"] = current_level - 1 if current_level > 0 else 0
+                        save(is_playing= False)
+                        return "main_game"
+                    
+                    elif opt_action == "Tutorial":
+                        return "tutorials"
+                    
                     continue  # Block other events while menu is open
                 
                 panel_clicked = side_panel.handle_event(event)
-
-                if panel_clicked == "OPTIONS":
-                    # Set current player info for high scores (use "Player" as default name)
-                    options_menu.set_current_player("Player", ScoreTracker.player.total_score)
-                    options_menu.is_open = True
-
 
                 if panel_clicked == "UNDO MOVE":
                     if history_states != []:
@@ -1459,7 +1463,9 @@ def main_game(current_level= 1, victory_common_surface = victory_common_surface,
                     history_states = []
 
                 elif panel_clicked == "OPTIONS":
-                    pass  # Thêm hiệu ứng mở bảng options vào
+                    # Set current player info for high scores (use "Player" as default name)
+                    options_menu.set_current_player("Player", ScoreTracker.player.total_score)
+                    options_menu.is_open = True
                 
                 elif panel_clicked == "HINT":
                     # ✅ GET CURRENT GATE STATE FROM GAME

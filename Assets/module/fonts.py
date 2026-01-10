@@ -249,7 +249,7 @@ if __name__ == "__main__":
     
     # Tạo 2 loại font
     pygame_font = pygame.font.Font(None, 36)  # Font mặc định pygame
-    metric_font = MetricFont(font_name="biggestfont", scale_height=36)  # Font custom
+    metric_font = MetricFont(font_name="headerfont", scale_height=36)  # Font custom
 
     # Màu sắc
     TEXT_COLOR = (255, 255, 255)
@@ -295,7 +295,7 @@ if __name__ == "__main__":
         pygame.draw.rect(screen, (200, 100, 100), button_rect3)
         pygame.draw.rect(screen, (255, 255, 255), button_rect3, 2)
         
-        text = "WITH BACKGROUND"
+        text = "Hello! ITs headerfont."
         txt_surf = metric_font.render(text, True, (255, 255, 0), (200, 100, 100))
         txt_rect = txt_surf.get_rect(center=button_rect3.center)
         screen.blit(txt_surf, txt_rect)

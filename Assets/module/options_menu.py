@@ -335,6 +335,7 @@ class OptionsMenu:
         if action == "High Scores":
             self.high_scores_screen.is_open = True
             return None  # Don't return action, handle internally
+    
 
         return action
 
