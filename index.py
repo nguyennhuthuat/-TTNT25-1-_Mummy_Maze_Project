@@ -550,7 +550,7 @@ def show_victory_window(
     )
 
     # Calculate and display rank
-    rank_thresholds = [0, 150, 250, 1000]
+    rank_thresholds = [0, 500, 1500, 3000, 4000, 5000, 100000, 15000, 20000, 30000, 50000, 100000]
     rank_names = ["Cursed!", "Novice", "Explorer", "Legend!"]
 
     current_rank_index = 0
@@ -559,7 +559,7 @@ def show_victory_window(
             current_rank_index = i
             break
 
-    rank = rank_names[current_rank_index]
+    rank = rank_names[current_rank_index//3]
     rank_y = info_start_y + line_spacing * 3 + 20
     
     draw_text_with_outline(
@@ -1897,7 +1897,7 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
     pygame.quit()
 
 
-def main(action="main_game"):
+def main(action="lobby"):
     """
     ACTION FLOW:
     lobby --> main_menu --> (enter classic mode --> main_game --> lobby)
