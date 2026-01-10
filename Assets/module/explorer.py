@@ -308,8 +308,6 @@ class MummyMazePlayerManager:
                     gx, gy = self.__superdata["gate_pos"]
                     if (x - 1, y - 1) == (gx - 1, gy - 1):
                         return False
-                    else:
-                        print(f"curent player pos: {(x-1, y-1)}, gate pos: {(gx, gy)}")
 
                 # If gate not in the way or opened, check walls    
                 return (self.map_data[y - 1][x - 1] not in ['b', 'bl', 'br', 't*', 'l*', 'r*']) and \

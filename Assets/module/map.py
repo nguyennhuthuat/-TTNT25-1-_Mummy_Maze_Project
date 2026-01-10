@@ -309,7 +309,6 @@ class MummyMazeMapManager:
     def is_position_in_trap(self, position: Tuple[int, int]) -> bool:
         """Check if a given position is in trap positions."""
         trap_positions = [tuple(pos) for pos in self.get_trap_pos()]
-        print(position, trap_positions)
         return tuple(position) in trap_positions
     def is_trap_exists(self) -> bool:
         """Check if traps exist in the map."""

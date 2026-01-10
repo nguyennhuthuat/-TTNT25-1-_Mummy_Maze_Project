@@ -147,8 +147,6 @@ class MummyMazeScorpionManager:
         move_list = generate_next_scorpion_positions(self.map_data, [list(self.grid_position) + [self.scorpion_type]], player_position, show_list=True)
         self.movement_list += move_list
 
-        print(self.movement_list)
-
         return len(self.movement_list) > 0
 
     def draw_scorpion(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:

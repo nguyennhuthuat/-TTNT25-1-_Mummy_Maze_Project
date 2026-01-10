@@ -27,84 +27,58 @@ maps_collection = [
     # Kích thước: 6x6 và 8x8
     # ==========================================
     # --- MÀN 1: First Light  ---
-    # {
-    #     "name": "Generated Map 12x12",
-    #     "map_length": 12,
-    #     "map_data": [
-    #         [""  , ""  , "l" , ""  , ""  , ""  , ""  , "l" , ""  , ""  , ""  , ""  ],
-    #         [""  , ""  , "l" , "t" , "l" , "l" , "tl", ""  , "t" , "tl", ""  , "l" ],
-    #         [""  , "t" , ""  , "t" , "l" , "l" , "l" , "t" , "tl", ""  , "tl", ""  ],
-    #         ["t" , "t" , "tl", ""  , "l" , "l" , "t" , "l" , "l" , "t" , "l" , "t" ],
-    #         [""  , ""  , "l" , "tl", ""  , ""  , "l" , ""  , "tl", ""  , "tl", "l" ],
-    #         [""  , "t" , ""  , "l" , "t" , "tl", "t" , "t" , "l" , "t" , "l" , ""  ],
-    #         [""  , "t" , "t" , "t" , "l" , "l" , "t" , "l" , "tl", ""  , "t" , "l" ],
-    #         [""  , "t" , "l" , "tl", ""  , "l" , "l" , "l" , ""  , "tl", ""  , "l" ],
-    #         ["t" , ""  , "l" , ""  , "t" , "t" , "l" , "l" , ""  , "l" , "t" , "t" ],
-    #         [""  , "tl", "t" , "t" , "t" , "l" , ""  , "l" , "l" , "t" , ""  , "l" ],
-    #         [""  , ""  , "tl", "tl", ""  , "tl", ""  , "tl", ""  , "tl", ""  , "l" ],
-    #         [""  , ""  , ""  , ""  , "t" , ""  , "l" , ""  , "tl", ""  , "t" , ""  ]
-    #     ],
-    #     "player_start": [2, 1],
-    #     "stair_position": [5, 13],
-    #     "zombie_starts": [
-    #         [2, 5, 3],
-    #         [7, 9, 3]
-    #     ],
-    #     "scorpion_starts": [
-    #         [11, 10, 3],
-    #         [10, 6, 3],
-    #         [7, 4, 3]
-    #     ],
-    #     "trap_pos": [],
-    #     "key_pos": [],
-    #     "gate_pos": [],
-    #     "level_score": 1000
-    # },
     {
-        "name": "Level 1: map6_11",
-        "map_length": 6,
+        "name": "Generated Map 12x12",
+        "map_length": 12,
         "map_data": [
-            ['', '', '', '', '', ''],
-            ['', 'l', '', '', 't', ''],
-            ['', 'tl', 't', 'tl', '', ''],
-            ['', 'l', '', 't', 't', 't'],
-            ['', '', 't', '', 'r', 't'],
-            ['', '', 't', 'tr', 'r', ''],
+            [""  , ""  , "l" , ""  , ""  , ""  , ""  , "l" , ""  , ""  , ""  , ""  ],
+            [""  , ""  , "l" , "t" , "l" , "l" , "tl", ""  , "t" , "tl", ""  , "l" ],
+            [""  , "t" , ""  , "t" , "l" , "l" , "l" , "t" , "tl", ""  , "tl", ""  ],
+            ["t" , "t" , "tl", ""  , "l" , "l" , "t" , "l" , "l" , "t" , "l" , "t" ],
+            [""  , ""  , "l" , "tl", ""  , ""  , "l" , ""  , "tl", ""  , "tl", "l" ],
+            [""  , "t" , ""  , "l" , "t" , "tl", "t" , "t" , "l" , "t" , "l" , ""  ],
+            [""  , "t" , "t" , "t" , "l" , "l" , "t" , "l" , "tl", ""  , "t" , "l" ],
+            [""  , "t" , "l" , "tl", ""  , "l" , "l" , "l" , ""  , "tl", ""  , "l" ],
+            ["t" , ""  , "l" , ""  , "t" , "t" , "l" , "l" , ""  , "l" , "t" , "t" ],
+            [""  , "tl", "t" , "t" , "t" , "l" , ""  , "l" , "l" , "t" , ""  , "l" ],
+            [""  , ""  , "tl", "tl", ""  , "tl", ""  , "tl", ""  , "tl", ""  , "l" ],
+            [""  , ""  , ""  , ""  , "t" , ""  , "l" , ""  , "tl", ""  , "t" , ""  ]
         ],
-        "player_start": [1, 1],
-        "stair_position": (4, 7),
-        "zombie_starts": [[6, 5, 2], [1,6,2], [6,6,3]],
-        "scorpion_starts": [[1, 5, 0]],
-        "trap_pos": [],
-        "key_pos": [2,2],
-        "gate_pos": [1,1],
-        "level_score": 1000,
-    },
-    # --- MÀN 2: Tutorial - Né zombie đơn giản ---
-    # Mục tiêu: Giới thiệu zombie, học cách né tránh
-    {
-        
-        "name": "Level 2: map6_9",
-        "map_length": 6,
-        "map_data": [
-            ['', 'l', 'l', '', '', ''],
-            ['', 'l', 't', 'l', 'l', 't'],
-            ['', 'l', 't', '', '', 'l'],
-            ['', 't', 't', '', 'l', 'tl'],
-            ['', '', 't', '', 'l', ''],
-            ['', 't', '', 't', '', ''],
+        "player_start": [2, 1],
+        "stair_position": [5, 13],
+        "zombie_starts": [
+            [2, 5, 3],
+            [7, 9, 3]
         ],
-        "player_start": [3, 3],
-        "stair_position": (7, 4),
-        "zombie_starts": [[4, 6, 2]],
-        "scorpion_starts": [],
+        "scorpion_starts": [
+            [11, 10, 3],
+            [10, 6, 3],
+            [7, 4, 3]
+        ],
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 1000
     },
-    # --- MÀN 3: Học cách dùng tường ---
-    # Zombie type 0 (vertical first) - bị chặn bởi tường ngang
+        {
+        "name": "Level 7: The L-Shape",
+        "map_length": 6,
+        "map_data": [
+            ["", "b", "", "r", "l", ""],
+            ["", "t", "r", "", "", ""],
+            ["r", "l", "", "", "l", ""],  # Chặn zombie ở (5,3) đi trái
+            ["", "b", "", "r", "l", ""],
+            ["", "t", "", "", "", ""],
+            ["", "", "r", "l", "", ""],
+        ],
+        "player_start": [3, 3],  # Player ở giữa
+        "stair_position": (0, 3),  # Stair bên trái
+        "zombie_starts": [[5, 3, 1]],  # Zombie type 1 bị chặn đi trái
+        "scorpion_starts": [],
+        "trap_pos": [],
+        "gate_pos": [],
+        "key_pos": [],
+    },
     {
         "name": "Level 3: map6_2",
         "map_length": 6,
@@ -125,9 +99,26 @@ maps_collection = [
         "gate_pos": [],
         "level_score": 1000,
     },
-    # --- MÀN 4: Đường vòng ---
-    # Zombie type 1 (horizontal first) - bị chặn bởi tường 'l'
-    # Player đi về bên trái (không qua cột zombie)
+    {
+        "name": "Level 9: map6_8",
+        "map_length": 6,
+        "map_data": [
+            ['', '', '', '', 'l', ''],
+            ['b', 'b', '', '', '', 'l'],
+            ['', 'b', '', 'tl', 't', ''],
+            ['', 'T', '', '', 'l', 'l'],
+            ['', '', '', 'l', 't', ''],
+            ['', '', '', '', 'l', 'l'],
+        ],
+        "player_start": [4, 6],
+        "stair_position": (0, 5),
+        "zombie_starts": [[5, 3, 0]],
+        "scorpion_starts": [],
+        "trap_pos": [[4, 2]],
+        "key_pos": [],
+        "gate_pos": [],
+        "level_score": 1000,
+    },
     {
         "name": "Level 4: map6_3",
         "map_length": 6,
@@ -148,137 +139,6 @@ maps_collection = [
         "gate_pos": [],
         "level_score": 1000,
     },
-    # --- MÀN 5: Hai zombie đơn giản ---
-    # 2 zombie type 0 (vertical first), bị chặn đi lên bởi tường 't' tại vị trí zombie
-    {
-        "name": "Level 5: map6_4",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', '', ''],
-            ['', 't', '', '', 'l', ''],
-            ['', 't', 'l', '', 'l', 't'],
-            ['', '', '', 't', '', 'l'],
-            ['', '', '', '', '', ''],
-            ['', '', '', '', '', ''],
-        ],
-        "player_start": [4, 2],
-        "stair_position": (7, 6),
-        "zombie_starts": [[3, 6, 2]],
-        "scorpion_starts": [],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 6: Hành lang hẹp ---
-    {
-        "name": "Level 6: map6_5",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', '', ''],
-            ['', 'l', 't', '', 't', ''],
-            ['', '', '', '', 'tl', ''],
-            ['t', 'l', 't', '', 't', ''],
-            ['', 'l', 'l', 't', '', ''],
-            ['', '', 't', 'l', '', ''],
-        ],
-        "player_start": [3, 3],
-        "stair_position": (5, 0),
-        "zombie_starts": [[1, 1, 2]],
-        "scorpion_starts": [],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 7: Mê cung chữ L ---
-    # Zombie type 1 bị chặn đi trái, player đi về bên trái
-    {
-        "name": "Level 7: map6_6",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', 'l', ''],
-            ['', '', 'l', '', '', ''],
-            ['', '', '', 't', '', ''],
-            ['', '', '', '', '', ''],
-            ['', 'tl', 't', '', '', 't'],
-            ['', 'l', '', '', 't', ''],
-        ],
-        "player_start": [2, 6],
-        "stair_position": (2, 0),
-        "zombie_starts": [[6, 2, 2]],
-        "scorpion_starts": [],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 8: Smart Hunter ---
-    # Smart zombie type 2 bị chặn cả lên và trái bởi 'tl'
-    {
-        "name": "Level 8: map6_7",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', '', ''],
-            ['', '', '', '', '', ''],
-            ['', 't', '', 'l', 't', 'T'],
-            ['', 'l', 'tl', 't', '', 'l'],
-            ['', '', 't', '', '', 't'],
-            ['t', '', '', '', '', ''],
-        ],
-        "player_start": [5, 1],
-        "stair_position": (0, 1),
-        "zombie_starts": [[3, 6, 2]],
-        "scorpion_starts": [[2, 1, 0]],
-        "trap_pos": [[3, 6]],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 9: Đường zigzag ---
-    {
-        "name": "Level 9: map6_8",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', 'l', ''],
-            ['b', 'b', '', '', '', 'l'],
-            ['', 'b', '', 'tl', 't', ''],
-            ['', 'T', '', '', 'l', 'l'],
-            ['', '', '', 'l', 't', ''],
-            ['', '', '', '', 'l', 'l'],
-        ],
-        "player_start": [4, 6],
-        "stair_position": (0, 5),
-        "zombie_starts": [[5, 3, 3]],
-        "scorpion_starts": [],
-        "trap_pos": [[4, 2]],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 10: Hai zombie khác loại ---
-    # Type 0 và type 1 - mỗi loại bị chặn bởi tường khác nhau
-    {
-        "name": "Level 10: map6_14",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', 'l', '', ''],
-            ['t', '', 'l', 'l', 't', 't'],
-            ['t', 'l', 'l', '', '', 'l'],
-            ['', '', '', '', 'tl', ''],
-            ['', 't', 't', '', 'T', 'l'],
-            ['t', '', '', '', 'tl', ''],
-        ],
-        "player_start": [1, 2],
-        "stair_position": (7, 5),
-        "zombie_starts": [[6, 6, 2]],
-        "scorpion_starts": [],
-        "trap_pos": [[5, 5]],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 11: Đường hầm song song ---
     {
         "name": "Level 11: map6_10",
         "map_length": 6,
@@ -299,7 +159,6 @@ maps_collection = [
         "gate_pos": [],
         "level_score": 1000,
     },
-    # --- MÀN 12: Dead Ends - 1 zombie type 0 bị chặn dọc ---
     {
         "name": "Level 12: map6_13",
         "map_length": 6,
@@ -320,7 +179,65 @@ maps_collection = [
         "gate_pos": [],
         "level_score": 1000,
     },
-    # --- MÀN 13: Bao vây - 2 zombie bị chặn ---
+    {
+        "name": "Level 5: map6_4",
+        "map_length": 6,
+        "map_data": [
+            ['', '', '', '', '', ''],
+            ['', 't', '', '', 'l', ''],
+            ['', 't', 'l', '', 'l', 't'],
+            ['', '', '', 't', '', 'l'],
+            ['', '', '', '', '', ''],
+            ['', '', '', '', '', ''],
+        ],
+        "player_start": [4, 2],
+        "stair_position": (7, 6),
+        "zombie_starts": [[3, 6, 2]],
+        "scorpion_starts": [],
+        "trap_pos": [],
+        "key_pos": [],
+        "gate_pos": [],
+        "level_score": 1000,
+    },
+    {
+        "name": "Level 6: map6_5",
+        "map_length": 6,
+        "map_data": [
+            ['', '', '', '', '', ''],
+            ['', 'l', 't', '', 't', ''],
+            ['', '', '', '', 'tl', ''],
+            ['t', 'l', 't', '', 't', ''],
+            ['', 'l', 'l', 't', '', ''],
+            ['', '', 't', 'l', '', ''],
+        ],
+        "player_start": [3, 3],
+        "stair_position": (5, 0),
+        "zombie_starts": [[1, 1, 2]],
+        "scorpion_starts": [],
+        "trap_pos": [],
+        "key_pos": [],
+        "gate_pos": [],
+        "level_score": 1000,
+    },
+    {
+        "name": "Level 1: First Light (Hard)",
+        "map_length": 6,
+        "map_data": [
+            ["", "b", "", "", "", ""],
+            ["r", "l", "t", "t", "b", ""],
+            ["", "", "tr", "l", "", ""],
+            ["", "b", "", "", "t", ""],
+            ["", "", "r", "l", "b", ""],
+            ["", "", "", "", "", ""],
+        ],
+        "player_start": [1, 3],
+        "stair_position": (7, 3),
+        "zombie_starts": [[4, 2, 0]],
+        "scorpion_starts": [],
+        "trap_pos": [],
+        "gate_pos": [],
+        "key_pos": [],
+    },
     {
         "name": "Level 13: map6_12",
         "map_length": 6,
@@ -341,7 +258,6 @@ maps_collection = [
         "gate_pos": [5, 3],
         "level_score": 1000,
     },
-    # --- MÀN 14: Map 8x8 - 2 zombie type 0 bị chặn dọc ---
     {
         "name": "Level 14: map8_1",
         "map_length": 8,
@@ -362,9 +278,8 @@ maps_collection = [
         "trap_pos": [[4, 1]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
-    # --- MÀN 15: BOSS - 2 zombie type 0 bị chặn dọc ---
     {
         "name": "Level 15: map8_7",
         "map_length": 8,
@@ -380,18 +295,13 @@ maps_collection = [
         ],
         "player_start": [1, 2],
         "stair_position": (0, 6),
-        "zombie_starts": [[2, 3, 2], [7, 7, 2]],
+        "zombie_starts": [[7, 7, 2]],
         "scorpion_starts": [],
         "trap_pos": [],
         "key_pos": [5, 8],
         "gate_pos": [1, 4],
-        "level_score": 1000,
+        "level_score": 3000,
     },
-    # ==========================================
-    # GIAI ĐOẠN 2: HẦM MỘ TỐI TĂM
-    # Màn 16-30: Độ khó trung bình
-    # ==========================================
-    # --- MÀN 16: Open Field - 2 zombie type 0 bị chặn ---
     {
         "name": "Level 16: map8_8",
         "map_length": 8,
@@ -412,52 +322,7 @@ maps_collection = [
         "trap_pos": [[2, 8]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
-    },
-    # --- MÀN 17: Hai hướng - 1 zombie type 0 bị chặn ---
-    {
-        "name": "Level 17: Two Ways",
-        "map_length": 8,
-        "map_data": [
-            ["", "r", "l", "", "", "r", "l", ""],
-            ["", "", "", "b", "b", "", "", ""],
-            ["", "b", "", "t", "t", "", "b", ""],
-            ["", "t", "", "b", "b", "", "t", ""],
-            ["", "", "", "t", "t", "", "", ""],
-            ["", "r", "l", "", "", "r", "l", ""],
-            ["", "", "", "b", "b", "", "", ""],
-            ["", "", "", "t", "t", "", "", ""],
-        ],
-        "player_start": [1, 4],
-        "stair_position": (9, 4),
-        "zombie_starts": [[4, 1, 0]],
-        "scorpion_starts": [],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-    },
-    # --- MÀN 18: Center Wall - zombie type 1 bị chặn đi trái ---
-    {
-        "name": "Level 18: map8_2",
-        "map_length": 8,
-        "map_data": [
-            ['', '', '', '', '', '', '', 'l'],
-            ['', 'l', '', 'l', '', '', 't', 'l'],
-            ['t', '', '', 't', '', 'l', '', ''],
-            ['', 't', '', '', '', '', '', ''],
-            ['t', '', 'l', '', '', '', '', ''],
-            ['', '', 't', '', '', 't', 'l', ''],
-            ['', '', '', '', '', '', '', 'l'],
-            ['', 'tl', '', '', '', '', '', ''],
-        ],
-        "player_start": [5, 6],
-        "stair_position": (0, 1),
-        "zombie_starts": [[8, 4, 3]],
-        "scorpion_starts": [[4, 5, 1]],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 19: Corner Walls - 2 zombie type 0 bị chặn ---
     {
@@ -480,7 +345,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [3, 3],
         "gate_pos": [6, 3],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 20: Wide Arena - zombie type 0 bị chặn dọc ---
     {
@@ -503,7 +368,7 @@ maps_collection = [
         "trap_pos": [[8, 1]],
         "key_pos": [[3, 4]],
         "gate_pos": [5, 3],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 21: Triple Threat - 3 zombie type 0 bị chặn ---
     {
@@ -526,7 +391,7 @@ maps_collection = [
         "trap_pos": [[6, 7]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 22: Straight Path - zombie type 0 bị chặn dọc ---
     {
@@ -549,7 +414,7 @@ maps_collection = [
         "trap_pos": [[7, 7]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 23: H Shape - 2 zombie type 1 bị chặn ---
     {
@@ -572,7 +437,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 24: Four Corners - 2 zombie type 0 bị chặn ---
     {
@@ -595,7 +460,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 25: Mini Boss - 2 zombie type 0 bị chặn ---
     {
@@ -618,7 +483,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 3000,
     },
     # --- MÀN 26: Big Arena 10x10 - 2 zombie type 0 bị chặn ---
     {
@@ -643,7 +508,7 @@ maps_collection = [
         "trap_pos": [[6, 7]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 27: Many Walls - 2 zombie type 1 bị chặn ---
     {
@@ -668,7 +533,7 @@ maps_collection = [
         "trap_pos": [[3, 1]],
         "key_pos": [[9, 5]],
         "gate_pos": [7, 7],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 28: Large Room - 2 zombie type 0 bị chặn ---
     {
@@ -693,7 +558,7 @@ maps_collection = [
         "trap_pos": [[7, 8]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 29: Corner Blocks - 3 zombie type 0 bị chặn ---
     {
@@ -718,7 +583,7 @@ maps_collection = [
         "trap_pos": [[7, 4]],
         "key_pos": [[4, 10]],
         "gate_pos": [9, 5],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 30: BOSS - 2 zombie type 0 bị chặn ---
     {
@@ -743,7 +608,7 @@ maps_collection = [
         "trap_pos": [[7, 8]],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # ==========================================
     # GIAI ĐOẠN 3: ĐIỆN THỜ HOÀNG GIA
@@ -772,7 +637,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 32: Wall Maze - Asymmetric maze with 2 zombies ---
     {
@@ -797,7 +662,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 33: Twisted Path - Winding corridors ---
     {
@@ -822,7 +687,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 5000,
     },
     # --- MÀN 34: Grand Hall 12x12 - Complex asymmetric layout ---
     {
@@ -849,7 +714,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 35: Serpent Path 12x12 - Snake-like corridors ---
     {
@@ -876,7 +741,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 36: Labyrinth 12x12 - Complex maze pattern ---
     {
@@ -903,7 +768,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 37: Dragon's Path 12x12 - Winding corridors ---
     {
@@ -930,7 +795,40 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
+    },
+    {
+        "name": "Generated Map 12x12",
+        "map_length": 12,
+        "map_data": [
+            [""  , ""  , "l" , ""  , ""  , ""  , ""  , "l" , ""  , ""  , ""  , ""  ],
+            [""  , ""  , "l" , "t" , "l" , "l" , "tl", ""  , "t" , "tl", ""  , "l" ],
+            [""  , "t" , ""  , "t" , "l" , "l" , "l" , "t" , "tl", ""  , "tl", ""  ],
+            ["t" , "t" , "tl", ""  , "l" , "l" , "t" , "l" , "l" , "t" , "l" , "t" ],
+            [""  , ""  , "l" , "tl", ""  , ""  , "l" , ""  , "tl", ""  , "tl", "l" ],
+            [""  , "t" , ""  , "l" , "t" , "tl", "t" , "t" , "l" , "t" , "l" , ""  ],
+            [""  , "t" , "t" , "t" , "l" , "l" , "t" , "l" , "tl", ""  , "t" , "l" ],
+            [""  , "t" , "l" , "tl", ""  , "l" , "l" , "l" , ""  , "tl", ""  , "l" ],
+            ["t" , ""  , "l" , ""  , "t" , "t" , "l" , "l" , ""  , "l" , "t" , "t" ],
+            [""  , "tl", "t" , "t" , "t" , "l" , ""  , "l" , "l" , "t" , ""  , "l" ],
+            [""  , ""  , "tl", "tl", ""  , "tl", ""  , "tl", ""  , "tl", ""  , "l" ],
+            [""  , ""  , ""  , ""  , "t" , ""  , "l" , ""  , "tl", ""  , "t" , ""  ]
+        ],
+        "player_start": [2, 1],
+        "stair_position": [5, 13],
+        "zombie_starts": [
+            [2, 5, 3],
+            [7, 9, 3]
+        ],
+        "scorpion_starts": [
+            [11, 10, 3],
+            [10, 6, 3],
+            [7, 4, 3]
+        ],
+        "trap_pos": [],
+        "key_pos": [],
+        "gate_pos": [],
+        "level_score": 1000
     },
     # --- MÀN 38: Crossroads 12x12 - Multiple pathways ---
     {
@@ -957,7 +855,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 39: Shadow Maze 12x12 - Dark corridors ---
     {
@@ -984,7 +882,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 40: Arena of Trials 12x12 - Challenge arena ---
     {
@@ -1011,7 +909,7 @@ maps_collection = [
         "trap_pos": [],
         "key_pos": [],
         "gate_pos": [],
-        "level_score": 1000,
+        "level_score": 7000,
     },
     # --- MÀN 41: Imperial Palace 16x16 - Massive asymmetric maze ---
     {
@@ -1169,3 +1067,6 @@ maps_collection = [
         "level_score": 1000,
     },
 ]
+
+
+print(len(maps_collection))

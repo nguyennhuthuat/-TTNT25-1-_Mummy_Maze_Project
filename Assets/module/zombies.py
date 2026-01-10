@@ -170,7 +170,6 @@ class MummyMazeZombieManager:
         
         move_list = generate_next_zombie_positions(self.map_data, [list(self.grid_position) + [self.zombie_type]], player_position, show_list=True)
         self.movement_list += move_list
-        print(self.movement_list)
         return len(self.movement_list) > 0
 
     def draw_zombie(self, screen: pygame.Surface, offset_x: int, offset_y: int) -> None:
