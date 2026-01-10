@@ -1,35 +1,43 @@
 import pygame
 import sys
-from fonts import MetricFont
+
+try:
+    from fonts import MetricFont
+except ImportError:
+    class MetricFont:
+        def __init__(self, font_name, scale_height):
+            self.font = pygame.font.Font(None, scale_height)
+        def render(self, text, antialias, color):
+            return self.font.render(text, antialias, color)
 
 def open_register_window(screen):
     # --- 1. KHỞI TẠO FONT & MÀU SẮC ---
     try:
-        input_font = pygame.font.SysFont("arial", 28) 
-        label_font = pygame.font.SysFont("comic sans ms", 18)
-        footer_font = pygame.font.SysFont("comic sans ms", 14)
-        
-        # Font cho nút bấm (headerfont)
-        font_btn = MetricFont(font_name="headerfont", scale_height=40) 
-        
-        # Font cho tiêu đề
-        font_title = MetricFont(font_name="font1", scale_height=50)
-
-        # Font cho mô tả
+        input_font = pygame.font.SysFont("arial", 28)
+        # Font cho nút bấm
+        font_btn = MetricFont(font_name="headerfont", scale_height=40)
+        # Font cho tiêu đề lớn
+        font_title = MetricFont(font_name="font1", scale_height=30)
+        # Font cho label nhỏ (Enter In-game Name)
         font_word = MetricFont(font_name="font1", scale_height=20)
+        # Font cho dòng chú thích rank chart
+        font_note = pygame.font.SysFont("comic sans ms", 16, italic=True) 
+        # Font footer
+        footer_font = pygame.font.SysFont("comic sans ms", 14)
 
-
-    except Exception as e:
+    except:
         input_font = pygame.font.Font(None, 32)
-        label_font = pygame.font.Font(None, 20)
-        footer_font = pygame.font.Font(None, 18)
         font_btn = pygame.font.Font(None, 50)
         font_title = pygame.font.Font(None, 60)
+        font_word = pygame.font.Font(None, 30)
+        font_note = pygame.font.Font(None, 20)
+        footer_font = pygame.font.Font(None, 18)
 
     COLOR_BG_OVERLAY = (0, 0, 0)
     TEXT_COLOR       = (40, 20, 10)
-    HOVER_COLOR      = (255, 0, 0) 
-    INPUT_TEXT_COLOR = (50, 50, 50) 
+    HOVER_COLOR      = (255, 0, 0)
+    INPUT_TEXT_COLOR = (50, 50, 50)
+    NOTE_COLOR       = (80, 60, 50) # Màu cho dòng chú thích (nhạt hơn chút)
 
     w, h = screen.get_size()
     center_x, center_y = w // 2, h // 2
@@ -38,14 +46,12 @@ def open_register_window(screen):
     try:
         bg = pygame.image.load('./assets/images/background_window.png').convert()
         bg = pygame.transform.scale(bg, (w, h))
-    except:
-        bg = None
+    except: bg = None
     
     try:
         logo_image = pygame.image.load("./assets/images/DudesChaseMoneyLogo.png").convert_alpha()
         logo_icon = pygame.transform.scale(logo_image, (130, 130))
-    except:
-        pass
+    except: pass
 
     try:
         board_img = pygame.image.load('./assets/images/window.png').convert_alpha()
@@ -61,198 +67,162 @@ def open_register_window(screen):
     try:
         logo_img = pygame.image.load('./assets/images/menulogo.png').convert_alpha()
         logo_rect = logo_img.get_rect(center=(center_x, center_y - 230))
-    except:
-        logo_img = None
+    except: logo_img = None
 
-    # --- 3. LOAD ẢNH KHUNG NHẬP LIỆU ---
     try:
         input_frame_img = pygame.image.load('./assets/images/input_frame.png').convert_alpha()
         input_frame_img = pygame.transform.scale(input_frame_img, (300, 50))
-    except:
-        input_frame_img = None
+    except: input_frame_img = None
+
+    # --- 3. ĐỊNH NGHĨA VỊ TRÍ ---
     
-    # --- 4. ĐỊNH NGHĨA VỊ TRÍ ---
-    # Block Shift cho các ô nhập liệu
-    BLOCK_SHIFT_X = 0  
-    BLOCK_SHIFT_Y = 200   
+    # Dịch chuyển khối nhập liệu. 
+    IGN_SHIFT_X = 0    
+    IGN_SHIFT_Y = 200 
 
-    anchor_x = center_x + BLOCK_SHIFT_X
-    anchor_y = center_y + BLOCK_SHIFT_Y
+    anchor_ign_x = center_x + IGN_SHIFT_X
+    anchor_ign_y = center_y + IGN_SHIFT_Y
 
-    # [MỚI] Vị trí tiêu đề "REGISTER AN ACCOUNT" (Nằm trên Username 60px)
-    pos_title = (anchor_x, anchor_y - 80)
+    # Vị trí ô nhập In-game Name
+    rect_ign_input = pygame.Rect(0, 0, 300, 50)
+    rect_ign_input.center = (anchor_ign_x, anchor_ign_y) 
 
-    # Username Input
-    rect_user_input = pygame.Rect(0, 0, 300, 50)
-    rect_user_input.center = (anchor_x, anchor_y)
+    # Vị trí tiêu đề "CHARACTER NAME"
+    pos_title = (anchor_ign_x, anchor_ign_y - 80)
+    
+    # Vị trí nút bấm (Cố định ở dưới đáy window)
+    BUTTON_FIXED_Y = center_y + 200 # Đẩy lên một chút cho gọn
+    pos_back = (center_x - 300, BUTTON_FIXED_Y + 100)
+    pos_confirm = (center_x + 300, BUTTON_FIXED_Y + 100)
 
-    # Password Input
-    rect_pass_input = pygame.Rect(0, 0, 300, 50)
-    rect_pass_input.center = (anchor_x, anchor_y + 80)
-
-    # Vị trí nút bấm (Cố định Y)
-    BUTTON_FIXED_Y = center_y + 300
-
-    # Nút BACK (Góc Trái)
-    pos_back = (center_x - 290, BUTTON_FIXED_Y)
-
-    # Nút REGISTER (Góc Phải)
-    pos_register = (center_x + 290, BUTTON_FIXED_Y)
-
-    # --- 5. BIẾN TRẠNG THÁI ---
-    username_text = ""
-    password_text = ""
-    active_field = None 
-
+    # --- 4. LOGIC LOOP ---
+    ign_text = ""
+    active = True # Mặc định focus vào ô này luôn
+    
     overlay = pygame.Surface((w, h))
     overlay.set_alpha(150)
     overlay.fill(COLOR_BG_OVERLAY)
-    
+
     running = True
-    result_data = None 
+    final_ign = None
 
     while running:
         mouse_pos = pygame.mouse.get_pos()
         
-        # --- CẤU HÌNH NÚT BẤM ---
         buttons_config = [
-            ("REGISTER", pos_register, "do_register"),
-            ("GO BACK", pos_back, "go_back")
+            ("CONFIRM", pos_confirm, "do_confirm"),
+            ("BACK", pos_back, "go_back")
         ]
-
-        active_buttons = []
-        for text, pos, action in buttons_config:
-            temp_surf = font_btn.render(text, True, TEXT_COLOR)
-            rect = temp_surf.get_rect(center=pos)
-            active_buttons.append((rect, text, action))
-
+        
         # --- XỬ LÝ SỰ KIỆN ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                pygame.quit(); sys.exit()
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if rect_user_input.collidepoint(mouse_pos):
-                    active_field = 'user'
-                elif rect_pass_input.collidepoint(mouse_pos):
-                    active_field = 'pass'
+                if rect_ign_input.collidepoint(mouse_pos):
+                    active = True
                 else:
-                    active_field = None 
-
-                for rect, _, action in active_buttons:
-                    if rect.collidepoint(mouse_pos):
+                    active = False
+                
+                # Check nút bấm
+                for text, pos, action in buttons_config:
+                    temp_surf = font_btn.render(text, True, TEXT_COLOR)
+                    btn_rect = temp_surf.get_rect(center=pos)
+                    if btn_rect.collidepoint(mouse_pos):
                         if action == "go_back":
-                            result_data = None 
-                            running = False
-                        elif action == "do_register":
-                            if username_text and password_text: 
-                                result_data = (username_text, password_text)
+                            running = False 
+                        elif action == "do_confirm":
+                            if len(ign_text) > 0:
+                                final_ign = ign_text
                                 running = False
-                            else:
-                                print("Please enter your full information!")
             
             if event.type == pygame.KEYDOWN:
-                if active_field is not None:
+                if active:
                     if event.key == pygame.K_RETURN:
-                        if active_field == 'user':
-                            active_field = 'pass'
-                        elif active_field == 'pass':
-                            if username_text and password_text:
-                                result_data = (username_text, password_text)
-                                running = False
+                        if len(ign_text) > 0:
+                            final_ign = ign_text
+                            running = False
                     elif event.key == pygame.K_BACKSPACE:
-                        if active_field == 'user':
-                            username_text = username_text[:-1]
-                        else:
-                            password_text = password_text[:-1]
+                        ign_text = ign_text[:-1]
                     else:
-                        if active_field == 'user' and len(username_text) < 15:
-                            username_text += event.unicode
-                        elif active_field == 'pass' and len(password_text) < 15:
-                            password_text += event.unicode
+                        if len(ign_text) < 12: # Giới hạn 12 ký tự
+                            ign_text += event.unicode
 
         # --- VẼ GIAO DIỆN ---
         if bg: screen.blit(bg, (0, 0))
         else: screen.fill((100, 150, 100))
         screen.blit(overlay, (0, 0))
 
-        if logo_img: screen.blit(logo_img, logo_rect)
-
-        if board_img:
-            screen.blit(board_img, board_rect)
-        else:
-            pygame.draw.rect(screen, (210, 180, 140), board_rect)
+        # Vẽ bảng (Board)
+        if board_img: screen.blit(board_img, board_rect)
+        else: pygame.draw.rect(screen, (210, 180, 140), board_rect)
         
+        # Vẽ Logo lớn (Menu Logo)
         if logo_img: screen.blit(logo_img, logo_rect)
+        # Vẽ Logo nhỏ góc trái
+        if 'logo_icon' in locals(): screen.blit(logo_icon, (30, h - 120))
 
-        # Vẽ tiêu đề 
-        title_surf = font_title.render("ACCOUNT", True, HOVER_COLOR)
+        # 1. Tiêu đề
+        title_surf = font_title.render("CHARACTER NAME", True, HOVER_COLOR)
         title_rect = title_surf.get_rect(center=pos_title)
         screen.blit(title_surf, title_rect)
 
-        # 3. Vẽ Khung Nhập Liệu & Text
-        # --- Username ---
+        # 2. Ô nhập liệu
         if input_frame_img:
-            screen.blit(input_frame_img, rect_user_input)
+            screen.blit(input_frame_img, rect_ign_input)
         else:
-            pygame.draw.rect(screen, (255, 255, 255), rect_user_input)
-            pygame.draw.rect(screen, (0,0,0), rect_user_input, 2)
+            pygame.draw.rect(screen, (255, 255, 255), rect_ign_input)
+            pygame.draw.rect(screen, (0,0,0), rect_ign_input, 2)
         
-        lbl_user = font_word.render("Username", True, TEXT_COLOR)
-        screen.blit(lbl_user, (rect_user_input.x, rect_user_input.y - 20))
+        # Label "Enter Name" (nhỏ phía trên ô nhập)
+        lbl_ign = font_word.render("Enter In-Game Name", True, TEXT_COLOR)
+        screen.blit(lbl_ign, (rect_ign_input.x, rect_ign_input.y - 25))
 
-        display_user = username_text + ("|" if active_field == 'user' and (pygame.time.get_ticks() // 500) % 2 == 0 else "")
-        txt_surf_user = input_font.render(display_user, True, INPUT_TEXT_COLOR)
-        screen.blit(txt_surf_user, (rect_user_input.x + 10, rect_user_input.centery - txt_surf_user.get_height()//2))
+        # Text người dùng nhập
+        display_text = ign_text + ("|" if active and (pygame.time.get_ticks() // 500) % 2 == 0 else "")
+        txt_surf = input_font.render(display_text, True, INPUT_TEXT_COLOR)
+        # Căn giữa text theo chiều dọc (center Y) và cách lề trái 10px
+        screen.blit(txt_surf, (rect_ign_input.x + 15, rect_ign_input.centery - txt_surf.get_height()//2))
 
-        # --- Password ---
-        if input_frame_img:
-            screen.blit(input_frame_img, rect_pass_input)
-        else:
-            pygame.draw.rect(screen, (255, 255, 255), rect_pass_input)
-            pygame.draw.rect(screen, (0,0,0), rect_pass_input, 2)
+        # [MỚI] 3. Dòng chú thích Rank Chart
+        note_text = "This name is used for displaying with your rank on the chart."
+        note_surf = font_note.render(note_text, True, NOTE_COLOR)
+        # Đặt ngay dưới ô nhập liệu 10 pixel
+        note_rect = note_surf.get_rect(centerx=rect_ign_input.centerx, top=rect_ign_input.bottom + 10)
+        screen.blit(note_surf, note_rect)
 
-        lbl_pass = font_word.render("Password", True, TEXT_COLOR)
-        screen.blit(lbl_pass, (rect_pass_input.x, rect_pass_input.y - 20))
+        # 4. Vẽ nút (Confirm / Back)
+        for text, pos, action in buttons_config:
+            temp_surf = font_btn.render(text, True, TEXT_COLOR)
+            rect = temp_surf.get_rect(center=pos)
+            color = HOVER_COLOR if rect.collidepoint(mouse_pos) else TEXT_COLOR
+            real_surf = font_btn.render(text, True, color)
+            screen.blit(real_surf, rect)
 
-        masked_pass = "*" * len(password_text) + ("|" if active_field == 'pass' and (pygame.time.get_ticks() // 500) % 2 == 0 else "")
-        txt_surf_pass = input_font.render(masked_pass, True, INPUT_TEXT_COLOR)
-        screen.blit(txt_surf_pass, (rect_pass_input.x + 10, rect_pass_input.centery - txt_surf_pass.get_height()//2))
-
-        # 4. Vẽ Các Nút
-        for rect, text, _ in active_buttons:
-            color = TEXT_COLOR
-            if rect.collidepoint(mouse_pos):
-                color = HOVER_COLOR
-            
-            txt_surf = font_btn.render(text, True, color)
-            screen.blit(txt_surf, rect)
-
-        # 5. Footer & Logo nhỏ
+        # 5. Footer
         footer_text_surf = footer_font.render("Version 1.0.1 | © 25TNT1 - Dudes Chase Money", True, TEXT_COLOR)
-        footer_text_rect = footer_text_surf.get_rect(centerx = w // 2, bottom = h)
+        footer_text_rect = footer_text_surf.get_rect(centerx = w // 2, bottom = h - 10)
         screen.blit(footer_text_surf, footer_text_rect)
-        
-        if 'logo_icon' in locals():
-            screen.blit(logo_icon, (30, h - 120))
 
         pygame.display.flip()
-        
-    return result_data
 
+    return final_ign
+
+# --- HÀM MAIN ĐỂ CHẠY THỬ ---
 if __name__ == "__main__":
     pygame.init()
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 670
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Register Window Test")  
+    pygame.display.set_caption("In-Game Name Input")   
 
-    data = open_register_window(screen)
+    # Gọi hàm nhập tên
+    ingame_name = open_register_window(screen)
     
-    if data:
-        print(f"Registered successfully! Username: {data[0]}, Password: {data[1]}")
+    if ingame_name:
+        print(f"Success! Player Name: {ingame_name}")
     else:
-        print("Back to Lobby (Back clicked)")
+        print("User cancelled (Clicked Back or Close).")
 
     pygame.quit()
     sys.exit()

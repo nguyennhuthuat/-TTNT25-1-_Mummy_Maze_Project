@@ -60,10 +60,6 @@ def open_switch_account_window(screen, account_list):
     overlay.set_alpha(150)
     overlay.fill(COLOR_BG_OVERLAY)
 
-    # =========================================================================
-    # --- 3. THIẾT LẬP VỊ TRÍ & SCROLL (CÓ BIẾN ĐIỀU CHỈNH) ---
-    # =========================================================================
-    
     # Kích thước khung danh sách
     list_w = 200
     list_h = 180 
@@ -229,7 +225,7 @@ def open_switch_account_window(screen, account_list):
         screen.blit(reg_surf, reg_rect)
 
         # Nút Back
-        back_txt = "GO BACK"
+        back_txt = "BACK"
         back_surf_temp = font_header.render(back_txt, True, TEXT_COLOR)
         back_rect = back_surf_temp.get_rect(center=(center_x - 290, btn_y_pos))
         
