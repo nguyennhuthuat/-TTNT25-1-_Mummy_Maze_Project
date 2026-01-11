@@ -28,39 +28,6 @@ maps_collection = [
     # ==========================================
     # --- MÀN 1: First Light  ---
     {
-        "name": "Generated Map 12x12",
-        "map_length": 12,
-        "map_data": [
-            [""  , ""  , "l" , ""  , ""  , ""  , ""  , "l" , ""  , ""  , ""  , ""  ],
-            [""  , ""  , "l" , "t" , "l" , "l" , "tl", ""  , "t" , "tl", ""  , "l" ],
-            [""  , "t" , ""  , "t" , "l" , "l" , "l" , "t" , "tl", ""  , "tl", ""  ],
-            ["t" , "t" , "tl", ""  , "l" , "l" , "t" , "l" , "l" , "t" , "l" , "t" ],
-            [""  , ""  , "l" , "tl", ""  , ""  , "l" , ""  , "tl", ""  , "tl", "l" ],
-            [""  , "t" , ""  , "l" , "t" , "tl", "t" , "t" , "l" , "t" , "l" , ""  ],
-            [""  , "t" , "t" , "t" , "l" , "l" , "t" , "l" , "tl", ""  , "t" , "l" ],
-            [""  , "t" , "l" , "tl", ""  , "l" , "l" , "l" , ""  , "tl", ""  , "l" ],
-            ["t" , ""  , "l" , ""  , "t" , "t" , "l" , "l" , ""  , "l" , "t" , "t" ],
-            [""  , "tl", "t" , "t" , "t" , "l" , ""  , "l" , "l" , "t" , ""  , "l" ],
-            [""  , ""  , "tl", "tl", ""  , "tl", ""  , "tl", ""  , "tl", ""  , "l" ],
-            [""  , ""  , ""  , ""  , "t" , ""  , "l" , ""  , "tl", ""  , "t" , ""  ]
-        ],
-        "player_start": [2, 1],
-        "stair_position": [5, 13],
-        "zombie_starts": [
-            [2, 5, 3],
-            [7, 9, 3]
-        ],
-        "scorpion_starts": [
-            [11, 10, 3],
-            [10, 6, 3],
-            [7, 4, 3]
-        ],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000
-    },
-        {
         "name": "Level 7: The L-Shape",
         "map_length": 6,
         "map_data": [
@@ -716,6 +683,39 @@ maps_collection = [
         "gate_pos": [],
         "level_score": 7000,
     },
+     {
+        "name": "Generated Map 12x12",
+        "map_length": 12,
+        "map_data": [
+            [""  , ""  , "l" , ""  , ""  , ""  , ""  , "l" , ""  , ""  , ""  , ""  ],
+            [""  , ""  , "l" , "t" , "l" , "l" , "tl", ""  , "t" , "tl", ""  , "l" ],
+            [""  , "t" , ""  , "t" , "l" , "l" , "l" , "t" , "tl", ""  , "tl", ""  ],
+            ["t" , "t" , "tl", ""  , "l" , "l" , "t" , "l" , "l" , "t" , "l" , "t" ],
+            [""  , ""  , "l" , "tl", ""  , ""  , "l" , ""  , "tl", ""  , "tl", "l" ],
+            [""  , "t" , ""  , "l" , "t" , "tl", "t" , "t" , "l" , "t" , "l" , ""  ],
+            [""  , "t" , "t" , "t" , "l" , "l" , "t" , "l" , "tl", ""  , "t" , "l" ],
+            [""  , "t" , "l" , "tl", ""  , "l" , "l" , "l" , ""  , "tl", ""  , "l" ],
+            ["t" , ""  , "l" , ""  , "t" , "t" , "l" , "l" , ""  , "l" , "t" , "t" ],
+            [""  , "tl", "t" , "t" , "t" , "l" , ""  , "l" , "l" , "t" , ""  , "l" ],
+            [""  , ""  , "tl", "tl", ""  , "tl", ""  , "tl", ""  , "tl", ""  , "l" ],
+            [""  , ""  , ""  , ""  , "t" , ""  , "l" , ""  , "tl", ""  , "t" , ""  ]
+        ],
+        "player_start": [2, 1],
+        "stair_position": [5, 13],
+        "zombie_starts": [
+            [2, 5, 3],
+            [7, 9, 3]
+        ],
+        "scorpion_starts": [
+            [11, 10, 3],
+            [10, 6, 3],
+            [7, 4, 3]
+        ],
+        "trap_pos": [],
+        "key_pos": [],
+        "gate_pos": [],
+        "level_score": 1000
+    },
     # --- MÀN 35: Serpent Path 12x12 - Snake-like corridors ---
     {
         "name": "Level 35: Serpent Path",
@@ -1005,6 +1005,3 @@ maps_collection = [
         "level_score": 10000,
             }
 ]
-
-
-print(len(maps_collection))
