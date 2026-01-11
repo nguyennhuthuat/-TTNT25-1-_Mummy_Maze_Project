@@ -107,26 +107,6 @@ maps_collection = [
         "level_score": 1000,
     },
     {
-        "name": "Level 11: map6_10",
-        "map_length": 6,
-        "map_data": [
-            ['', '', '', '', '', ''],
-            ['', '', '', 'tl', 't', ''],
-            ['', '', '', 't', '', 'l'],
-            ['', '', 'l', '', '', ''],
-            ['', '', '', '', '', ''],
-            ['', 'l', '', '', '', ''],
-        ],
-        "player_start": [5, 5],
-        "stair_position": (4, 0),
-        "zombie_starts": [[2, 4, 2], [2, 5, 2]],
-        "scorpion_starts": [],
-        "trap_pos": [],
-        "key_pos": [],
-        "gate_pos": [],
-        "level_score": 1000,
-    },
-    {
         "name": "Level 12: map6_13",
         "map_length": 6,
         "map_data": [
