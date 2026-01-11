@@ -1,3 +1,7 @@
+<!--
+Source Code/GitHub Repository: https://github.com/nguyennhuthuat/-TTNT25-1-_Mummy_Maze_Project
+-->
+
 # 🏺 Mummy Maze - The Escape
 
 ![Main Menu](Assets/images/mainUI.png)
