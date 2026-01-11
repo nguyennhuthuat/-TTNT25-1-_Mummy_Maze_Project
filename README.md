@@ -1,6 +1,6 @@
 # 🏺 Mummy Maze - The Escape
 
-![Menu Game](Assets/images/UI.png)
+![Main Menu](Assets/images/mainUI.png)
 
 ---
 
@@ -12,27 +12,119 @@
 
 ## ⚙️ Hướng dẫn cài đặt (Installation)
 
-### 1. Yêu cầu hệ thống (Prerequisites)
+### 1️. Cài đặt Git
 
-- Hệ điều hành: Windows 10/11, macOS hoặc Linux
-- Cài đặt sẵn **Python 3.x** *(hoặc môi trường tương ứng)*
+Git dùng để tải (clone) mã nguồn game từ GitHub.
 
-### 2. Các bước cài đặt
+#### 🔹 Windows
 
-**Bước 1: Clone project**
+1. Truy cập: https://git-scm.com/
+2. Tải **Git for Windows**
+3. Cài đặt → giữ nguyên các tuỳ chọn mặc định → *Next* cho đến khi hoàn tất
+4. Mở **Command Prompt** hoặc **Git Bash**, gõ:
+
+```bash
+git --version
+```
+
+Nếu thấy phiên bản Git → cài đặt thành công ✅
+
+#### 🔹 macOS
+
+```bash
+brew install git
+```
+
+Hoặc cài trực tiếp từ trang Git chính thức.
+
+#### 🔹 Linux (Ubuntu/Debian)
+
+```bash
+sudo apt update
+sudo apt install git
+```
+
+---
+
+### 2️. Cài đặt Python
+
+Python là ngôn ngữ dùng để chạy game.
+
+#### 🔹 Windows
+
+1. Truy cập: https://www.python.org/downloads/
+2. Tải **Python 3.x** (khuyên dùng bản mới nhất)
+3. ⚠️ **BẮT BUỘC tick** vào ô: `Add Python to PATH`
+4. Cài đặt → Finish
+5. Kiểm tra:
+
+```bash
+python --version
+```
+
+#### 🔹 macOS
+
+```bash
+brew install python
+```
+
+#### 🔹 Linux
+```bash
+sudo apt install python3 python3-pip
+```
+
+---
+
+### 3️. Tải mã nguồn game
+
+Mở Terminal / Command Prompt tại thư mục bạn muốn lưu project, chạy:
 
 ```bash
 git clone https://github.com/nguyennhuthuat/-TTNT25-1-_Mummy_Maze_Project.git
 cd -TTNT25-1-_Mummy_Maze_Project
 ```
 
-**Bước 2: Cài đặt thư viện** 
+---
+
+### 4️. (Tuỳ chọn) Tạo môi trường ảo Python
+
+```bash
+python -m venv venv
+```
+
+Kích hoạt môi trường ảo:
+
+- **Windows**:
+```bash
+venv\Scripts\activate
+```
+
+- **macOS / Linux**:
+```bash
+source venv/bin/activate
+```
+
+---
+
+
+### 5️. Cài đặt thư viện cần thiết
+
+Nếu có file `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Bước 3: Chạy game**
+Hoặc cài thủ công với các thư viện trong file requirements.txt (ví dụ với Pygame):
+
+```bash
+pip install pygame
+```
+
+---
+
+
+### 6️. Chạy game
 
 ```bash
 python index.py
@@ -48,10 +140,17 @@ Di chuyển nhà thám hiểm đến ô **Cầu thang (Exit)** để qua màn. �
 
 ### 🧟 Quy luật di chuyển của Xác ướp
 
-- Với mỗi bước của người chơi → xác ướp đi **2 bước**
-- Ưu tiên di chuyển theo **chiều ngang (Horizontal)** trước
-- Sau đó di chuyển theo **chiều dọc (Vertical)**
-- Có thể lợi dụng tường để dụ xác ướp bị kẹt
+Mỗi xác ướp có một **Type** quyết định hành vi di chuyển.  
+Với mỗi lượt của người chơi, xác ướp sẽ thực hiện **2 bước di chuyển** theo quy tắc tương ứng.
+
+| Type | Tên | Hành vi |
+|----|-----|--------|
+| 0 | Zombie Trắng (Dọc) | Ưu tiên di chuyển dọc (UP/DOWN). Nếu bị chặn theo chiều dọc → đứng yên |
+| 1 | Zombie Đỏ (Ngang) | Ưu tiên di chuyển ngang (LEFT/RIGHT). Nếu bị chặn theo chiều ngang → đứng yên |
+| 2 | Zombie Trắng (Dọc, Thông minh) | Ưu tiên dọc. Nếu bị chặn dọc → thử di chuyển ngang |
+| 3 | Zombie Đỏ (Ngang, Thông minh) | Ưu tiên ngang. Nếu bị chặn ngang → thử di chuyển dọc |
+
+Xác ướp luôn cố gắng tiến gần nhà thám hiểm nhất theo quy tắc ưu tiên của từng loại.
 
 ### ⌨️ Phím điều khiển (Controls)
 
@@ -70,7 +169,9 @@ Di chuyển nhà thám hiểm đến ô **Cầu thang (Exit)** để qua màn. �
 ## 📸 Hình ảnh minh họa 
 
 - Màn hình Gameplay
-- Level nâng cao
+
+![Menu Game](Assets/images/manchinh1.png)
+
 
 ---
 
