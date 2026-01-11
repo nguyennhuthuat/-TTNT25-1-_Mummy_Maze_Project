@@ -995,7 +995,10 @@ def main_game(current_level, victory_common_surface = victory_common_surface, gl
 
         if is_win:
             game_data["level"] = game_data.get("level", 0) + 1 
-            game_data["score_queue"].append(game_data.get("total_score", 0))
+            if "score_queue" in game_data:
+                game_data["score_queue"].append(game_data.get("total_score", 0)) 
+            else:
+                game_data["score_queue"] = [game_data.get("total_score", 0)]
         if load_prev_level:
             game_data["level"] = game_data.get("level", 0) - 1
             game_data["total_score"] = game_data["score_queue"].pop() if game_data["score_queue"] != [] else 0
