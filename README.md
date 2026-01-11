@@ -181,7 +181,7 @@ Xác ướp luôn cố gắng tiến gần nhà thám hiểm nhất theo quy t�
 
 ## 🤝 Tác giả (Authors)
 
-**Đồ án môn học**: *Cơ Sở Lập Trình*  \
+**Đồ án môn học**: *Cơ Sở Lập Trình* 
 **Giảng viên hướng dẫn**:
 - **Lê Thanh Tùng**
 - **Trần Hoàng Quân**
